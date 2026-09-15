@@ -1,4 +1,5 @@
 import os
+import re
 import sqlite3
 import urllib.parse
 import pandas as pd
@@ -51,105 +52,30 @@ def clean_val(val):
 
 
 # =========================================================
-# FAST BULK INGESTION LOGIC
+# EXACT ORIGINAL PRICING & PARTS EXTRACTION LOGIC
 # =========================================================
-def ingest_feedback_fast(df):
-  conn = sqlite3.connect(DB_NAME)
-  c = conn.cursor()
+def build_parts_catalog(fb_df, coll_df):
+  fb = fb_df.copy()
+  coll = coll_df.copy()
 
-  # Clean values
-  df["c_no"] = df["COMPLAINT_NO"].apply(clean_val)
-  df["serial"] = df["SERIAL"].apply(clean_val).str.upper()
-  df["phone"] = df["PHONE_NO"].apply(clean_val)
-  df["model"] = df["MODEL_NAME"].astype(str).str.strip().str.upper()
-  df["customer_name"] = df.get(
-      "CUSTOMER_NAME", pd.Series([""] * len(df))
-  ).apply(clean_val)
-  df["technician_name"] = df.get(
-      "TECHNICIAN_NAME", pd.Series([""] * len(df))
-  ).apply(clean_val)
-  df["complaint_type"] = df.get(
-      "COMPLAINT_TYPE", pd.Series([""] * len(df))
-  ).apply(clean_val)
-  df["purchase_date"] = df.get(
-      "PURCHASE_DATE", pd.Series([""] * len(df))
-  ).apply(clean_val)
-  df["complaint_date"] = df.get(
-      "COMPLAINT_DATE", pd.Series([""] * len(df))
-  ).apply(clean_val)
-  df["closed_date"] = df.get("CLOSED_DATE", pd.Series([""] * len(df))).apply(
-      clean_val
+  fb["C_NO_CLEAN"] = fb["COMPLAINT_NO"].apply(clean_val)
+  fb["SERIAL_CLEAN"] = fb["SERIAL"].apply(clean_val).str.upper()
+  fb["PHONE_CLEAN"] = fb["PHONE_NO"].apply(clean_val)
+  fb["MODEL_CLEAN"] = fb["MODEL_NAME"].astype(str).str.strip().str.upper()
+
+  coll["C_NO_CLEAN"] = coll["Complaint No"].apply(clean_val)
+  coll["EFFECTIVE_PART_PRICE"] = coll["Part Cash"].where(
+      coll["Part Cash"] > 0, coll["Part Warranty"]
   )
-  df["hardware_products"] = df.get(
-      "HARDWARE_PRODUCTS", pd.Series([""] * len(df))
-  ).apply(clean_val)
-  df["hardware_part_nos"] = df.get(
-      "HARDWARE_PART_NOS", pd.Series([""] * len(df))
-  ).apply(clean_val)
-
-  # Filter empty complaint numbers
-  valid_df = df[df["c_no"] != ""][
-      [
-          "c_no",
-          "serial",
-          "phone",
-          "model",
-          "customer_name",
-          "technician_name",
-          "complaint_type",
-          "purchase_date",
-          "complaint_date",
-          "closed_date",
-          "hardware_products",
-          "hardware_part_nos",
-      ]
-  ]
-
-  records = valid_df.values.tolist()
-
-  # Ultra fast C-level Bulk Upsert
-  c.executemany(
-      """
-        INSERT OR REPLACE INTO complaints_master (
-            c_no, serial, phone, model, customer_name, technician_name,
-            complaint_type, purchase_date, complaint_date, closed_date,
-            hardware_products, hardware_part_nos
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """,
-      records,
-  )
-
-  conn.commit()
-  conn.close()
-  return len(records)
-
-
-def ingest_pricing_fast(coll_df):
-  conn = sqlite3.connect(DB_NAME)
-  coll_df["C_NO_CLEAN"] = coll_df["Complaint No"].apply(clean_val)
-  coll_df["EFFECTIVE_PART_PRICE"] = coll_df["Part Cash"].where(
-      coll_df["Part Cash"] > 0, coll_df["Part Warranty"]
-  )
-  coll_sub = coll_df[coll_df["EFFECTIVE_PART_PRICE"] > 0][
+  coll_sub = coll[coll["EFFECTIVE_PART_PRICE"] > 0][
       ["C_NO_CLEAN", "EFFECTIVE_PART_PRICE"]
   ]
+  merged = pd.merge(fb, coll_sub, on="C_NO_CLEAN", how="inner")
 
-  fb = pd.read_sql_query(
-      "SELECT c_no, model, hardware_part_nos, hardware_products FROM"
-      " complaints_master",
-      conn,
-  )
-  if fb.empty:
-    conn.close()
-    return 0
-
-  merged = pd.merge(
-      fb, coll_sub, left_on="c_no", right_on="C_NO_CLEAN", how="inner"
-  )
   single_jobs = merged[
-      ~merged["hardware_part_nos"].str.contains(",", na=False)
+      ~merged["HARDWARE_PART_NOS"].str.contains(",", na=False)
   ].copy()
-  single_jobs["PART_NO"] = single_jobs["hardware_part_nos"].str.strip()
+  single_jobs["PART_NO"] = single_jobs["HARDWARE_PART_NOS"].str.strip()
 
   exact_price_map = (
       single_jobs.groupby("PART_NO")["EFFECTIVE_PART_PRICE"]
@@ -157,11 +83,15 @@ def ingest_pricing_fast(coll_df):
       .to_dict()
   )
 
-  part_rows = []
+  records = []
   for _, row in fb.iterrows():
-    pnos = str(row["hardware_part_nos"])
-    prods = str(row["hardware_products"])
-    if not pnos or pnos.lower() == "nan":
+    pnos = str(row["HARDWARE_PART_NOS"])
+    prods = str(row["HARDWARE_PRODUCTS"])
+    if (
+        pd.isna(row["HARDWARE_PART_NOS"])
+        or pnos.lower() == "nan"
+        or not pnos.strip()
+    ):
       continue
     pno_list = [p.strip() for p in pnos.split(",") if p.strip()]
     prod_list = [p.strip() for p in prods.split(",") if p.strip()]
@@ -172,138 +102,132 @@ def ingest_pricing_fast(coll_df):
           else (prod_list[0] if prod_list else "Component")
       )
       price = int(exact_price_map.get(pno, 0))
-      part_rows.append((row["model"], pno, pname, price))
+      records.append({
+          "MODEL": row["MODEL_CLEAN"],
+          "PART_NO": pno,
+          "PART_NAME": pname,
+          "PRICE": price,
+      })
 
-  c = conn.cursor()
-  c.executemany(
-      """
-        INSERT OR REPLACE INTO parts_catalog (model, part_no, part_name, price)
-        VALUES (?, ?, ?, ?)
-    """,
-      part_rows,
+  parts_df = pd.DataFrame(records).drop_duplicates(subset=["MODEL", "PART_NO"])
+  return parts_df, fb
+
+
+# =========================================================
+# DATABASE BOOTSTRAP & SYNC
+# =========================================================
+def sync_to_sqlite(parts_df, fb_df):
+  conn = sqlite3.connect(DB_NAME)
+
+  # Complaints Master
+  fb_to_save = fb_df[[
+      "C_NO_CLEAN",
+      "SERIAL_CLEAN",
+      "PHONE_CLEAN",
+      "MODEL_CLEAN",
+      "CUSTOMER_NAME",
+      "TECHNICIAN_NAME",
+      "COMPLAINT_TYPE",
+      "PURCHASE_DATE",
+      "COMPLAINT_DATE",
+      "CLOSED_DATE",
+      "HARDWARE_PRODUCTS",
+  ]].copy()
+
+  fb_to_save.columns = [
+      "c_no",
+      "serial",
+      "phone",
+      "model",
+      "customer_name",
+      "technician_name",
+      "complaint_type",
+      "purchase_date",
+      "complaint_date",
+      "closed_date",
+      "hardware_products",
+  ]
+
+  fb_to_save.to_sql(
+      "complaints_master", conn, if_exists="replace", index=False
   )
 
-  conn.commit()
-  conn.close()
-  return len(part_rows)
+  # Parts Catalog
+  parts_to_save = parts_df.copy()
+  parts_to_save.columns = ["model", "part_no", "part_name", "price"]
+  parts_to_save.to_sql("parts_catalog", conn, if_exists="replace", index=False)
 
-
-# =========================================================
-# AUTO DATABASE BOOTSTRAP
-# =========================================================
-def ensure_database_ready():
-  conn = sqlite3.connect(DB_NAME)
+  # Create Search Indexes
   c = conn.cursor()
-
-  c.execute("""
-    CREATE TABLE IF NOT EXISTS complaints_master (
-        c_no TEXT PRIMARY KEY, serial TEXT, phone TEXT, model TEXT,
-        customer_name TEXT, technician_name TEXT, complaint_type TEXT,
-        purchase_date TEXT, complaint_date TEXT, closed_date TEXT,
-        hardware_products TEXT, hardware_part_nos TEXT
-    )""")
   c.execute(
       "CREATE INDEX IF NOT EXISTS idx_search_keys ON"
       " complaints_master(serial, phone, c_no)"
   )
   c.execute(
-      "CREATE INDEX IF NOT EXISTS idx_model ON complaints_master(model)"
+      "CREATE INDEX IF NOT EXISTS idx_parts_model ON parts_catalog(model)"
   )
-
-  c.execute("""
-    CREATE TABLE IF NOT EXISTS parts_catalog (
-        model TEXT, part_no TEXT, part_name TEXT, price INTEGER,
-        PRIMARY KEY (model, part_no)
-    )""")
   conn.commit()
-
-  c.execute("SELECT COUNT(*) FROM complaints_master")
-  count = c.fetchone()[0]
   conn.close()
 
-  # Agar DB khali hai toh folder mein pari original files se auto-populate karein
-  if count == 0:
-    if os.path.exists(DEFAULT_FB_FILE):
-      with st.spinner("Initializing Database from archive files..."):
-        df_fb = pd.read_csv(DEFAULT_FB_FILE, low_memory=False)
-        ingest_feedback_fast(df_fb)
-        if os.path.exists(DEFAULT_COLL_FILE):
-          df_coll = pd.read_excel(DEFAULT_COLL_FILE)
-          ingest_pricing_fast(df_coll)
 
-
-ensure_database_ready()
-
-
-# =========================================================
-# CACHED FETCHERS
-# =========================================================
 @st.cache_data
-def get_all_models():
+def load_app_data():
+  # Agar SQLite DB nahi hai ya empty hai, toh base files se create karein
+  if not os.path.exists(DB_NAME):
+    if os.path.exists(DEFAULT_FB_FILE) and os.path.exists(DEFAULT_COLL_FILE):
+      fb_df = pd.read_csv(DEFAULT_FB_FILE, low_memory=False)
+      coll_df = pd.read_excel(DEFAULT_COLL_FILE)
+      parts_df, fb_df = build_parts_catalog(fb_df, coll_df)
+      sync_to_sqlite(parts_df, fb_df)
+
   conn = sqlite3.connect(DB_NAME)
+  parts_df = pd.read_sql_query("SELECT * FROM parts_catalog", conn)
   models = pd.read_sql_query(
       "SELECT DISTINCT model FROM complaints_master WHERE model != '' ORDER BY"
       " model ASC",
       conn,
-  )
+  )["model"].tolist()
   conn.close()
-  return models["model"].tolist()
+  return parts_df, models
 
 
-@st.cache_data
-def get_parts_for_model(selected_model, family_code):
-  conn = sqlite3.connect(DB_NAME)
-  query = """
-        SELECT model, part_no, part_name, price 
-        FROM parts_catalog 
-        WHERE model = ? OR model LIKE ?
-    """
-  df = pd.read_sql_query(query, conn, params=(selected_model, f"{family_code}%"))
-  conn.close()
-  return df.drop_duplicates(subset=["part_no"])
+parts_df, all_models = load_app_data()
 
 
 # =========================================================
-# SIDEBAR (FOR DAILY REFRESH ONLY)
+# SIDEBAR: DATA UPDATE & DAILY UPLOAD
 # =========================================================
 with st.sidebar:
   st.subheader("⚙️ Data Sync Center")
-  st.caption("Upload daily fresh ERP report to append or update complaints.")
+  st.caption("Upload daily fresh ERP report to append or update records.")
 
   up_fb = st.file_uploader(
       "1. Quality Feedback (CSV/Excel)",
       type=["csv", "xlsx", "xls"],
       key="fb_up",
   )
-  if up_fb:
-    if st.button("Sync Feedback Records"):
-      with st.spinner("Syncing records to DB..."):
-        df_in = (
+  up_coll = st.file_uploader(
+      "2. Collection Pricing (Excel)", type=["xlsx", "xls"], key="coll_up"
+  )
+
+  if up_fb and up_coll:
+    if st.button("Sync & Update Complete System"):
+      with st.spinner("Processing & updating database..."):
+        df_fb_new = (
             pd.read_csv(up_fb, low_memory=False)
             if up_fb.name.endswith(".csv")
             else pd.read_excel(up_fb)
         )
-        cnt = ingest_feedback_fast(df_in)
-        st.success(f"{cnt:,} records synced!")
+        df_coll_new = pd.read_excel(up_coll)
+        new_parts_df, new_fb_df = build_parts_catalog(df_fb_new, df_coll_new)
+        sync_to_sqlite(new_parts_df, new_fb_df)
         st.cache_data.clear()
-        st.rerun()
-
-  st.divider()
-  up_coll = st.file_uploader(
-      "2. Collection Pricing (Excel)", type=["xlsx", "xls"], key="coll_up"
-  )
-  if up_coll:
-    if st.button("Update Parts Catalog"):
-      with st.spinner("Updating pricing..."):
-        df_c = pd.read_excel(up_coll)
-        cnt = ingest_pricing_fast(df_c)
-        st.success(f"{cnt:,} parts updated!")
-        st.cache_data.clear()
+        st.success("Database fully synchronized!")
         st.rerun()
 
 
 # =========================================================
-# BENCHMARK RULES
+# TONNAGE & BENCHMARK RULES
 # =========================================================
 def get_tonnage_specs(model_str):
   m = str(model_str).upper()
@@ -318,13 +242,13 @@ def get_tonnage_specs(model_str):
   return "1.5 Ton", 7000, 26000, 40000
 
 
-all_models = get_all_models()
+# UI Tabs
 tab_estimator, tab_history = st.tabs(
     ["🧮 Cost Estimator", "🔍 Unit & Customer History"]
 )
 
 # ==========================================
-# TAB 1: ESTIMATOR
+# TAB 1: ORIGINAL COST ESTIMATOR LOGIC
 # ==========================================
 with tab_estimator:
   selected_model = st.selectbox(
@@ -336,8 +260,17 @@ with tab_estimator:
     ton_label, gas_charge_amount, def_evap, def_pcb = get_tonnage_specs(
         selected_model
     )
-    family_code = selected_model[:7]
-    available = get_parts_for_model(selected_model, family_code).copy()
+
+    fam_match = re.match(r"^([A-Z0-9]+-[0-9]{2}[A-Z]+)", selected_model)
+    family_code = fam_match.group(1) if fam_match else selected_model[:7]
+
+    direct_parts = parts_df[parts_df["model"] == selected_model]
+    family_parts = parts_df[parts_df["model"].str.startswith(family_code)]
+    available = (
+        pd.concat([direct_parts, family_parts])
+        .drop_duplicates(subset=["part_no"])
+        .copy()
+    )
 
     for i, r in available.iterrows():
       if r["price"] == 0:
@@ -448,7 +381,9 @@ with tab_estimator:
       inc_visit = st.checkbox("Visit Charges (Rs. 600)", value=True)
       visit_cost = 600 if inc_visit else 0
     with col_m:
-      inc_mobility = st.checkbox("Mobility / Labor (Rs. 2,000)", value=True)
+      inc_mobility = st.checkbox(
+          "Mobility / Labor (Rs. 2,000)", value=True
+      )
       mobility_cost = 2000 if inc_mobility else 0
 
     inc_gas = st.checkbox(
@@ -504,7 +439,7 @@ with tab_estimator:
         st.code(whatsapp_text, language="text")
 
 # ==========================================
-# TAB 2: INSTANT SEARCH (WITH AUTO-DATABASE)
+# TAB 2: FAST SQL UNIT & CUSTOMER HISTORY
 # ==========================================
 with tab_history:
   st.markdown("##### 🔎 Smart Complaint & Unit Search")
@@ -551,10 +486,10 @@ with tab_history:
         phone = r["phone"]
         tech = r["technician_name"]
         c_type = str(r["complaint_type"]).strip()
-        p_date = r["purchase_date"]
-        c_date = r["complaint_date"]
-        closed_date = r["closed_date"]
-        parts_used = r["hardware_products"]
+        p_date = clean_val(r["purchase_date"])
+        c_date = clean_val(r["complaint_date"])
+        closed_date = clean_val(r["closed_date"])
+        parts_used = clean_val(r["hardware_products"])
         if not parts_used or parts_used.lower() == "nan":
           parts_used = "No hardware parts logged (Service / Checking call)"
 
@@ -585,6 +520,7 @@ with tab_history:
             unsafe_allow_html=True,
         )
 
+# Footer Credit
 st.markdown(
     """
 <div class="credit-footer">
