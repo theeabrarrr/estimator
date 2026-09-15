@@ -1,18 +1,21 @@
-import streamlit as st
-import pandas as pd
-import re
+import sqlite3
 import urllib.parse
+import pandas as pd
+import streamlit as st
 
-# 1. Page Configuration for Mobile
+DB_NAME = "dwp_service.db"
+
+# 1. Page Configuration
 st.set_page_config(
-    page_title="DWP Field Assistant", 
-    page_icon="❄️", 
-    layout="centered", 
-    initial_sidebar_state="collapsed"
+    page_title="DWP Field Assistant",
+    page_icon="❄️",
+    layout="centered",
+    initial_sidebar_state="collapsed",
 )
 
 # Custom Styling
-st.markdown("""
+st.markdown(
+    """
 <style>
     .main-title { font-size: 1.4rem; font-weight: 700; color: #1E3A8A; margin-bottom: 0.1rem; }
     .sub-title { font-size: 0.82rem; color: #64748B; margin-bottom: 0.8rem; }
@@ -24,249 +27,540 @@ st.markdown("""
     .badge-partial { background-color: #FEF3C7; color: #B45309; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
     .credit-footer { font-size: 0.75rem; color: #94A3B8; text-align: center; margin-top: 2rem; border-top: 1px solid #E2E8F0; padding-top: 8px; }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
-st.markdown('<div class="main-title">❄️ DWP Service Field Assistant</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Field Diagnostic, Cost Estimator & Customer Unit History Engine</div>', unsafe_allow_html=True)
+st.markdown(
+    '<div class="main-title">❄️ DWP Service Field Assistant</div>',
+    unsafe_allow_html=True,
+)
+st.markdown(
+    '<div class="sub-title">Field Diagnostic, Cost Estimator & Customer Unit'
+    " History Engine</div>",
+    unsafe_allow_html=True,
+)
 
-# Helper function to clean Oracle text formatting
+
 def clean_val(val):
-    if pd.isna(val):
-        return ""
-    return str(val).strip().replace('=', '').replace('"', '').strip()
+  if pd.isna(val):
+    return ""
+  return str(val).strip().replace("=", "").replace('"', "").strip()
 
-# 2. Data Loader
+
+# =========================================================
+# DATABASE INITIALIZATION & SCHEMA DEFINITIONS
+# =========================================================
+def init_db():
+  conn = sqlite3.connect(DB_NAME)
+  c = conn.cursor()
+
+  # Master complaints table with composite index for ultra-fast history search
+  c.execute("""
+    CREATE TABLE IF NOT EXISTS complaints_master (
+        c_no TEXT PRIMARY KEY,
+        serial TEXT,
+        phone TEXT,
+        model TEXT,
+        customer_name TEXT,
+        technician_name TEXT,
+        complaint_type TEXT,
+        purchase_date TEXT,
+        complaint_date TEXT,
+        closed_date TEXT,
+        hardware_products TEXT,
+        hardware_part_nos TEXT
+    )
+    """)
+
+  c.execute(
+      "CREATE INDEX IF NOT EXISTS idx_search_keys ON"
+      " complaints_master(serial, phone, c_no)"
+  )
+  c.execute(
+      "CREATE INDEX IF NOT EXISTS idx_model ON complaints_master(model)"
+  )
+
+  # Master parts catalog
+  c.execute("""
+    CREATE TABLE IF NOT EXISTS parts_catalog (
+        model TEXT,
+        part_no TEXT,
+        part_name TEXT,
+        price INTEGER,
+        PRIMARY KEY (model, part_no)
+    )
+    """)
+
+  c.execute(
+      "CREATE INDEX IF NOT EXISTS idx_parts_model ON parts_catalog(model)"
+  )
+  conn.commit()
+  conn.close()
+
+
+init_db()
+
+
+# =========================================================
+# SMART INGESTION & UPSERT LOGIC
+# =========================================================
+def ingest_feedback_data(df):
+  conn = sqlite3.connect(DB_NAME)
+  c = conn.cursor()
+
+  df["C_NO"] = df["COMPLAINT_NO"].apply(clean_val)
+  df["SERIAL"] = df["SERIAL"].apply(clean_val).str.upper()
+  df["PHONE"] = df["PHONE_NO"].apply(clean_val)
+  df["MODEL"] = df["MODEL_NAME"].astype(str).str.strip().str.upper()
+
+  records = []
+  for _, r in df.iterrows():
+    if not r["C_NO"]:
+      continue
+    records.append((
+        r["C_NO"],
+        r["SERIAL"],
+        r["PHONE"],
+        r["MODEL"],
+        clean_val(r.get("CUSTOMER_NAME", "")),
+        clean_val(r.get("TECHNICIAN_NAME", "")),
+        clean_val(r.get("COMPLAINT_TYPE", "")),
+        clean_val(r.get("PURCHASE_DATE", "")),
+        clean_val(r.get("COMPLAINT_DATE", "")),
+        clean_val(r.get("CLOSED_DATE", "")),
+        clean_val(r.get("HARDWARE_PRODUCTS", "")),
+        clean_val(r.get("HARDWARE_PART_NOS", "")),
+    ))
+
+  # UPSERT: Naya record insert, purane par latest status/fields overwrite
+  c.executemany(
+      """
+    INSERT OR REPLACE INTO complaints_master (
+        c_no, serial, phone, model, customer_name, technician_name,
+        complaint_type, purchase_date, complaint_date, closed_date,
+        hardware_products, hardware_part_nos
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """,
+      records,
+  )
+
+  conn.commit()
+  conn.close()
+  return len(records)
+
+
+def ingest_pricing_data(coll_df):
+  conn = sqlite3.connect(DB_NAME)
+  coll_df["C_NO_CLEAN"] = coll_df["Complaint No"].apply(clean_val)
+  coll_df["EFFECTIVE_PART_PRICE"] = coll_df["Part Cash"].where(
+      coll_df["Part Cash"] > 0, coll_df["Part Warranty"]
+  )
+  coll_sub = coll_df[coll_df["EFFECTIVE_PART_PRICE"] > 0][
+      ["C_NO_CLEAN", "EFFECTIVE_PART_PRICE"]
+  ]
+
+  # Pull master data to map parts with prices
+  fb = pd.read_sql_query(
+      "SELECT c_no, model, hardware_part_nos, hardware_products FROM"
+      " complaints_master",
+      conn,
+  )
+  if fb.empty:
+    conn.close()
+    return 0
+
+  merged = pd.merge(
+      fb, coll_sub, left_on="c_no", right_on="C_NO_CLEAN", how="inner"
+  )
+  single_jobs = merged[
+      ~merged["hardware_part_nos"].str.contains(",", na=False)
+  ].copy()
+  single_jobs["PART_NO"] = single_jobs["hardware_part_nos"].str.strip()
+
+  exact_price_map = (
+      single_jobs.groupby("PART_NO")["EFFECTIVE_PART_PRICE"]
+      .agg(lambda x: x.mode()[0] if not x.mode().empty else x.median())
+      .to_dict()
+  )
+
+  part_rows = []
+  for _, row in fb.iterrows():
+    pnos = str(row["hardware_part_nos"])
+    prods = str(row["hardware_products"])
+    if not pnos or pnos.lower() == "nan":
+      continue
+    pno_list = [p.strip() for p in pnos.split(",") if p.strip()]
+    prod_list = [p.strip() for p in prods.split(",") if p.strip()]
+    for i, pno in enumerate(pno_list):
+      pname = (
+          prod_list[i]
+          if i < len(prod_list)
+          else (prod_list[0] if prod_list else "Component")
+      )
+      price = int(exact_price_map.get(pno, 0))
+      part_rows.append((row["model"], pno, pname, price))
+
+  c = conn.cursor()
+  c.executemany(
+      """
+    INSERT OR REPLACE INTO parts_catalog (model, part_no, part_name, price)
+    VALUES (?, ?, ?, ?)
+    """,
+      part_rows,
+  )
+
+  conn.commit()
+  conn.close()
+  return len(part_rows)
+
+
+# =========================================================
+# CACHED DB FETCHERS
+# =========================================================
 @st.cache_data
-def load_all_datasets():
-    fb = pd.read_csv("quality_feedback_report_14SEP2026_170840.csv", low_memory=False)
-    coll = pd.read_excel("Detail_Collection_14SEP26_052528PM.xlsx")
+def get_all_models():
+  conn = sqlite3.connect(DB_NAME)
+  models = pd.read_sql_query(
+      "SELECT DISTINCT model FROM complaints_master WHERE model != '' ORDER BY"
+      " model ASC",
+      conn,
+  )
+  conn.close()
+  return models["model"].tolist()
 
-    # Clean IDs for merging & search
-    fb['C_NO_CLEAN'] = fb['COMPLAINT_NO'].apply(clean_val)
-    fb['SERIAL_CLEAN'] = fb['SERIAL'].apply(clean_val).str.upper()
-    fb['PHONE_CLEAN'] = fb['PHONE_NO'].apply(clean_val)
-    fb['MODEL_CLEAN'] = fb['MODEL_NAME'].astype(str).str.strip().str.upper()
-    
-    coll['C_NO_CLEAN'] = coll['Complaint No'].apply(clean_val)
 
-    # Pricing map from Col R & Col W
-    coll['EFFECTIVE_PART_PRICE'] = coll['Part Cash'].where(coll['Part Cash'] > 0, coll['Part Warranty'])
-    coll_sub = coll[coll['EFFECTIVE_PART_PRICE'] > 0][['C_NO_CLEAN', 'EFFECTIVE_PART_PRICE']]
-    merged = pd.merge(fb, coll_sub, on='C_NO_CLEAN', how='inner')
+@st.cache_data
+def get_parts_for_model(selected_model, family_code):
+  conn = sqlite3.connect(DB_NAME)
+  query = """
+        SELECT model, part_no, part_name, price 
+        FROM parts_catalog 
+        WHERE model = ? OR model LIKE ?
+    """
+  df = pd.read_sql_query(query, conn, params=(selected_model, f"{family_code}%"))
+  conn.close()
+  return df.drop_duplicates(subset=["part_no"])
 
-    single_jobs = merged[~merged['HARDWARE_PART_NOS'].str.contains(',', na=False)].copy()
-    single_jobs['PART_NO'] = single_jobs['HARDWARE_PART_NOS'].str.strip()
-    
-    exact_price_map = single_jobs.groupby('PART_NO')['EFFECTIVE_PART_PRICE'].agg(
-        lambda x: x.mode()[0] if not x.mode().empty else x.median()
-    ).to_dict()
 
-    records = []
-    for _, row in fb.iterrows():
-        pnos = str(row['HARDWARE_PART_NOS'])
-        prods = str(row['HARDWARE_PRODUCTS'])
-        if pd.isna(row['HARDWARE_PART_NOS']) or pnos.lower() == 'nan' or not pnos.strip():
-            continue
-        pno_list = [p.strip() for p in pnos.split(',') if p.strip()]
-        prod_list = [p.strip() for p in prods.split(',') if p.strip()]
-        for i, pno in enumerate(pno_list):
-            pname = prod_list[i] if i < len(prod_list) else (prod_list[0] if prod_list else "Component")
-            price = exact_price_map.get(pno, 0)
-            records.append({
-                'MODEL': row['MODEL_CLEAN'],
-                'PART_NO': pno,
-                'PART_NAME': pname,
-                'PRICE': price
-            })
-            
-    parts_db = pd.DataFrame(records).drop_duplicates(subset=['MODEL', 'PART_NO'])
-    model_list = sorted(fb['MODEL_CLEAN'].dropna().unique().tolist())
-    return parts_db, model_list, fb
+# =========================================================
+# SIDEBAR: DATA SYNC ENGINE
+# =========================================================
+with st.sidebar:
+  st.subheader("⚙️ Data Sync Center")
+  st.caption("Upload fresh ERP exports to update records with zero duplicates.")
 
-parts_df, all_models, raw_fb = load_all_datasets()
+  up_fb = st.file_uploader(
+      "1. Quality Feedback Report (CSV/Excel)",
+      type=["csv", "xlsx", "xls"],
+      key="fb_file",
+  )
+  if up_fb and st.button("Sync Complaints Data"):
+    with st.spinner("Ingesting complaints..."):
+      df_up = (
+          pd.read_csv(up_fb, low_memory=False)
+          if up_fb.name.endswith(".csv")
+          else pd.read_excel(up_fb)
+      )
+      count = ingest_feedback_data(df_up)
+      st.success(f"Synced {count:,} records via UPSERT!")
+      st.cache_data.clear()
+      st.rerun()
 
-# 3. Capacity & Benchmark Rules
+  st.divider()
+
+  up_coll = st.file_uploader(
+      "2. Collection Report for Pricing (Excel)",
+      type=["xlsx", "xls"],
+      key="coll_file",
+  )
+  if up_coll and st.button("Update Parts & Pricing"):
+    with st.spinner("Calculating part prices..."):
+      df_coll = pd.read_excel(up_coll)
+      p_count = ingest_pricing_data(df_coll)
+      st.success(f"Updated {p_count:,} parts in catalog!")
+      st.cache_data.clear()
+      st.rerun()
+
+
+# =========================================================
+# BENCHMARK RULES
+# =========================================================
 def get_tonnage_specs(model_str):
-    m = str(model_str).upper()
-    if any(x in m for x in ['12', '11', '10']):
-        return '1.0 Ton', 5500, 20000, 35000
-    elif any(x in m for x in ['18', '16']):
-        return '1.5 Ton', 7000, 26000, 40000
-    elif any(x in m for x in ['24', '26']):
-        return '2.0 Ton', 8500, 39000, 45000
-    elif any(x in m for x in ['48', '60']):
-        return '4.0 Ton', 13000, 70000, 55000
-    return '1.5 Ton', 7000, 26000, 40000
+  m = str(model_str).upper()
+  if any(x in m for x in ["12", "11", "10"]):
+    return "1.0 Ton", 5500, 20000, 35000
+  elif any(x in m for x in ["18", "16"]):
+    return "1.5 Ton", 7000, 26000, 40000
+  elif any(x in m for x in ["24", "26"]):
+    return "2.0 Ton", 8500, 39000, 45000
+  elif any(x in m for x in ["48", "60"]):
+    return "4.0 Ton", 13000, 70000, 55000
+  return "1.5 Ton", 7000, 26000, 40000
 
-# Navigation Tabs
-tab_estimator, tab_history = st.tabs(["🧮 Cost Estimator", "🔍 Unit & Customer History"])
+
+all_models = get_all_models()
+tab_estimator, tab_history = st.tabs(
+    ["🧮 Cost Estimator", "🔍 Unit & Customer History"]
+)
 
 # ==========================================
-# TAB 1: ORIGINAL COST ESTIMATOR (UNTOUCHED)
+# TAB 1: COST ESTIMATOR
 # ==========================================
 with tab_estimator:
-    selected_model = st.selectbox("🔍 Step 1: Select Appliance Model Number", options=["-- Search Model --"] + all_models)
+  if not all_models:
+    st.info(
+        "👋 Welcome! Database is currently empty. Please open the sidebar and"
+        " upload initial reports to populate records."
+    )
+  else:
+    selected_model = st.selectbox(
+        "🔍 Step 1: Select Appliance Model Number",
+        options=["-- Search Model --"] + all_models,
+    )
 
     if selected_model != "-- Search Model --":
-        ton_label, gas_charge_amount, def_evap, def_pcb = get_tonnage_specs(selected_model)
-        
-        fam_match = re.match(r"^([A-Z0-9]+-[0-9]{2}[A-Z]+)", selected_model)
-        family_code = fam_match.group(1) if fam_match else selected_model[:7]
+      ton_label, gas_charge_amount, def_evap, def_pcb = get_tonnage_specs(
+          selected_model
+      )
+      family_code = selected_model[:7]
 
-        direct_parts = parts_df[parts_df['MODEL'] == selected_model]
-        family_parts = parts_df[parts_df['MODEL'].str.startswith(family_code)]
-        available = pd.concat([direct_parts, family_parts]).drop_duplicates(subset=['PART_NO']).copy()
+      available = get_parts_for_model(selected_model, family_code).copy()
 
-        for i, r in available.iterrows():
-            if r['PRICE'] == 0:
-                name_lower = str(r['PART_NAME']).lower()
-                if 'evap' in name_lower:
-                    available.at[i, 'PRICE'] = def_evap
-                elif '1/4' in name_lower:
-                    available.at[i, 'PRICE'] = 1600
-                elif any(v in name_lower for v in ['1/2', '5/8', '3/8', 'valve']):
-                    available.at[i, 'PRICE'] = 2100
-                elif 'motor' in name_lower:
-                    available.at[i, 'PRICE'] = 2000
-                elif 'sensor' in name_lower:
-                    available.at[i, 'PRICE'] = 1500
-                elif any(b in name_lower for b in ['board', 'pcb']):
-                    available.at[i, 'PRICE'] = def_pcb
+      for i, r in available.iterrows():
+        if r["price"] == 0:
+          name_lower = str(r["part_name"]).lower()
+          if "evap" in name_lower:
+            available.at[i, "price"] = def_evap
+          elif "1/4" in name_lower:
+            available.at[i, "price"] = 1600
+          elif any(v in name_lower for v in ["1/2", "5/8", "3/8", "valve"]):
+            available.at[i, "price"] = 2100
+          elif "motor" in name_lower:
+            available.at[i, "price"] = 2000
+          elif "sensor" in name_lower:
+            available.at[i, "price"] = 1500
+          elif any(b in name_lower for b in ["board", "pcb"]):
+            available.at[i, "price"] = def_pcb
 
-        st.success(f"**Model:** `{selected_model}` | **Capacity:** `{ton_label}`")
+      st.success(f"**Model:** `{selected_model}` | **Capacity:** `{ton_label}`")
+      st.markdown("##### 🛠️ Step 2: Select Faulty Parts (Tap category to open)")
 
-        st.markdown("##### 🛠️ Step 2: Select Faulty Parts (Tap category to open)")
+      categories = [
+          (
+              "❄️ Evaporator Assemblies",
+              available[
+                  available["part_name"].str.contains(
+                      "evap", case=False, na=False
+                  )
+              ],
+              True,
+          ),
+          (
+              "🔩 Cut-off & Service Valves",
+              available[
+                  available["part_name"].str.contains(
+                      "valve", case=False, na=False
+                  )
+              ],
+              True,
+          ),
+          (
+              "⚡ Circuit Boards (PCBs)",
+              available[
+                  available["part_name"].str.contains(
+                      "board|pcb", case=False, na=False
+                  )
+              ],
+              False,
+          ),
+          (
+              "🔄 Compressors",
+              available[
+                  available["part_name"].str.contains(
+                      "compressor", case=False, na=False
+                  )
+              ],
+              True,
+          ),
+          (
+              "🔌 Motors & Temperature Sensors",
+              available[
+                  available["part_name"].str.contains(
+                      "motor|sensor", case=False, na=False
+                  )
+              ],
+              False,
+          ),
+          (
+              "📦 Other Historical Parts",
+              available[
+                  ~available["part_name"].str.contains(
+                      "evap|valve|board|pcb|compressor|motor|sensor",
+                      case=False,
+                      na=False,
+                  )
+              ],
+              False,
+          ),
+      ]
 
-        categories = [
-            ("❄️ Evaporator Assemblies", available[available['PART_NAME'].str.contains('evap', case=False, na=False)], True),
-            ("🔩 Cut-off & Service Valves", available[available['PART_NAME'].str.contains('valve', case=False, na=False)], True),
-            ("⚡ Circuit Boards (PCBs)", available[available['PART_NAME'].str.contains('board|pcb', case=False, na=False)], False),
-            ("🔄 Compressors", available[available['PART_NAME'].str.contains('compressor', case=False, na=False)], True),
-            ("🔌 Motors & Temperature Sensors", available[available['PART_NAME'].str.contains('motor|sensor', case=False, na=False)], False),
-            ("📦 Other Historical Parts", available[~available['PART_NAME'].str.contains('evap|valve|board|pcb|compressor|motor|sensor', case=False, na=False)], False)
-        ]
+      selected_parts = []
+      parts_total = 0
+      cooling_cycle_selected = False
 
-        selected_parts = []
-        parts_total = 0
-        cooling_cycle_selected = False
+      for cat_title, cat_data, is_cooling in categories:
+        part_count = len(cat_data)
+        with st.expander(f"{cat_title} ({part_count} Available)", expanded=False):
+          if not cat_data.empty:
+            for _, part in cat_data.iterrows():
+              p_name = part["part_name"]
+              p_no = part["part_no"]
+              p_price = int(part["price"])
 
-        for cat_title, cat_data, is_cooling in categories:
-            part_count = len(cat_data)
-            with st.expander(f"{cat_title} ({part_count} Available)", expanded=False):
-                if not cat_data.empty:
-                    for _, part in cat_data.iterrows():
-                        p_name = part['PART_NAME']
-                        p_no = part['PART_NO']
-                        p_price = int(part['PRICE'])
-                        
-                        checked = st.checkbox(f"{p_name} — Rs. {p_price:,}", key=f"part_{p_no}")
-                        if checked:
-                            selected_parts.append({'name': p_name, 'part_no': p_no, 'price': p_price})
-                            parts_total += p_price
-                            if is_cooling:
-                                cooling_cycle_selected = True
-                else:
-                    st.caption("No parts logged in service history.")
+              checked = st.checkbox(
+                  f"{p_name} — Rs. {p_price:,}", key=f"part_{p_no}"
+              )
+              if checked:
+                selected_parts.append(
+                    {"name": p_name, "part_no": p_no, "price": p_price}
+                )
+                parts_total += p_price
+                if is_cooling:
+                  cooling_cycle_selected = True
+          else:
+            st.caption("No parts logged in service history.")
 
-        st.markdown("##### ⛽ Step 3: Overheads & Charging")
-        
-        col_v, col_m = st.columns(2)
-        with col_v:
-            inc_visit = st.checkbox("Visit Charges (Rs. 600)", value=True)
-            visit_cost = 600 if inc_visit else 0
-        with col_m:
-            inc_mobility = st.checkbox("Mobility / Labor (Rs. 2,000)", value=True)
-            mobility_cost = 2000 if inc_mobility else 0
+      st.markdown("##### ⛽ Step 3: Overheads & Charging")
 
-        inc_gas = st.checkbox(f"Gas Charging ({ton_label} - Rs. {gas_charge_amount:,})", value=True if cooling_cycle_selected else False)
-        gas_cost = gas_charge_amount if inc_gas else 0
+      col_v, col_m = st.columns(2)
+      with col_v:
+        inc_visit = st.checkbox("Visit Charges (Rs. 600)", value=True)
+        visit_cost = 600 if inc_visit else 0
+      with col_m:
+        inc_mobility = st.checkbox(
+            "Mobility / Labor (Rs. 2,000)", value=True
+        )
+        mobility_cost = 2000 if inc_mobility else 0
 
-        grand_total = parts_total + visit_cost + mobility_cost + gas_cost
+      inc_gas = st.checkbox(
+          f"Gas Charging ({ton_label} - Rs. {gas_charge_amount:,})",
+          value=cooling_cycle_selected,
+      )
+      gas_cost = gas_charge_amount if inc_gas else 0
 
-        st.markdown("---")
-        st.markdown(f"""
+      grand_total = parts_total + visit_cost + mobility_cost + gas_cost
+
+      st.markdown("---")
+      st.markdown(
+          f"""
         <div class="bill-card">
             <div style="font-size: 0.9rem; color: #475569;">Grand Total Estimate:</div>
             <div class="grand-total">Rs. {grand_total:,}</div>
             <div style="font-size: 0.8rem; color: #64748B;">Includes Selected Parts + Gas + Overheads</div>
         </div>
-        """, unsafe_allow_html=True)
+        """,
+          unsafe_allow_html=True,
+      )
 
-        part_bullets = "\n".join([f"• {sp['name']}: Rs. {sp['price']:,}" for sp in selected_parts]) if selected_parts else "• Nil (General Service)"
-        whatsapp_text = (
-            f"*DWP OFFICIAL SERVICE ESTIMATE*\n"
-            f"----------------------------------\n"
-            f"Appliance: {selected_model} ({ton_label})\n\n"
-            f"*Parts Replaced:*\n{part_bullets}\n\n"
-            f"*Standard Overheads:*\n"
-            f"• Technician Visit: Rs. {visit_cost:,}\n"
-            f"• Mobility / Labor: Rs. {mobility_cost:,}\n"
-            f"• Gas Charging ({ton_label}): Rs. {gas_cost:,}\n"
-            f"----------------------------------\n"
-            f"*TOTAL PAYABLE: Rs. {grand_total:,}*\n"
-            f"----------------------------------\n"
-            f"_DWP Authorized Customer Care_"
+      part_bullets = (
+          "\n".join([
+              f"• {sp['name']}: Rs. {sp['price']:,}" for sp in selected_parts
+          ])
+          if selected_parts
+          else "• Nil (General Service)"
+      )
+      whatsapp_text = (
+          "*DWP OFFICIAL SERVICE ESTIMATE*\n"
+          "----------------------------------\n"
+          f"Appliance: {selected_model} ({ton_label})\n\n"
+          f"*Parts Replaced:*\n{part_bullets}\n\n"
+          "*Standard Overheads:*\n"
+          f"• Technician Visit: Rs. {visit_cost:,}\n"
+          f"• Mobility / Labor: Rs. {mobility_cost:,}\n"
+          f"• Gas Charging ({ton_label}): Rs. {gas_cost:,}\n"
+          "----------------------------------\n"
+          f"*TOTAL PAYABLE: Rs. {grand_total:,}*\n"
+          "----------------------------------\n"
+          "_DWP Authorized Customer Care_"
+      )
+
+      encoded_msg = urllib.parse.quote(whatsapp_text)
+      wa_url = f"https://api.whatsapp.com/send?text={encoded_msg}"
+
+      col_btn1, col_btn2 = st.columns([1, 1])
+      with col_btn1:
+        st.link_button(
+            "📲 Share to WhatsApp", wa_url, use_container_width=True
         )
-        
-        encoded_msg = urllib.parse.quote(whatsapp_text)
-        wa_url = f"https://api.whatsapp.com/send?text={encoded_msg}"
-        
-        col_btn1, col_btn2 = st.columns([1, 1])
-        with col_btn1:
-            st.link_button("📲 Share to WhatsApp", wa_url, use_container_width=True)
-        with col_btn2:
-            with st.popover("👁️ View Full Text"):
-                st.code(whatsapp_text, language="text")
+      with col_btn2:
+        with st.popover("👁️ View Full Text"):
+          st.code(whatsapp_text, language="text")
 
 # ==========================================
-# TAB 2: UNIT & CUSTOMER HISTORY LOOKUP
+# TAB 2: INDEX-BACKED FAST SEARCH
 # ==========================================
 with tab_history:
-    st.markdown("##### 🔎 Smart Complaint & Unit Search")
-    st.caption("Enter Serial No, Customer Phone, or Complaint No to fetch complete historical service logs.")
+  st.markdown("##### 🔎 Smart Complaint & Unit Search")
+  st.caption(
+      "Enter Serial No, Customer Phone, or Complaint No to fetch complete"
+      " historical service logs."
+  )
 
-    query = st.text_input("Enter Search Key:", placeholder="e.g. A1021288DD... or 03322260552 or 282622633").strip()
+  query = st.text_input(
+      "Enter Search Key:",
+      placeholder="e.g. A1021288DD... or 03322260552 or 282622633",
+  ).strip()
 
-    if query:
-        q_clean = query.upper().replace('=', '').replace('"', '').strip()
-        
-        # Filter matching records from raw feedback
-        match_df = raw_fb[
-            (raw_fb['SERIAL_CLEAN'].str.contains(q_clean, na=False, case=False)) |
-            (raw_fb['PHONE_CLEAN'].str.contains(q_clean, na=False)) |
-            (raw_fb['C_NO_CLEAN'].str.contains(q_clean, na=False))
-        ].copy()
+  if query:
+    q_clean = query.upper().replace("=", "").replace('"', "").strip()
+    conn = sqlite3.connect(DB_NAME)
 
-        if match_df.empty:
-            st.warning(f"No previous closed complaints found matching `{query}`.")
-        else:
-            st.info(f"Found **{len(match_df)}** closed service record(s) for `{query}`:")
+    # Indexed targeted SQL search
+    sql_search = """
+            SELECT c_no, serial, phone, model, customer_name, technician_name,
+                   complaint_type, purchase_date, complaint_date, closed_date, hardware_products
+            FROM complaints_master
+            WHERE serial LIKE ? OR phone LIKE ? OR c_no LIKE ?
+            ORDER BY closed_date DESC LIMIT 25
+        """
+    match_df = pd.read_sql_query(
+        sql_search,
+        conn,
+        params=(f"%{q_clean}%", f"%{q_clean}%", f"%{q_clean}%"),
+    )
+    conn.close()
 
-            # Display cards sorted by closed date descending
-            for _, r in match_df.iterrows():
-                c_no = r['C_NO_CLEAN']
-                model = r['MODEL_CLEAN']
-                serial = r['SERIAL_CLEAN']
-                cust_name = r['CUSTOMER_NAME']
-                phone = r['PHONE_CLEAN']
-                tech = r['TECHNICIAN_NAME']
-                c_type = str(r['COMPLAINT_TYPE']).strip()
-                p_date = clean_val(r['PURCHASE_DATE'])
-                c_date = clean_val(r['COMPLAINT_DATE'])
-                closed_date = clean_val(r['CLOSED_DATE'])
-                parts_used = clean_val(r['HARDWARE_PRODUCTS'])
-                if not parts_used or parts_used.lower() == 'nan':
-                    parts_used = "No hardware parts logged (Service / Checking call)"
+    if match_df.empty:
+      st.warning(f"No previous closed complaints found matching `{query}`.")
+    else:
+      st.info(
+          f"Found **{len(match_df)}** closed service record(s) for `{query}`:"
+      )
 
-                # Badge selection
-                badge_class = "badge-warranty"
-                if "cash" in c_type.lower():
-                    badge_class = "badge-cash"
-                elif "partial" in c_type.lower():
-                    badge_class = "badge-partial"
+      for _, r in match_df.iterrows():
+        c_no = r["c_no"]
+        model = r["model"]
+        serial = r["serial"]
+        cust_name = r["customer_name"]
+        phone = r["phone"]
+        tech = r["technician_name"]
+        c_type = str(r["complaint_type"]).strip()
+        p_date = r["purchase_date"]
+        c_date = r["complaint_date"]
+        closed_date = r["closed_date"]
+        parts_used = r["hardware_products"]
+        if not parts_used or parts_used.lower() == "nan":
+          parts_used = "No hardware parts logged (Service / Checking call)"
 
-                # HTML Card
-                st.markdown(f"""
+        badge_class = "badge-warranty"
+        if "cash" in c_type.lower():
+          badge_class = "badge-cash"
+        elif "partial" in c_type.lower():
+          badge_class = "badge-partial"
+
+        st.markdown(
+            f"""
                 <div class="history-card">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                         <span style="font-weight: 700; color: #1E293B; font-size: 1rem;">Complaint #{c_no}</span>
@@ -282,12 +576,17 @@ with tab_history:
                         <b>Parts Replaced:</b> <span style="color: #0369A1;">{parts_used}</span>
                     </div>
                 </div>
-                """, unsafe_allow_html=True)
+                """,
+            unsafe_allow_html=True,
+        )
 
-# Subtle Professional Footer Credit
-st.markdown("""
+# Professional Footer Credit
+st.markdown(
+    """
 <div class="credit-footer">
     DWP Service Logistics & Operations Platform<br>
     System Architecture & Logic: <b>M. Abrar</b> | Operations Support
 </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
