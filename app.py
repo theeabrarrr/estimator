@@ -5,7 +5,7 @@ import urllib.parse
 import pandas as pd
 import streamlit as st
 
-DB_NAME = "dwp_service_v3.db"
+DB_NAME = "dwp_service_v5.db"
 DEFAULT_FB_FILE = "quality_feedback_report_14SEP2026_170840.csv"
 DEFAULT_COLL_FILE = "Detail_Collection_14SEP26_052528PM.xlsx"
 
@@ -27,7 +27,7 @@ st.markdown("""
     .badge-warranty { background-color: #DCFCE7; color: #15803D; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
     .badge-cash { background-color: #FEE2E2; color: #B91C1C; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
     .badge-partial { background-color: #FEF3C7; color: #B45309; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
-    .badge-amount { background-color: #EFF6FF; color: #1D4ED8; padding: 3px 8px; border-radius: 12px; font-size: 0.78rem; font-weight: 700; border: 1px solid #BFDBFE; }
+    .badge-amount { background-color: #EFF6FF; color: #1D4ED8; padding: 3px 8px; border-radius: 12px; font-size: 0.78rem; font-weight: 700; border: 1px solid #BFDBFE; margin-right: 4px; }
     .credit-footer { font-size: 0.75rem; color: #94A3B8; text-align: center; margin-top: 2rem; border-top: 1px solid #E2E8F0; padding-top: 8px; }
 </style>
 """, unsafe_allow_html=True)
@@ -53,18 +53,21 @@ def build_and_save_data(fb_source, coll_source):
     fb['MODEL_CLEAN'] = fb['MODEL_NAME'].astype(str).str.strip().str.upper()
     
     # Identify remarks column
-    rem_col = next((c for c in ['FEEDBACK_REMARKS', 'REMARKS', 'CLOSING_REMARKS', 'TECHNICIAN_REMARKS'] if c in fb.columns), None)
+    rem_col = next((c for c in ['FEEDBACK_REMARKS', 'REMARKS', 'CLOSING_REMARKS', 'TECHNICIAN_REMARKS', 'TECH_REMARKS'] if c in fb.columns), None)
     fb['REMARKS_CLEAN'] = fb[rem_col].apply(clean_val) if rem_col else ""
 
-    coll['C_NO_CLEAN'] = coll['Complaint No'].apply(clean_val)
-    
-    # Identify closed amount column from collection
-    amt_col = next((c for c in ['Total Amount', 'Grand Total', 'Net Amount', 'Collection Amount', 'Amount'] if c in coll.columns), None)
-    if amt_col:
-        coll['CLOSED_AMOUNT'] = pd.to_numeric(coll[amt_col], errors='coerce').fillna(0).astype(int)
-    else:
-        coll['CLOSED_AMOUNT'] = 0
+    # Clean collection complaint number
+    c_no_coll_col = next((c for c in ['Complaint No', 'COMPLAINT_NO', 'COMPLAINT NO', 'Complaint_No'] if c in coll.columns), 'Complaint No')
+    coll['C_NO_CLEAN'] = coll[c_no_coll_col].apply(clean_val)
 
+    # EXACT COLUMN: Net Collection
+    if 'Net Collection' in coll.columns:
+        coll['NET_COLLECTION_CLEAN'] = pd.to_numeric(coll['Net Collection'], errors='coerce').fillna(0).astype(int)
+    else:
+        net_col = next((c for c in coll.columns if 'net collection' in str(c).lower()), None)
+        coll['NET_COLLECTION_CLEAN'] = pd.to_numeric(coll[net_col], errors='coerce').fillna(0).astype(int) if net_col else 0
+
+    # Pricing logic for Estimator (Untouched)
     coll['EFFECTIVE_PART_PRICE'] = coll['Part Cash'].where(coll['Part Cash'] > 0, coll['Part Warranty'])
     coll_sub = coll[coll['EFFECTIVE_PART_PRICE'] > 0][['C_NO_CLEAN', 'EFFECTIVE_PART_PRICE']]
     merged = pd.merge(fb, coll_sub, on='C_NO_CLEAN', how='inner')
@@ -96,8 +99,8 @@ def build_and_save_data(fb_source, coll_source):
             
     parts_df = pd.DataFrame(records).drop_duplicates(subset=['MODEL', 'PART_NO'])
     
-    # Merge Collection Closed Amount into Feedback Records
-    coll_amt_map = coll.groupby('C_NO_CLEAN')['CLOSED_AMOUNT'].max().to_dict()
+    # Map Exact Net Collection to Feedback Records by Complaint No
+    coll_amt_map = coll.groupby('C_NO_CLEAN')['NET_COLLECTION_CLEAN'].max().to_dict()
     fb['CLOSED_AMOUNT'] = fb['C_NO_CLEAN'].map(coll_amt_map).fillna(0).astype(int)
 
     # Save to SQLite
@@ -160,20 +163,16 @@ with st.sidebar:
                 st.rerun()
 
 # =========================================================
-# REVISED CAPACITY & GAS SPECIFICATIONS (FIXED RULE ORDER)
+# CAPACITY & GAS SPECIFICATIONS (FIXED RULE ORDER)
 # =========================================================
 def get_tonnage_specs(model_str):
     m = str(model_str).upper()
-    # 1. Check Commercial / 4.0 Ton & 36 Models First
     if any(x in m for x in ['48', '60', '36', '36TFIH', 'TFIH']):
         return '4.0 Ton', 13000, 70000, 55000
-    # 2. Check 2.0 Ton (e.g. 24PIT10W)
     elif any(x in m for x in ['24', '26']):
         return '2.0 Ton', 8500, 39000, 45000
-    # 3. Check 1.5 Ton
     elif any(x in m for x in ['18', '16']):
         return '1.5 Ton', 7000, 26000, 40000
-    # 4. Check 1.0 Ton strictly
     elif any(x in m for x in ['12', '11']) or re.search(r'[^0-9]10[^0-9]', m):
         return '1.0 Ton', 5500, 20000, 35000
     return '1.5 Ton', 7000, 26000, 40000
@@ -182,7 +181,7 @@ def get_tonnage_specs(model_str):
 tab_estimator, tab_history = st.tabs(["🧮 Cost Estimator", "🔍 Unit & Customer History"])
 
 # ==========================================
-# TAB 1: COST ESTIMATOR
+# TAB 1: COST ESTIMATOR (UNTOUCHED)
 # ==========================================
 with tab_estimator:
     selected_model = st.selectbox("🔍 Step 1: Select Appliance Model Number", options=["-- Search Model --"] + all_models)
@@ -339,7 +338,14 @@ with tab_history:
                     remarks = "No specific closing remarks logged."
                 
                 closed_amt = int(r.get('CLOSED_AMOUNT', 0))
-                amt_display = f"Rs. {closed_amt:,}" if closed_amt > 0 else "Rs. 0 / Free Under Warranty"
+                
+                # Context-aware Amount Formatting
+                if closed_amt > 0:
+                    amt_display = f"Rs. {closed_amt:,}"
+                elif "warranty" in c_type.lower():
+                    amt_display = "Free Under Warranty"
+                else:
+                    amt_display = "Rs. 0 (Nil Collection)"
 
                 badge_class = "badge-warranty"
                 if "cash" in c_type.lower():
