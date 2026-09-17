@@ -5,7 +5,7 @@ import urllib.parse
 import pandas as pd
 import streamlit as st
 
-DB_NAME = "dwp_service_v2.db"
+DB_NAME = "dwp_service_v3.db"
 DEFAULT_FB_FILE = "quality_feedback_report_14SEP2026_170840.csv"
 DEFAULT_COLL_FILE = "Detail_Collection_14SEP26_052528PM.xlsx"
 
@@ -27,6 +27,7 @@ st.markdown("""
     .badge-warranty { background-color: #DCFCE7; color: #15803D; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
     .badge-cash { background-color: #FEE2E2; color: #B91C1C; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
     .badge-partial { background-color: #FEF3C7; color: #B45309; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+    .badge-amount { background-color: #EFF6FF; color: #1D4ED8; padding: 3px 8px; border-radius: 12px; font-size: 0.78rem; font-weight: 700; border: 1px solid #BFDBFE; }
     .credit-footer { font-size: 0.75rem; color: #94A3B8; text-align: center; margin-top: 2rem; border-top: 1px solid #E2E8F0; padding-top: 8px; }
 </style>
 """, unsafe_allow_html=True)
@@ -40,19 +41,29 @@ def clean_val(val):
     return str(val).strip().replace('=', '').replace('"', '').strip()
 
 # =========================================================
-# CORE BUILDER & PERSISTENCE (1:1 ORIGINAL MATCH)
+# CORE BUILDER & PERSISTENCE
 # =========================================================
 def build_and_save_data(fb_source, coll_source):
     fb = pd.read_csv(fb_source, low_memory=False) if isinstance(fb_source, str) or fb_source.name.endswith('.csv') else pd.read_excel(fb_source)
     coll = pd.read_excel(coll_source)
 
-    # 1:1 Original Cleaning
     fb['C_NO_CLEAN'] = fb['COMPLAINT_NO'].apply(clean_val)
     fb['SERIAL_CLEAN'] = fb['SERIAL'].apply(clean_val).str.upper()
     fb['PHONE_CLEAN'] = fb['PHONE_NO'].apply(clean_val)
     fb['MODEL_CLEAN'] = fb['MODEL_NAME'].astype(str).str.strip().str.upper()
     
+    # Identify remarks column
+    rem_col = next((c for c in ['FEEDBACK_REMARKS', 'REMARKS', 'CLOSING_REMARKS', 'TECHNICIAN_REMARKS'] if c in fb.columns), None)
+    fb['REMARKS_CLEAN'] = fb[rem_col].apply(clean_val) if rem_col else ""
+
     coll['C_NO_CLEAN'] = coll['Complaint No'].apply(clean_val)
+    
+    # Identify closed amount column from collection
+    amt_col = next((c for c in ['Total Amount', 'Grand Total', 'Net Amount', 'Collection Amount', 'Amount'] if c in coll.columns), None)
+    if amt_col:
+        coll['CLOSED_AMOUNT'] = pd.to_numeric(coll[amt_col], errors='coerce').fillna(0).astype(int)
+    else:
+        coll['CLOSED_AMOUNT'] = 0
 
     coll['EFFECTIVE_PART_PRICE'] = coll['Part Cash'].where(coll['Part Cash'] > 0, coll['Part Warranty'])
     coll_sub = coll[coll['EFFECTIVE_PART_PRICE'] > 0][['C_NO_CLEAN', 'EFFECTIVE_PART_PRICE']]
@@ -85,14 +96,18 @@ def build_and_save_data(fb_source, coll_source):
             
     parts_df = pd.DataFrame(records).drop_duplicates(subset=['MODEL', 'PART_NO'])
     
-    # Save directly to SQLite
+    # Merge Collection Closed Amount into Feedback Records
+    coll_amt_map = coll.groupby('C_NO_CLEAN')['CLOSED_AMOUNT'].max().to_dict()
+    fb['CLOSED_AMOUNT'] = fb['C_NO_CLEAN'].map(coll_amt_map).fillna(0).astype(int)
+
+    # Save to SQLite
     conn = sqlite3.connect(DB_NAME)
     parts_df.to_sql('parts_master', conn, if_exists='replace', index=False)
     
-    # Save History Search Table
     fb_save = fb[['C_NO_CLEAN', 'SERIAL_CLEAN', 'PHONE_CLEAN', 'MODEL_CLEAN', 
                   'CUSTOMER_NAME', 'TECHNICIAN_NAME', 'COMPLAINT_TYPE', 
-                  'PURCHASE_DATE', 'COMPLAINT_DATE', 'CLOSED_DATE', 'HARDWARE_PRODUCTS']].copy()
+                  'PURCHASE_DATE', 'COMPLAINT_DATE', 'CLOSED_DATE', 
+                  'REMARKS_CLEAN', 'CLOSED_AMOUNT']].copy()
     fb_save.to_sql('history_master', conn, if_exists='replace', index=False)
     
     c = conn.cursor()
@@ -100,7 +115,7 @@ def build_and_save_data(fb_source, coll_source):
     conn.commit()
     conn.close()
 
-# Bootstrap database on fresh deployment
+# Auto Database Bootstrap
 @st.cache_resource
 def init_system():
     conn = sqlite3.connect(DB_NAME)
@@ -115,7 +130,6 @@ def init_system():
 
 init_system()
 
-# Load memory structures from DB
 @st.cache_data
 def get_cached_store():
     conn = sqlite3.connect(DB_NAME)
@@ -127,7 +141,7 @@ def get_cached_store():
 parts_df, all_models = get_cached_store()
 
 # =========================================================
-# SIDEBAR: DATA UPDATE & DAILY UPLOAD
+# SIDEBAR: DATA UPDATE
 # =========================================================
 with st.sidebar:
     st.subheader("⚙️ Data Sync Center")
@@ -145,24 +159,30 @@ with st.sidebar:
                 st.success("Synchronized successfully!")
                 st.rerun()
 
-# 3. Capacity & Benchmark Rules
+# =========================================================
+# REVISED CAPACITY & GAS SPECIFICATIONS (FIXED RULE ORDER)
+# =========================================================
 def get_tonnage_specs(model_str):
     m = str(model_str).upper()
-    if any(x in m for x in ['12', '11', '10']):
-        return '1.0 Ton', 5500, 20000, 35000
-    elif any(x in m for x in ['18', '16']):
-        return '1.5 Ton', 7000, 26000, 40000
+    # 1. Check Commercial / 4.0 Ton & 36 Models First
+    if any(x in m for x in ['48', '60', '36', '36TFIH', 'TFIH']):
+        return '4.0 Ton', 13000, 70000, 55000
+    # 2. Check 2.0 Ton (e.g. 24PIT10W)
     elif any(x in m for x in ['24', '26']):
         return '2.0 Ton', 8500, 39000, 45000
-    elif any(x in m for x in ['48', '60']):
-        return '4.0 Ton', 13000, 70000, 55000
+    # 3. Check 1.5 Ton
+    elif any(x in m for x in ['18', '16']):
+        return '1.5 Ton', 7000, 26000, 40000
+    # 4. Check 1.0 Ton strictly
+    elif any(x in m for x in ['12', '11']) or re.search(r'[^0-9]10[^0-9]', m):
+        return '1.0 Ton', 5500, 20000, 35000
     return '1.5 Ton', 7000, 26000, 40000
 
 # Navigation Tabs
 tab_estimator, tab_history = st.tabs(["🧮 Cost Estimator", "🔍 Unit & Customer History"])
 
 # ==========================================
-# TAB 1: EXACT ESTIMATOR (RESTORED)
+# TAB 1: COST ESTIMATOR
 # ==========================================
 with tab_estimator:
     selected_model = st.selectbox("🔍 Step 1: Select Appliance Model Number", options=["-- Search Model --"] + all_models)
@@ -293,7 +313,7 @@ with tab_history:
         sql = """
             SELECT * FROM history_master 
             WHERE SERIAL_CLEAN LIKE ? OR PHONE_CLEAN LIKE ? OR C_NO_CLEAN LIKE ?
-            LIMIT 30
+            ORDER BY CLOSED_DATE DESC LIMIT 30
         """
         match_df = pd.read_sql_query(sql, conn, params=(f"%{q_clean}%", f"%{q_clean}%", f"%{q_clean}%"))
         conn.close()
@@ -314,9 +334,12 @@ with tab_history:
                 p_date = clean_val(r['PURCHASE_DATE'])
                 c_date = clean_val(r['COMPLAINT_DATE'])
                 closed_date = clean_val(r['CLOSED_DATE'])
-                parts_used = clean_val(r['HARDWARE_PRODUCTS'])
-                if not parts_used or parts_used.lower() == 'nan':
-                    parts_used = "No hardware parts logged (Service / Checking call)"
+                remarks = clean_val(r['REMARKS_CLEAN'])
+                if not remarks or remarks.lower() == 'nan':
+                    remarks = "No specific closing remarks logged."
+                
+                closed_amt = int(r.get('CLOSED_AMOUNT', 0))
+                amt_display = f"Rs. {closed_amt:,}" if closed_amt > 0 else "Rs. 0 / Free Under Warranty"
 
                 badge_class = "badge-warranty"
                 if "cash" in c_type.lower():
@@ -328,7 +351,10 @@ with tab_history:
                 <div class="history-card">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                         <span style="font-weight: 700; color: #1E293B; font-size: 1rem;">Complaint #{c_no}</span>
-                        <span class="{badge_class}">{c_type}</span>
+                        <div>
+                            <span class="badge-amount">{amt_display}</span>
+                            <span class="{badge_class}">{c_type}</span>
+                        </div>
                     </div>
                     <div style="font-size: 0.85rem; color: #334155; line-height: 1.5;">
                         <b>Model:</b> {model} &nbsp;|&nbsp; <b>Serial:</b> <code>{serial}</code><br>
@@ -337,7 +363,7 @@ with tab_history:
                         <b>Complaint Date:</b> {c_date} &nbsp;|&nbsp; <b>Closed Date:</b> {closed_date}<br>
                         <b>Purchase Date:</b> {p_date if p_date else 'N/A'}<br>
                         <hr style="margin: 6px 0; border: none; border-top: 1px dashed #CBD5E1;">
-                        <b>Parts Replaced:</b> <span style="color: #0369A1;">{parts_used}</span>
+                        <b>Closing Remarks:</b> <span style="color: #0369A1; font-weight: 500;">{remarks}</span>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
