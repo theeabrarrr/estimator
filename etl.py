@@ -24,6 +24,10 @@ def normalize_phone(val):
     return digits
 
 def safe_read(source):
+    if source is None:
+        return pd.DataFrame()
+    if isinstance(source, pd.DataFrame):
+        return source.copy()
     if isinstance(source, str):
         if source.endswith('.csv'):
             try:
@@ -32,7 +36,8 @@ def safe_read(source):
                 return pd.read_csv(source, encoding='latin1', low_memory=False)
         return pd.read_excel(source)
     else:
-        if source.name.endswith('.csv'):
+        filename = getattr(source, 'name', '')
+        if filename.endswith('.csv'):
             try:
                 return pd.read_csv(source, encoding='utf-8-sig', low_memory=False)
             except Exception:
@@ -56,9 +61,8 @@ def bootstrap_master_data():
             return
 
     if os.path.exists(DEFAULT_FB_FILE):
-        fb = safe_read(DEFAULT_FB_FILE)
-        coll = safe_read(DEFAULT_COLL_FILE) if os.path.exists(DEFAULT_COLL_FILE) else None
-        ingest_feedback_and_pricing(fb, coll)
+        coll_path = DEFAULT_COLL_FILE if os.path.exists(DEFAULT_COLL_FILE) else None
+        ingest_feedback_and_pricing(DEFAULT_FB_FILE, coll_path)
 
 def ingest_feedback_and_pricing(fb_source, coll_source=None):
     fb = standardize_columns(safe_read(fb_source))
@@ -132,9 +136,9 @@ def ingest_performance_pipeline(fb_source, cancel_source):
 
     fb_sub = pd.DataFrame({
         'complaint_no': fb['complaint_no'],
-        'technician_name': fb['technician_name'].apply(clean_val) if 'technician_name' in fb.columns else '',
+        'technician_name': fb['technician_name'].apply(clean_val),
         'status': fb['status'].astype(str).str.upper().str.strip() if 'status' in fb.columns else 'COMPLETED',
-        'closed_date': fb['closed_date'].apply(clean_val) if 'closed_date' in fb.columns else '',
+        'closed_date': fb['closed_date'].apply(clean_val),
         '_priority': 2
     })
 
