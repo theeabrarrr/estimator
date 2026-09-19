@@ -1,9 +1,14 @@
-import streamlit as st
-import pandas as pd
+import os
 import re
+import sqlite3
 import urllib.parse
+import pandas as pd
+import streamlit as st
 
-# 1. Page Configuration for Mobile
+DB_NAME = "dwp_service_v5.db"
+DEFAULT_FB_FILE = "quality_feedback_report_14SEP2026_170840.csv"
+DEFAULT_COLL_FILE = "Detail_Collection_14SEP26_052528PM.xlsx"
+
 st.set_page_config(
     page_title="DWP Field Assistant", 
     page_icon="❄️", 
@@ -22,6 +27,7 @@ st.markdown("""
     .badge-warranty { background-color: #DCFCE7; color: #15803D; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
     .badge-cash { background-color: #FEE2E2; color: #B91C1C; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
     .badge-partial { background-color: #FEF3C7; color: #B45309; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+    .badge-amount { background-color: #EFF6FF; color: #1D4ED8; padding: 3px 8px; border-radius: 12px; font-size: 0.78rem; font-weight: 700; border: 1px solid #BFDBFE; margin-right: 4px; }
     .credit-footer { font-size: 0.75rem; color: #94A3B8; text-align: center; margin-top: 2rem; border-top: 1px solid #E2E8F0; padding-top: 8px; }
 </style>
 """, unsafe_allow_html=True)
@@ -29,27 +35,39 @@ st.markdown("""
 st.markdown('<div class="main-title">❄️ DWP Service Field Assistant</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-title">Field Diagnostic, Cost Estimator & Customer Unit History Engine</div>', unsafe_allow_html=True)
 
-# Helper function to clean Oracle text formatting
 def clean_val(val):
     if pd.isna(val):
         return ""
     return str(val).strip().replace('=', '').replace('"', '').strip()
 
-# 2. Data Loader
-@st.cache_data
-def load_all_datasets():
-    fb = pd.read_csv("quality_feedback_report_14SEP2026_170840.csv", low_memory=False)
-    coll = pd.read_excel("Detail_Collection_14SEP26_052528PM.xlsx")
+# =========================================================
+# CORE BUILDER & PERSISTENCE
+# =========================================================
+def build_and_save_data(fb_source, coll_source):
+    fb = pd.read_csv(fb_source, low_memory=False) if isinstance(fb_source, str) or fb_source.name.endswith('.csv') else pd.read_excel(fb_source)
+    coll = pd.read_excel(coll_source)
 
-    # Clean IDs for merging & search
     fb['C_NO_CLEAN'] = fb['COMPLAINT_NO'].apply(clean_val)
     fb['SERIAL_CLEAN'] = fb['SERIAL'].apply(clean_val).str.upper()
     fb['PHONE_CLEAN'] = fb['PHONE_NO'].apply(clean_val)
     fb['MODEL_CLEAN'] = fb['MODEL_NAME'].astype(str).str.strip().str.upper()
     
-    coll['C_NO_CLEAN'] = coll['Complaint No'].apply(clean_val)
+    # Identify remarks column
+    rem_col = next((c for c in ['FEEDBACK_REMARKS', 'REMARKS', 'CLOSING_REMARKS', 'TECHNICIAN_REMARKS', 'TECH_REMARKS'] if c in fb.columns), None)
+    fb['REMARKS_CLEAN'] = fb[rem_col].apply(clean_val) if rem_col else ""
 
-    # Pricing map from Col R & Col W
+    # Clean collection complaint number
+    c_no_coll_col = next((c for c in ['Complaint No', 'COMPLAINT_NO', 'COMPLAINT NO', 'Complaint_No'] if c in coll.columns), 'Complaint No')
+    coll['C_NO_CLEAN'] = coll[c_no_coll_col].apply(clean_val)
+
+    # EXACT COLUMN: Net Collection
+    if 'Net Collection' in coll.columns:
+        coll['NET_COLLECTION_CLEAN'] = pd.to_numeric(coll['Net Collection'], errors='coerce').fillna(0).astype(int)
+    else:
+        net_col = next((c for c in coll.columns if 'net collection' in str(c).lower()), None)
+        coll['NET_COLLECTION_CLEAN'] = pd.to_numeric(coll[net_col], errors='coerce').fillna(0).astype(int) if net_col else 0
+
+    # Pricing logic for Estimator (Untouched)
     coll['EFFECTIVE_PART_PRICE'] = coll['Part Cash'].where(coll['Part Cash'] > 0, coll['Part Warranty'])
     coll_sub = coll[coll['EFFECTIVE_PART_PRICE'] > 0][['C_NO_CLEAN', 'EFFECTIVE_PART_PRICE']]
     merged = pd.merge(fb, coll_sub, on='C_NO_CLEAN', how='inner')
@@ -79,30 +97,91 @@ def load_all_datasets():
                 'PRICE': price
             })
             
-    parts_db = pd.DataFrame(records).drop_duplicates(subset=['MODEL', 'PART_NO'])
-    model_list = sorted(fb['MODEL_CLEAN'].dropna().unique().tolist())
-    return parts_db, model_list, fb
+    parts_df = pd.DataFrame(records).drop_duplicates(subset=['MODEL', 'PART_NO'])
+    
+    # Map Exact Net Collection to Feedback Records by Complaint No
+    coll_amt_map = coll.groupby('C_NO_CLEAN')['NET_COLLECTION_CLEAN'].max().to_dict()
+    fb['CLOSED_AMOUNT'] = fb['C_NO_CLEAN'].map(coll_amt_map).fillna(0).astype(int)
 
-parts_df, all_models, raw_fb = load_all_datasets()
+    # Save to SQLite
+    conn = sqlite3.connect(DB_NAME)
+    parts_df.to_sql('parts_master', conn, if_exists='replace', index=False)
+    
+    fb_save = fb[['C_NO_CLEAN', 'SERIAL_CLEAN', 'PHONE_CLEAN', 'MODEL_CLEAN', 
+                  'CUSTOMER_NAME', 'TECHNICIAN_NAME', 'COMPLAINT_TYPE', 
+                  'PURCHASE_DATE', 'COMPLAINT_DATE', 'CLOSED_DATE', 
+                  'REMARKS_CLEAN', 'CLOSED_AMOUNT']].copy()
+    fb_save.to_sql('history_master', conn, if_exists='replace', index=False)
+    
+    c = conn.cursor()
+    c.execute("CREATE INDEX IF NOT EXISTS idx_hist ON history_master(SERIAL_CLEAN, PHONE_CLEAN, C_NO_CLEAN)")
+    conn.commit()
+    conn.close()
 
-# 3. Capacity & Benchmark Rules
+# Auto Database Bootstrap
+@st.cache_resource
+def init_system():
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='parts_master'")
+    exists = c.fetchone()
+    conn.close()
+    
+    if not exists:
+        if os.path.exists(DEFAULT_FB_FILE) and os.path.exists(DEFAULT_COLL_FILE):
+            build_and_save_data(DEFAULT_FB_FILE, DEFAULT_COLL_FILE)
+
+init_system()
+
+@st.cache_data
+def get_cached_store():
+    conn = sqlite3.connect(DB_NAME)
+    parts_df = pd.read_sql_query("SELECT * FROM parts_master", conn)
+    models = pd.read_sql_query("SELECT DISTINCT MODEL FROM parts_master ORDER BY MODEL ASC", conn)['MODEL'].tolist()
+    conn.close()
+    return parts_df, models
+
+parts_df, all_models = get_cached_store()
+
+# =========================================================
+# SIDEBAR: DATA UPDATE
+# =========================================================
+with st.sidebar:
+    st.subheader("⚙️ Data Sync Center")
+    st.caption("Upload fresh ERP reports to update parts and history.")
+    
+    up_fb = st.file_uploader("1. Quality Feedback (CSV/Excel)", type=["csv", "xlsx", "xls"], key="fb_up")
+    up_coll = st.file_uploader("2. Collection Pricing (Excel)", type=["xlsx", "xls"], key="coll_up")
+    
+    if up_fb and up_coll:
+        if st.button("Sync System Data"):
+            with st.spinner("Processing & Synchronizing..."):
+                build_and_save_data(up_fb, up_coll)
+                st.cache_data.clear()
+                st.cache_resource.clear()
+                st.success("Synchronized successfully!")
+                st.rerun()
+
+# =========================================================
+# CAPACITY & GAS SPECIFICATIONS (FIXED RULE ORDER)
+# =========================================================
 def get_tonnage_specs(model_str):
     m = str(model_str).upper()
-    if any(x in m for x in ['12', '11', '10']):
-        return '1.0 Ton', 5500, 20000, 35000
-    elif any(x in m for x in ['18', '16']):
-        return '1.5 Ton', 7000, 26000, 40000
+    if any(x in m for x in ['48', '60', '36', '36TFIH', 'TFIH']):
+        return '4.0 Ton', 13000, 70000, 55000
     elif any(x in m for x in ['24', '26']):
         return '2.0 Ton', 8500, 39000, 45000
-    elif any(x in m for x in ['48', '60']):
-        return '4.0 Ton', 13000, 70000, 55000
+    elif any(x in m for x in ['18', '16']):
+        return '1.5 Ton', 7000, 26000, 40000
+    elif any(x in m for x in ['12', '11']) or re.search(r'[^0-9]10[^0-9]', m):
+        return '1.0 Ton', 5500, 20000, 35000
     return '1.5 Ton', 7000, 26000, 40000
 
 # Navigation Tabs
 tab_estimator, tab_history = st.tabs(["🧮 Cost Estimator", "🔍 Unit & Customer History"])
 
 # ==========================================
-# TAB 1: ORIGINAL COST ESTIMATOR (UNTOUCHED)
+# TAB 1: COST ESTIMATOR (UNTOUCHED)
 # ==========================================
 with tab_estimator:
     selected_model = st.selectbox("🔍 Step 1: Select Appliance Model Number", options=["-- Search Model --"] + all_models)
@@ -134,7 +213,6 @@ with tab_estimator:
                     available.at[i, 'PRICE'] = def_pcb
 
         st.success(f"**Model:** `{selected_model}` | **Capacity:** `{ton_label}`")
-
         st.markdown("##### 🛠️ Step 2: Select Faulty Parts (Tap category to open)")
 
         categories = [
@@ -178,7 +256,7 @@ with tab_estimator:
             inc_mobility = st.checkbox("Mobility / Labor (Rs. 2,000)", value=True)
             mobility_cost = 2000 if inc_mobility else 0
 
-        inc_gas = st.checkbox(f"Gas Charging ({ton_label} - Rs. {gas_charge_amount:,})", value=True if cooling_cycle_selected else False)
+        inc_gas = st.checkbox(f"Gas Charging ({ton_label} - Rs. {gas_charge_amount:,})", value=cooling_cycle_selected)
         gas_cost = gas_charge_amount if inc_gas else 0
 
         grand_total = parts_total + visit_cost + mobility_cost + gas_cost
@@ -229,20 +307,21 @@ with tab_history:
 
     if query:
         q_clean = query.upper().replace('=', '').replace('"', '').strip()
+        conn = sqlite3.connect(DB_NAME)
         
-        # Filter matching records from raw feedback
-        match_df = raw_fb[
-            (raw_fb['SERIAL_CLEAN'].str.contains(q_clean, na=False, case=False)) |
-            (raw_fb['PHONE_CLEAN'].str.contains(q_clean, na=False)) |
-            (raw_fb['C_NO_CLEAN'].str.contains(q_clean, na=False))
-        ].copy()
+        sql = """
+            SELECT * FROM history_master 
+            WHERE SERIAL_CLEAN LIKE ? OR PHONE_CLEAN LIKE ? OR C_NO_CLEAN LIKE ?
+            ORDER BY CLOSED_DATE DESC LIMIT 30
+        """
+        match_df = pd.read_sql_query(sql, conn, params=(f"%{q_clean}%", f"%{q_clean}%", f"%{q_clean}%"))
+        conn.close()
 
         if match_df.empty:
             st.warning(f"No previous closed complaints found matching `{query}`.")
         else:
             st.info(f"Found **{len(match_df)}** closed service record(s) for `{query}`:")
 
-            # Display cards sorted by closed date descending
             for _, r in match_df.iterrows():
                 c_no = r['C_NO_CLEAN']
                 model = r['MODEL_CLEAN']
@@ -254,23 +333,34 @@ with tab_history:
                 p_date = clean_val(r['PURCHASE_DATE'])
                 c_date = clean_val(r['COMPLAINT_DATE'])
                 closed_date = clean_val(r['CLOSED_DATE'])
-                parts_used = clean_val(r['HARDWARE_PRODUCTS'])
-                if not parts_used or parts_used.lower() == 'nan':
-                    parts_used = "No hardware parts logged (Service / Checking call)"
+                remarks = clean_val(r['REMARKS_CLEAN'])
+                if not remarks or remarks.lower() == 'nan':
+                    remarks = "No specific closing remarks logged."
+                
+                closed_amt = int(r.get('CLOSED_AMOUNT', 0))
+                
+                # Context-aware Amount Formatting
+                if closed_amt > 0:
+                    amt_display = f"Rs. {closed_amt:,}"
+                elif "warranty" in c_type.lower():
+                    amt_display = "Free Under Warranty"
+                else:
+                    amt_display = "Rs. 0 (Nil Collection)"
 
-                # Badge selection
                 badge_class = "badge-warranty"
                 if "cash" in c_type.lower():
                     badge_class = "badge-cash"
                 elif "partial" in c_type.lower():
                     badge_class = "badge-partial"
 
-                # HTML Card
                 st.markdown(f"""
                 <div class="history-card">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                         <span style="font-weight: 700; color: #1E293B; font-size: 1rem;">Complaint #{c_no}</span>
-                        <span class="{badge_class}">{c_type}</span>
+                        <div>
+                            <span class="badge-amount">{amt_display}</span>
+                            <span class="{badge_class}">{c_type}</span>
+                        </div>
                     </div>
                     <div style="font-size: 0.85rem; color: #334155; line-height: 1.5;">
                         <b>Model:</b> {model} &nbsp;|&nbsp; <b>Serial:</b> <code>{serial}</code><br>
@@ -279,12 +369,12 @@ with tab_history:
                         <b>Complaint Date:</b> {c_date} &nbsp;|&nbsp; <b>Closed Date:</b> {closed_date}<br>
                         <b>Purchase Date:</b> {p_date if p_date else 'N/A'}<br>
                         <hr style="margin: 6px 0; border: none; border-top: 1px dashed #CBD5E1;">
-                        <b>Parts Replaced:</b> <span style="color: #0369A1;">{parts_used}</span>
+                        <b>Closing Remarks:</b> <span style="color: #0369A1; font-weight: 500;">{remarks}</span>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
 
-# Subtle Professional Footer Credit
+# Footer Credit
 st.markdown("""
 <div class="credit-footer">
     DWP Service Logistics & Operations Platform<br>
