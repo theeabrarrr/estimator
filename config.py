@@ -2,10 +2,11 @@
 import re
 import os
 
-DB_NAME = "dwp_service.db"
-DEFAULT_FB_FILE = "quality_feedback_report_14SEP2026_170840.csv"
-DEFAULT_COLL_FILE = "Detail_Collection_14SEP26_052528PM.xlsx"
-STOCK_SEARCH_DIRS = [".", r"C:\temp"]
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_NAME = os.path.join(BASE_DIR, "dwp_service.db")
+DEFAULT_FB_FILE = os.path.join(BASE_DIR, "quality_feedback_report_14SEP2026_170840.csv")
+DEFAULT_COLL_FILE = os.path.join(BASE_DIR, "Detail_Collection_14SEP26_052528PM.xlsx")
+STOCK_SEARCH_DIRS = [BASE_DIR, ".", r"C:\temp", "/tmp"]
 
 VISIT_CHARGES = 600
 MOBILITY_CHARGES = 2000

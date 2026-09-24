@@ -1,15 +1,33 @@
 # app.py
+import os
+import sys
+from pathlib import Path
+import importlib
+
+# Ensure application root directory is first in sys.path (critical for Streamlit Cloud)
+APP_ROOT = str(Path(__file__).resolve().parent)
+if APP_ROOT not in sys.path:
+    sys.path.insert(0, APP_ROOT)
+
 import re
 import urllib.parse
 from datetime import datetime
 import pandas as pd
 import streamlit as st
 
+import config
+importlib.reload(config)
 from config import VISIT_CHARGES, MOBILITY_CHARGES, CATEGORY_OVERHEADS, get_tonnage_specs, detect_appliance_category
+
+import database
+importlib.reload(database)
 from database import (
     fetch_parts_and_models, search_history_records, fetch_performance_data,
     fetch_parts_with_live_stock, search_stock_global, get_stock_metadata
 )
+
+import etl
+importlib.reload(etl)
 from etl import (
     bootstrap_master_data, normalize_phone, ingest_performance_pipeline,
     ingest_feedback_and_pricing, ingest_stock_file
