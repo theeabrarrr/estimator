@@ -1,8 +1,10 @@
 # etl.py
 import re
 import os
+import glob
+from datetime import datetime
 import pandas as pd
-from config import COLUMN_ALIASES, DEFAULT_FB_FILE, DEFAULT_COLL_FILE
+from config import COLUMN_ALIASES, DEFAULT_FB_FILE, DEFAULT_COLL_FILE, STOCK_SEARCH_DIRS
 from database import get_connection, init_db_schema
 
 def clean_val(val):
@@ -52,17 +54,110 @@ def standardize_columns(df):
         mapping[col] = COLUMN_ALIASES.get(norm, norm.lower())
     return df.rename(columns=mapping)
 
+def find_latest_stock_file():
+    candidates = []
+    for d in STOCK_SEARCH_DIRS:
+        if not os.path.exists(d):
+            continue
+        for pattern in ["STOCK_DETAIL*.*", "Stock Balance*.*", "*STOCK*.*"]:
+            for f in glob.glob(os.path.join(d, pattern)):
+                if f.endswith(('.csv', '.xlsx', '.xls')) and not os.path.basename(f).startswith('~$'):
+                    candidates.append((os.path.getmtime(f), f))
+    if not candidates:
+        return None
+    candidates.sort(key=lambda x: x[0], reverse=True)
+    return candidates[0][1]
+
+def ingest_stock_file(stock_source):
+    init_db_schema()
+    raw = safe_read(stock_source)
+    if raw.empty:
+        return 0, 0
+
+    df = standardize_columns(raw)
+    if 'part_no' not in df.columns:
+        return 0, 0
+
+    df['part_no'] = df['part_no'].apply(clean_val).str.upper()
+    df = df[df['part_no'] != ''].copy()
+
+    for col in ['item_desc', 'item_code', 'product', 'brand', 'category', 'capacity']:
+        df[col] = df[col].apply(clean_val) if col in df.columns else ""
+
+    df['bal_qty'] = pd.to_numeric(df.get('bal_qty', 0), errors='coerce').fillna(0).astype(int)
+    df['amount'] = pd.to_numeric(df.get('amount', 0), errors='coerce').fillna(0.0)
+
+    # Calculate unit_price from ledger value
+    df['calc_price'] = df.apply(
+        lambda r: int(round(r['amount'] / r['bal_qty'])) if (r['bal_qty'] > 0 and r['amount'] > 0) else 0,
+        axis=1
+    )
+
+    now_str = datetime.now().strftime('%Y-%m-%d %I:%M %p')
+
+    # Fetch any established prices from parts_master
+    with get_connection() as conn:
+        existing_prices = pd.read_sql_query(
+            "SELECT part_no, MAX(price) as hist_price FROM parts_master WHERE price > 0 GROUP BY part_no",
+            conn
+        ).set_index('part_no')['hist_price'].to_dict()
+
+    # Determine final unit price (prefer history/retail price if available)
+    df['unit_price'] = df.apply(
+        lambda r: existing_prices.get(r['part_no'], r['calc_price']),
+        axis=1
+    )
+
+    stock_records = df[[
+        'part_no', 'item_code', 'item_desc', 'product', 'brand', 
+        'category', 'capacity', 'bal_qty', 'amount', 'unit_price'
+    ]].copy()
+    stock_records['last_synced'] = now_str
+
+    records_list = stock_records.values.tolist()
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.executemany("""
+            INSERT OR REPLACE INTO stock_master 
+            (part_no, item_code, item_desc, product, brand, category, capacity, bal_qty, amount, unit_price, last_synced)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, records_list)
+
+        # Cross-enrich parts_master with valid prices from stock_master
+        cursor.execute("""
+            UPDATE parts_master
+            SET price = (
+                SELECT s.unit_price FROM stock_master s 
+                WHERE s.part_no = parts_master.part_no AND s.unit_price > 0
+            )
+            WHERE (price IS NULL OR price = 0)
+              AND EXISTS (
+                SELECT 1 FROM stock_master s 
+                WHERE s.part_no = parts_master.part_no AND s.unit_price > 0
+              )
+        """)
+
+    in_stock_count = int((df['bal_qty'] > 0).sum())
+    return len(records_list), in_stock_count
+
 def bootstrap_master_data():
     init_db_schema()
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT count(*) FROM history_master")
-        if cursor.fetchone()[0] > 0:
-            return
+        hist_count = cursor.fetchone()[0]
+        cursor.execute("SELECT count(*) FROM stock_master")
+        stock_count = cursor.fetchone()[0]
 
-    if os.path.exists(DEFAULT_FB_FILE):
+    if hist_count == 0 and os.path.exists(DEFAULT_FB_FILE):
         coll_path = DEFAULT_COLL_FILE if os.path.exists(DEFAULT_COLL_FILE) else None
         ingest_feedback_and_pricing(DEFAULT_FB_FILE, coll_path)
+
+    if stock_count == 0:
+        latest_stock = find_latest_stock_file()
+        if latest_stock:
+            ingest_stock_file(latest_stock)
 
 def ingest_feedback_and_pricing(fb_source, coll_source=None):
     fb = standardize_columns(safe_read(fb_source))

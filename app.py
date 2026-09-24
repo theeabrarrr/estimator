@@ -5,9 +5,15 @@ from datetime import datetime
 import pandas as pd
 import streamlit as st
 
-from config import VISIT_CHARGES, MOBILITY_CHARGES, get_tonnage_specs
-from database import fetch_parts_and_models, search_history_records, fetch_performance_data
-from etl import bootstrap_master_data, normalize_phone, ingest_performance_pipeline, ingest_feedback_and_pricing
+from config import VISIT_CHARGES, MOBILITY_CHARGES, CATEGORY_OVERHEADS, get_tonnage_specs, detect_appliance_category
+from database import (
+    fetch_parts_and_models, search_history_records, fetch_performance_data,
+    fetch_parts_with_live_stock, search_stock_global, get_stock_metadata
+)
+from etl import (
+    bootstrap_master_data, normalize_phone, ingest_performance_pipeline,
+    ingest_feedback_and_pricing, ingest_stock_file
+)
 
 st.set_page_config(
     page_title="DWP Field Assistant", 
@@ -22,7 +28,7 @@ st.markdown("""
     .main-title { font-size: 1.4rem; font-weight: 700; color: #1E3A8A; margin-bottom: 0.1rem; }
     .sub-title { font-size: 0.82rem; color: #64748B; margin-bottom: 0.8rem; }
     .bill-card { background-color: #F8FAFC; border-left: 4px solid #0284C7; padding: 12px; border-radius: 6px; margin: 10px 0; }
-    .grand-total { font-size: 1.5rem; font-weight: 800; color: #0F172A; }
+    .grand-total { font-size: 1.6rem; font-weight: 800; color: #0F172A; }
     .history-card { background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
     .badge-warranty { background-color: #DCFCE7; color: #15803D; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
     .badge-cash { background-color: #FEE2E2; color: #B91C1C; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
@@ -31,11 +37,21 @@ st.markdown("""
     .scope-box { background-color: #F1F5F9; border: 1px solid #CBD5E1; padding: 8px 12px; border-radius: 6px; font-size: 0.82rem; color: #334155; margin-bottom: 12px; }
     .support-box { background-color: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px; padding: 12px; margin-top: 2rem; font-size: 0.82rem; color: #991B1B; text-align: center; }
     .credit-footer { font-size: 0.75rem; color: #64748B; text-align: center; margin-top: 1rem; border-top: 1px solid #E2E8F0; padding-top: 8px; }
+    
+    /* Stock Status Badges */
+    .stock-badge-in { background-color: #DCFCE7; color: #15803D; font-weight: 700; padding: 2px 8px; border-radius: 12px; font-size: 0.73rem; border: 1px solid #86EFAC; display: inline-block; }
+    .stock-badge-low { background-color: #FEF3C7; color: #B45309; font-weight: 700; padding: 2px 8px; border-radius: 12px; font-size: 0.73rem; border: 1px solid #FDE68A; display: inline-block; }
+    .stock-badge-out { background-color: #FEE2E2; color: #B91C1C; font-weight: 700; padding: 2px 8px; border-radius: 12px; font-size: 0.73rem; border: 1px solid #FECACA; display: inline-block; }
+    .item-card { background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 10px; margin-bottom: 8px; }
 </style>
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="main-title">❄️ DWP Service Field Assistant</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Field Diagnostic, Cost Estimator, Unit History & Technician Performance Hub</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Field Diagnostic, Cost & Live Stock Estimator, History & KPI Hub</div>', unsafe_allow_html=True)
+
+# Initialize Session State for Cart
+if "cart_items" not in st.session_state:
+    st.session_state.cart_items = {}
 
 @st.cache_data
 def get_app_store():
@@ -43,13 +59,39 @@ def get_app_store():
     return fetch_parts_and_models()
 
 parts_df, all_models = get_app_store()
+stock_meta = get_stock_metadata()
 
 # ==========================================
 # SIDEBAR
 # ==========================================
 with st.sidebar:
+    st.markdown("### 📦 Module 4: Live Stock Sync")
+    if stock_meta['total_items'] > 0:
+        st.markdown(f"""
+        <div style="background-color: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 6px; padding: 8px; font-size: 0.8rem; color: #166534; margin-bottom: 10px;">
+            <b>Live Warehouse Stock Active:</b><br>
+            • Total Items: <b>{stock_meta['total_items']:,}</b><br>
+            • In Stock: <b>{stock_meta['in_stock_items']:,}</b><br>
+            • Last Synced: <code>{stock_meta['last_synced']}</code>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.warning("Stock data abhi load nahi hai. Nayi CSV/Excel file upload karein.")
+
+    p_stock = st.file_uploader("Stock Detail File (.csv / .xls)", type=["csv", "xlsx", "xls"], key="p_stock")
+    if st.button("🔄 Sync Live Stock Now", use_container_width=True):
+        if p_stock:
+            with st.spinner("Syncing warehouse stock..."):
+                tot, in_stk = ingest_stock_file(p_stock)
+                st.cache_data.clear()
+                st.success(f"Stock Updated! {tot} items loaded ({in_stk} in stock).")
+                st.rerun()
+        else:
+            st.error("Stock Detail file lazmi choose karein!")
+
+    st.markdown("---")
     st.markdown("### 📊 Module 3: Performance Sync")
-    st.caption("Dono files upload karein aur button dabayein. Yeh Estimator ya History ko touch nahi karega.")
+    st.caption("Dono files upload karein aur button dabayein.")
     p_fb = st.file_uploader("Quality Feedback Report", type=["csv", "xlsx", "xls"], key="p_fb")
     p_can = st.file_uploader("Cancel / Nil / Transfer Report", type=["xlsx", "xls"], key="p_can")
 
@@ -76,120 +118,285 @@ with st.sidebar:
                 st.success("History updated safely without overwriting!")
                 st.rerun()
 
-tab_estimator, tab_history, tab_perf = st.tabs(["🧮 Cost Estimator", "🔍 Unit & Customer History", "📊 Technician Performance"])
+tab_estimator, tab_history, tab_perf = st.tabs(["🧮 Cost & Stock Estimator", "🔍 Unit & Customer History", "📊 Technician Performance"])
 
 # ==========================================
-# TAB 1: COST ESTIMATOR
+# TAB 1: COST & STOCK ESTIMATOR
 # ==========================================
 with tab_estimator:
-    selected_model = st.selectbox("🔍 Step 1: Select Appliance Model Number", options=["-- Search Model --"] + all_models)
+    # Top Stock Status bar
+    if stock_meta['total_items'] > 0:
+        st.caption(f"🟢 **Warehouse Stock Connected:** {stock_meta['in_stock_items']:,} parts available in Karachi store (Updated: {stock_meta['last_synced']})")
 
-    if selected_model != "-- Search Model --":
-        ton_label, gas_charge_amount, def_evap, def_pcb = get_tonnage_specs(selected_model)
-        fam_match = re.match(r"^([A-Z0-9]+-[0-9]{2}[A-Z]+)", selected_model)
-        family_code = fam_match.group(1) if fam_match else selected_model[:7]
+    # Search Mode Selection
+    search_mode = st.radio(
+        "🔎 Part Dhoondnay Ka Tareeqa:",
+        ["Model Number Se Search Karein", "Direct Part Name / Part No Se Search Karein"],
+        horizontal=True
+    )
 
-        direct_parts = parts_df[parts_df['model'] == selected_model] if not parts_df.empty else pd.DataFrame()
-        family_parts = parts_df[parts_df['model'].str.startswith(family_code)] if not parts_df.empty else pd.DataFrame()
-        available = pd.concat([direct_parts, family_parts]).drop_duplicates(subset=['part_no']).copy() if not parts_df.empty else pd.DataFrame()
+    detected_category = "Split AC"
+    ton_label = "1.5 Ton"
+    gas_charge_amount = 7000
 
-        if not available.empty:
-            for i, r in available.iterrows():
-                if r['price'] == 0:
-                    name_lower = str(r['part_name']).lower()
-                    if 'evap' in name_lower:
-                        available.at[i, 'price'] = def_evap
-                    elif '1/4' in name_lower:
-                        available.at[i, 'price'] = 1600
-                    elif any(v in name_lower for v in ['1/2', '5/8', '3/8', 'valve']):
-                        available.at[i, 'price'] = 2100
-                    elif 'motor' in name_lower:
-                        available.at[i, 'price'] = 2000
-                    elif 'sensor' in name_lower:
-                        available.at[i, 'price'] = 1500
-                    elif any(b in name_lower for b in ['board', 'pcb']):
-                        available.at[i, 'price'] = def_pcb
+    if search_mode == "Model Number Se Search Karein":
+        selected_model = st.selectbox("1. Appliance Model Select Karein:", options=["-- Search Model --"] + all_models)
 
-        st.success(f"**Model:** `{selected_model}` | **Capacity:** `{ton_label}`")
-        st.markdown("##### 🛠️ Step 2: Select Faulty Parts (Tap karke open karein)")
+        if selected_model != "-- Search Model --":
+            ton_label, gas_charge_amount, def_evap, def_pcb, detected_category = get_tonnage_specs(selected_model)
+            overheads = CATEGORY_OVERHEADS.get(detected_category, CATEGORY_OVERHEADS['General'])
 
-        categories = [
-            ("❄️ Evaporator Assemblies", available[available['part_name'].str.contains('evap', case=False, na=False)], True),
-            ("🔩 Cut-off & Service Valves", available[available['part_name'].str.contains('valve', case=False, na=False)], True),
-            ("⚡ Circuit Boards (PCBs)", available[available['part_name'].str.contains('board|pcb', case=False, na=False)], False),
-            ("🔄 Compressors", available[available['part_name'].str.contains('compressor', case=False, na=False)], True),
-            ("🔌 Motors & Temperature Sensors", available[available['part_name'].str.contains('motor|sensor', case=False, na=False)], False),
-            ("📦 Other Historical Parts", available[~available['part_name'].str.contains('evap|valve|board|pcb|compressor|motor|sensor', case=False, na=False)], False)
-        ] if not available.empty else []
+            st.info(f"**Appliance:** `{selected_model}` &nbsp;|&nbsp; **Category:** `{detected_category}` &nbsp;|&nbsp; **Spec:** `{ton_label}`")
 
-        selected_parts = []
-        parts_total = 0
-        cooling_cycle_selected = False
+            # Fetch live parts with stock
+            available = fetch_parts_with_live_stock(selected_model)
 
-        for cat_title, cat_data, is_cooling in categories:
-            part_count = len(cat_data)
-            with st.expander(f"{cat_title} ({part_count} Available)", expanded=False):
-                if not cat_data.empty:
-                    for _, part in cat_data.iterrows():
-                        p_name = part['part_name']
-                        p_no = part['part_no']
-                        p_price = int(part['price'])
-                        checked = st.checkbox(f"{p_name} — Rs. {p_price:,}", key=f"part_{p_no}")
-                        if checked:
-                            selected_parts.append({'name': p_name, 'part_no': p_no, 'price': p_price})
-                            parts_total += p_price
-                            if is_cooling:
-                                cooling_cycle_selected = True
-                else:
-                    st.caption("Service history mein koi part logged nahi mila.")
+            if available.empty:
+                st.warning("Is model ke compatible parts store list mein nahi milay. Aap neeche 'Direct Part Search' se part dhoond kar add kar saktay hain.")
+            else:
+                # Apply fallback heuristics if price is still 0
+                for i, r in available.iterrows():
+                    if r['price'] == 0:
+                        nl = str(r['part_name']).lower()
+                        if 'evap' in nl:
+                            available.at[i, 'price'] = def_evap
+                        elif '1/4' in nl:
+                            available.at[i, 'price'] = 1600
+                        elif any(v in nl for v in ['1/2', '5/8', '3/8', 'valve']):
+                            available.at[i, 'price'] = 2100
+                        elif 'motor' in nl:
+                            available.at[i, 'price'] = 2000
+                        elif 'sensor' in nl:
+                            available.at[i, 'price'] = 1500
+                        elif any(b in nl for b in ['board', 'pcb']):
+                            available.at[i, 'price'] = def_pcb
 
-        st.markdown("##### ⛽ Step 3: Overheads & Charging")
-        col_v, col_m = st.columns(2)
-        with col_v:
-            inc_visit = st.checkbox(f"Visit Charges (Rs. {VISIT_CHARGES:,})", value=True)
-            visit_cost = VISIT_CHARGES if inc_visit else 0
-        with col_m:
-            inc_mobility = st.checkbox(f"Mobility / Labor Charges (Rs. {MOBILITY_CHARGES:,})", value=True)
-            mobility_cost = MOBILITY_CHARGES if inc_mobility else 0
+                st.markdown("##### 🛠️ Step 2: Faulty Parts & Live Stock (Select to Add)")
 
-        inc_gas = st.checkbox(f"Gas Charging ({ton_label} - Rs. {gas_charge_amount:,})", value=cooling_cycle_selected)
-        gas_cost = gas_charge_amount if inc_gas else 0
-        grand_total = parts_total + visit_cost + mobility_cost + gas_cost
+                # Categorized breakdown
+                part_cats = [
+                    ("❄️ Evaporator Assemblies", available[available['part_name'].str.contains('evap', case=False, na=False)]),
+                    ("🔩 Valves & Tubing", available[available['part_name'].str.contains('valve', case=False, na=False)]),
+                    ("⚡ Circuit Boards (PCBs)", available[available['part_name'].str.contains('board|pcb', case=False, na=False)]),
+                    ("🔄 Compressors", available[available['part_name'].str.contains('compressor', case=False, na=False)]),
+                    ("🔌 Motors & Sensors", available[available['part_name'].str.contains('motor|sensor', case=False, na=False)]),
+                    ("📦 Other Parts", available[~available['part_name'].str.contains('evap|valve|board|pcb|compressor|motor|sensor', case=False, na=False)])
+                ]
 
-        st.markdown("---")
-        st.markdown(f"""
-        <div class="bill-card">
-            <div style="font-size: 0.9rem; color: #475569;">Grand Total Estimate:</div>
-            <div class="grand-total">Rs. {grand_total:,}</div>
-            <div style="font-size: 0.8rem; color: #64748B;">Includes Selected Parts + Gas + Overheads</div>
+                for cat_title, cat_data in part_cats:
+                    if cat_data.empty:
+                        continue
+                    in_stk_in_cat = (cat_data['bal_qty'] > 0).sum()
+                    with st.expander(f"{cat_title} ({len(cat_data)} Total | {in_stk_in_cat} In Stock)", expanded=(cat_title.startswith("❄️") or cat_title.startswith("⚡"))):
+                        for _, part in cat_data.iterrows():
+                            p_no = part['part_no']
+                            p_name = part['part_name']
+                            p_price = int(part['price'])
+                            p_qty = int(part['bal_qty'])
+
+                            if p_qty > 2:
+                                badge_html = f'<span class="stock-badge-in">🟢 In Stock ({p_qty} pcs)</span>'
+                            elif p_qty > 0:
+                                badge_html = f'<span class="stock-badge-low">🟡 Low Stock ({p_qty} left)</span>'
+                            else:
+                                badge_html = '<span class="stock-badge-out">🔴 Out of Stock / NIL</span>'
+
+                            col_p1, col_p2, col_p3 = st.columns([6, 2, 2])
+                            with col_p1:
+                                st.markdown(f"<b>{p_name}</b><br><small style='color:#64748B;'>Code: <code>{p_no}</code> &nbsp;|&nbsp; {badge_html}</small>", unsafe_allow_html=True)
+                            with col_p2:
+                                st.markdown(f"<span style='font-weight:700; color:#1E3A8A;'>Rs. {p_price:,}</span>", unsafe_allow_html=True)
+                            with col_p3:
+                                in_cart = p_no in st.session_state.cart_items
+                                if in_cart:
+                                    if st.button("❌ Remove", key=f"btn_rem_{p_no}", use_container_width=True):
+                                        del st.session_state.cart_items[p_no]
+                                        st.rerun()
+                                else:
+                                    if st.button("➕ Add", key=f"btn_add_{p_no}", use_container_width=True):
+                                        st.session_state.cart_items[p_no] = {
+                                            'name': p_name,
+                                            'part_no': p_no,
+                                            'price': p_price,
+                                            'qty': 1,
+                                            'bal_qty': p_qty
+                                        }
+                                        st.rerun()
+                            st.divider()
+
+    else:
+        # Direct Part Search
+        st.markdown("##### ⚡ Instant Store Inventory Search")
+        st.caption("Part Number, Description, ya Model likhein (e.g., `1521210712`, `Main Board`, `Evaporator`, `Sensor`):")
+        q_part = st.text_input("Search Keyword:", placeholder="Enter Part Code or Description...").strip()
+
+        if q_part:
+            results = search_stock_global(q_part)
+            if results.empty:
+                st.warning(f"`{q_part}` ke mutabiq koi part stock list mein nahi mila.")
+            else:
+                st.info(f"**{len(results)}** item(s) milay hain:")
+                for _, part in results.iterrows():
+                    p_no = part['part_no']
+                    p_name = part['part_name']
+                    p_price = int(part['price'])
+                    p_qty = int(part['bal_qty'])
+                    p_cat = part['category']
+
+                    if p_qty > 2:
+                        badge_html = f'<span class="stock-badge-in">🟢 In Stock ({p_qty} pcs)</span>'
+                    elif p_qty > 0:
+                        badge_html = f'<span class="stock-badge-low">🟡 Low Stock ({p_qty} left)</span>'
+                    else:
+                        badge_html = '<span class="stock-badge-out">🔴 Out of Stock / NIL</span>'
+
+                    col_r1, col_r2, col_r3 = st.columns([6, 2, 2])
+                    with col_r1:
+                        st.markdown(f"<b>{p_name}</b><br><small style='color:#64748B;'>Code: <code>{p_no}</code> | Cat: {p_cat} | {badge_html}</small>", unsafe_allow_html=True)
+                    with col_r2:
+                        st.markdown(f"<span style='font-weight:700; color:#1E3A8A;'>Rs. {p_price:,}</span>", unsafe_allow_html=True)
+                    with col_r3:
+                        in_cart = p_no in st.session_state.cart_items
+                        if in_cart:
+                            if st.button("❌ Remove", key=f"s_rem_{p_no}", use_container_width=True):
+                                del st.session_state.cart_items[p_no]
+                                st.rerun()
+                        else:
+                            if st.button("➕ Add", key=f"s_add_{p_no}", use_container_width=True):
+                                st.session_state.cart_items[p_no] = {
+                                    'name': p_name,
+                                    'part_no': p_no,
+                                    'price': p_price,
+                                    'qty': 1,
+                                    'bal_qty': p_qty
+                                }
+                                st.rerun()
+                    st.divider()
+
+    # ==========================================
+    # ESTIMATE BASKET & OVERHEADS SECTION
+    # ==========================================
+    st.markdown("---")
+    st.markdown("### 🛒 Estimate Basket (Selected Items)")
+
+    has_cooling_part = False
+    has_out_of_stock = False
+
+    if not st.session_state.cart_items:
+        st.info("Basket khali hai. Upar se parts add karein ya general service / visit estimate banayein.")
+    else:
+        # Display selected items with quantity controls
+        for p_no, item in list(st.session_state.cart_items.items()):
+            nl = item['name'].lower()
+            if any(k in nl for k in ['evap', 'valve', 'compressor']):
+                has_cooling_part = True
+            if item['bal_qty'] <= 0:
+                has_out_of_stock = True
+
+            col_c1, col_c2, col_c3, col_c4 = st.columns([5, 2, 2, 1])
+            with col_c1:
+                st.markdown(f"**{item['name']}**<br><small style='color:#64748B;'>Code: <code>{p_no}</code> &nbsp;|&nbsp; Stock: {item['bal_qty']} pcs</small>", unsafe_allow_html=True)
+            with col_c2:
+                q = st.number_input("Qty", min_value=1, max_value=20, value=item['qty'], key=f"qty_{p_no}", label_visibility="collapsed")
+                st.session_state.cart_items[p_no]['qty'] = q
+            with col_c3:
+                line_total = item['price'] * q
+                st.markdown(f"<span style='font-weight:700;'>Rs. {line_total:,}</span>", unsafe_allow_html=True)
+            with col_c4:
+                if st.button("🗑️", key=f"del_{p_no}"):
+                    del st.session_state.cart_items[p_no]
+                    st.rerun()
+
+        if st.button("🧹 Clear All Items"):
+            st.session_state.cart_items = {}
+            st.rerun()
+
+    # Out of stock warning banner
+    if has_out_of_stock:
+        st.warning("⚠️ **Stock Warning:** Aapki basket mein selected part(s) branch store mein **OUT OF STOCK / NIL** hain. Customer ko part arrival ka time inform karein.")
+
+    # Overheads & Service Section
+    st.markdown("##### ⛽ Service & Labor Overheads")
+    overheads = CATEGORY_OVERHEADS.get(detected_category, CATEGORY_OVERHEADS['General'])
+
+    col_v, col_m = st.columns(2)
+    with col_v:
+        inc_visit = st.checkbox(f"Technician Visit Charges (Rs. {overheads['visit']:,})", value=True)
+        visit_cost = overheads['visit'] if inc_visit else 0
+    with col_m:
+        inc_mobility = st.checkbox(f"Mobility / Labor Charges (Rs. {overheads['mobility']:,})", value=True)
+        mobility_cost = overheads['mobility'] if inc_mobility else 0
+
+    gas_cost = 0
+    if overheads.get('has_gas', False):
+        default_gas_price = gas_charge_amount if detected_category in ['Split AC', 'Floor Standing AC'] else overheads.get('gas_default', 3500)
+        inc_gas = st.checkbox(f"Gas Charging / Sealed System ({ton_label} - Rs. {default_gas_price:,})", value=has_cooling_part)
+        gas_cost = default_gas_price if inc_gas else 0
+
+    # Custom Miscellaneous Charges (e.g. extra piping / bracket)
+    with st.expander("➕ Additional Misc Charges (Optional)"):
+        misc_desc = st.text_input("Misc Item Description:", placeholder="e.g. Extra 10ft Copper Piping / AC Bracket")
+        misc_amt = st.number_input("Misc Amount (Rs.):", min_value=0, step=500, value=0)
+
+    # Totals Calculation
+    parts_subtotal = sum(item['price'] * item['qty'] for item in st.session_state.cart_items.values())
+    grand_total = parts_subtotal + visit_cost + mobility_cost + gas_cost + misc_amt
+
+    # Bill Summary Display
+    st.markdown("---")
+    st.markdown(f"""
+    <div class="bill-card">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <div style="font-size: 0.9rem; color: #475569;">Grand Total Estimate:</div>
+                <div class="grand-total">Rs. {grand_total:,}</div>
+            </div>
+            <div style="text-align: right; font-size: 0.8rem; color: #64748B;">
+                Parts: Rs. {parts_subtotal:,}<br>
+                Overheads: Rs. {(visit_cost + mobility_cost + gas_cost + misc_amt):,}
+            </div>
         </div>
-        """, unsafe_allow_html=True)
+    </div>
+    """, unsafe_allow_html=True)
 
-        part_bullets = "\n".join([f"• {sp['name']}: Rs. {sp['price']:,}" for sp in selected_parts]) if selected_parts else "• Nil (General Service / Checking)"
-        whatsapp_text = (
-            f"*DWP OFFICIAL SERVICE ESTIMATE*\n"
-            f"----------------------------------\n"
-            f"Appliance: {selected_model} ({ton_label})\n\n"
-            f"*Parts Replaced:*\n{part_bullets}\n\n"
-            f"*Standard Overheads:*\n"
-            f"• Technician Visit: Rs. {visit_cost:,}\n"
-            f"• Mobility / Labor: Rs. {mobility_cost:,}\n"
-            f"• Gas Charging ({ton_label}): Rs. {gas_cost:,}\n"
-            f"----------------------------------\n"
-            f"*TOTAL PAYABLE: Rs. {grand_total:,}*\n"
-            f"----------------------------------\n"
-            f"_DWP Authorized Customer Care_"
-        )
+    # WhatsApp Message Builder
+    part_bullets_list = []
+    if st.session_state.cart_items:
+        for it in st.session_state.cart_items.values():
+            stk_str = f"In Stock: {it['bal_qty']} pcs" if it['bal_qty'] > 0 else "NIL (Out of Stock)"
+            part_bullets_list.append(f"• {it['name']} (Qty: {it['qty']}) — Rs. {it['price'] * it['qty']:,} [{stk_str}]")
+        part_bullets = "\n".join(part_bullets_list)
+    else:
+        part_bullets = "• Nil (General Checking / Service Only)"
 
-        encoded_msg = urllib.parse.quote(whatsapp_text)
-        wa_url = f"https://api.whatsapp.com/send?text={encoded_msg}"
+    misc_bullet = f"• Misc / Extra: {misc_desc} — Rs. {misc_amt:,}\n" if misc_amt > 0 else ""
+    gas_bullet = f"• Gas Charging ({ton_label}): Rs. {gas_cost:,}\n" if gas_cost > 0 else ""
 
-        col_btn1, col_btn2 = st.columns([1, 1])
-        with col_btn1:
-            st.link_button("📲 Share to WhatsApp", wa_url, use_container_width=True)
-        with col_btn2:
-            with st.popover("👁️ View Full Text"):
-                st.code(whatsapp_text, language="text")
+    whatsapp_text = (
+        f"*DWP OFFICIAL SERVICE & PARTS ESTIMATE*\n"
+        f"-----------------------------------\n"
+        f"Appliance: {ton_label} ({detected_category})\n\n"
+        f"*Parts & Stock Availability:*\n{part_bullets}\n\n"
+        f"*Service & Standard Overheads:*\n"
+        f"• Technician Visit: Rs. {visit_cost:,}\n"
+        f"• Mobility / Labor: Rs. {mobility_cost:,}\n"
+        f"{gas_bullet}{misc_bullet}"
+        f"-----------------------------------\n"
+        f"*TOTAL ESTIMATE: Rs. {grand_total:,}*\n"
+        f"-----------------------------------\n"
+        f"_DWP Authorized Customer Care_"
+    )
+
+    encoded_msg = urllib.parse.quote(whatsapp_text)
+    wa_url = f"https://api.whatsapp.com/send?text={encoded_msg}"
+
+    col_btn1, col_btn2 = st.columns([1, 1])
+    with col_btn1:
+        st.link_button("📲 Share Estimate to WhatsApp", wa_url, use_container_width=True)
+    with col_btn2:
+        with st.popover("👁️ View Full Text Quotation"):
+            st.code(whatsapp_text, language="text")
+
 
 # ==========================================
 # TAB 2: UNIT & CUSTOMER HISTORY
