@@ -9,7 +9,7 @@ import re
 import glob
 from datetime import datetime
 import pandas as pd
-from config import COLUMN_ALIASES, DEFAULT_FB_FILE, DEFAULT_COLL_FILE, STOCK_SEARCH_DIRS
+from config import COLUMN_ALIASES, DEFAULT_FB_FILE, DEFAULT_COLL_FILE, STOCK_SEARCH_DIRS, STOCK_CSV_PATH
 from database import get_connection, init_db_schema
 
 def clean_val(val):
@@ -61,15 +61,19 @@ def standardize_columns(df):
 
 def find_latest_stock_file():
     candidates = []
+    if os.path.exists(STOCK_CSV_PATH):
+        candidates.append((os.path.getmtime(STOCK_CSV_PATH), STOCK_CSV_PATH))
+
     for d in STOCK_SEARCH_DIRS:
         if not os.path.exists(d):
             continue
-        for pattern in ["STOCK_DETAIL*.*", "Stock Balance*.*", "*STOCK*.*"]:
+        for pattern in ["*stock*.*", "*STOCK*.*", "*Stock*.*", "STOCK_DETAIL*.*", "Stock Balance*.*"]:
             for f in glob.glob(os.path.join(d, pattern)):
                 if f.endswith(('.csv', '.xlsx', '.xls')) and not os.path.basename(f).startswith('~$'):
                     candidates.append((os.path.getmtime(f), f))
     if not candidates:
         return None
+    # Sort candidates by modification time descending
     candidates.sort(key=lambda x: x[0], reverse=True)
     return candidates[0][1]
 
@@ -163,6 +167,22 @@ def bootstrap_master_data():
         latest_stock = find_latest_stock_file()
         if latest_stock:
             ingest_stock_file(latest_stock)
+
+    # Cross-enrich parts_master with baseline ground-truth prices
+    try:
+        from database import load_ground_truth_baseline
+        baseline = load_ground_truth_baseline()
+        price_book = baseline.get("price_book", {})
+        if price_book:
+            with get_connection() as conn:
+                cursor = conn.cursor()
+                updates = [(int(info.get('price', 0)), pno) for pno, info in price_book.items() if info.get('price', 0) > 0]
+                if updates:
+                    cursor.executemany("""
+                        UPDATE parts_master SET price = ? WHERE part_no = ? AND (price IS NULL OR price = 0)
+                    """, updates)
+    except Exception:
+        pass
 
 def ingest_feedback_and_pricing(fb_source, coll_source=None):
     fb = standardize_columns(safe_read(fb_source))

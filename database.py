@@ -7,7 +7,27 @@ if BASE_DIR not in sys.path:
 
 import sqlite3
 import pandas as pd
-from config import DB_NAME
+import json
+from config import (
+    DB_NAME, BASELINE_JSON_PATH, COMPONENT_ROLE_GROUPS,
+    tokenize_appliance_model, classify_component_role
+)
+
+_BASELINE_CACHE = None
+
+def load_ground_truth_baseline():
+    global _BASELINE_CACHE
+    if _BASELINE_CACHE is not None:
+        return _BASELINE_CACHE
+        
+    if os.path.exists(BASELINE_JSON_PATH):
+        try:
+            with open(BASELINE_JSON_PATH, 'r', encoding='utf-8') as f:
+                _BASELINE_CACHE = json.load(f)
+                return _BASELINE_CACHE
+        except Exception:
+            pass
+    return {'models': {}, 'series': {}, 'global_stock': {}}
 
 def get_connection():
     conn = sqlite3.connect(DB_NAME, timeout=30.0)
@@ -76,73 +96,145 @@ def init_db_schema():
 
 def fetch_parts_and_models():
     init_db_schema()
+    baseline = load_ground_truth_baseline()
+    base_models = list(baseline.get('models', {}).keys())
+    
     with get_connection() as conn:
-        parts_df = pd.read_sql_query("SELECT * FROM parts_master", conn)
         h_models = pd.read_sql_query("SELECT DISTINCT model FROM history_master WHERE model != '' AND model != 'NAN'", conn)['model'].tolist()
+        parts_df = pd.read_sql_query("SELECT * FROM parts_master", conn)
         p_models = parts_df['model'].dropna().unique().tolist() if not parts_df.empty else []
-        all_models = sorted(list(set([m for m in (h_models + p_models) if len(m) > 1])))
+        all_models = sorted(list(set([m for m in (base_models + h_models + p_models) if len(m) > 1])))
     return parts_df, all_models
 
-def fetch_parts_with_live_stock(selected_model):
+def fetch_tiered_compatible_parts(selected_model):
     init_db_schema()
-    import re
+    baseline = load_ground_truth_baseline()
+    tok = tokenize_appliance_model(selected_model)
+    model_name = tok['model']
+    series_key = tok['series_key']
+    
+    # Live stock lookup dictionary from SQLite stock_master
+    live_stock_map = {}
     with get_connection() as conn:
-        # Match model and family code
-        fam_match = re.match(r"^([A-Z0-9]+-[0-9]{2}[A-Z]+)", selected_model)
-        family_code = fam_match.group(1) if fam_match else selected_model[:7]
+        stock_rows = pd.read_sql_query("SELECT part_no, bal_qty, unit_price FROM stock_master", conn)
+        for _, sr in stock_rows.iterrows():
+            live_stock_map[sr['part_no'].upper()] = {
+                'bal_qty': int(sr['bal_qty']),
+                'unit_price': int(sr['unit_price'])
+            }
 
-        sql = """
-            SELECT 
-                p.model,
-                p.part_no,
-                p.part_name,
-                p.price as hist_price,
-                COALESCE(s.bal_qty, 0) as bal_qty,
-                COALESCE(s.unit_price, 0) as stock_price,
-                s.category,
-                s.brand,
-                s.item_desc
-            FROM parts_master p
-            LEFT JOIN stock_master s ON UPPER(TRIM(p.part_no)) = UPPER(TRIM(s.part_no))
-            WHERE p.model = ? OR p.model LIKE ?
-        """
-        df = pd.read_sql_query(sql, conn, params=(selected_model, f"{family_code}%"))
+    def is_series_compatible(pname, target_series, role):
+        if not target_series:
+            return True
+        pn = pname.upper()
+        if 'COMMON' in pn or 'UNIVERSAL' in pn:
+            return True
+        chassis_sensitive = [
+            'Evaporator Assembly', 'Outdoor Inverter PCB', 'Indoor Main PCB', 
+            'Display Board', 'Cross Flow Fan', 'Front Panel'
+        ]
+        tokens = ['PITH', 'CITH', 'FITH', 'AITH', 'VITH', 'LITH', 'LM', 'ECH']
+        found = [s for s in tokens if s in pn]
+        if found:
+            if target_series in found:
+                return True
+            if role in chassis_sensitive:
+                return False
+        return True
 
-        # Also search stock_master directly for any parts tagged with this model or family code
-        stock_extra_sql = """
-            SELECT 
-                ? as model,
-                s.part_no,
-                s.item_desc as part_name,
-                0 as hist_price,
-                s.bal_qty,
-                s.unit_price as stock_price,
-                s.category,
-                s.brand,
-                s.item_desc
-            FROM stock_master s
-            WHERE UPPER(s.item_desc) LIKE ? OR UPPER(s.item_desc) LIKE ?
-        """
-        extra_df = pd.read_sql_query(stock_extra_sql, conn, params=(
-            selected_model, 
-            f"%{selected_model.upper()}%", 
-            f"%{family_code.upper()}%"
-        ))
+    # 1. Tier 1: Exact Model Match (Ground Truth)
+    t1_records = baseline.get('models', {}).get(model_name, {}).get('parts', [])
+    t1_part_nos = set()
+    scored_parts = []
+    
+    total_verified_jobs = 0
+    for p in t1_records:
+        if not is_series_compatible(p['part_name'], tok['series'], p['role']):
+            continue
+        p_copy = p.copy()
+        pno = p['part_no'].upper()
+        # Override with live stock if available
+        if pno in live_stock_map:
+            p_copy['bal_qty'] = live_stock_map[pno]['bal_qty']
+            p_copy['in_stock'] = p_copy['bal_qty'] > 0
+            if p_copy['price'] <= 0 and live_stock_map[pno]['unit_price'] > 0:
+                p_copy['price'] = live_stock_map[pno]['unit_price']
+                
+        p_copy['tier'] = "Tier 1: Exact Model Verified"
+        p_copy['tier_code'] = 1
+        p_copy['score'] = (p['verified_jobs'] * 2) + (10 if p_copy['in_stock'] else 0) + 20
+        scored_parts.append(p_copy)
+        t1_part_nos.add(pno)
+        total_verified_jobs += p['verified_jobs']
 
-        combined = pd.concat([df, extra_df], ignore_index=True)
-        if combined.empty:
-            return pd.DataFrame()
+    # 2. Tier 2: Strict Platform Series Match (Strictly Isolated by Series Key)
+    series_records = baseline.get('series', {}).get(series_key, [])
+    for p in series_records:
+        if not is_series_compatible(p['part_name'], tok['series'], p['role']):
+            continue
+        pno = p['part_no'].upper()
+        if pno not in t1_part_nos:
+            p_copy = p.copy()
+            if pno in live_stock_map:
+                p_copy['bal_qty'] = live_stock_map[pno]['bal_qty']
+                p_copy['in_stock'] = p_copy['bal_qty'] > 0
+                if p_copy['price'] <= 0 and live_stock_map[pno]['unit_price'] > 0:
+                    p_copy['price'] = live_stock_map[pno]['unit_price']
+                    
+            p_copy['tier'] = f"Tier 2: {tok['series']} Series Platform"
+            p_copy['tier_code'] = 2
+            p_copy['score'] = (p['verified_jobs'] * 2) + (10 if p_copy['in_stock'] else 0) + 5
+            scored_parts.append(p_copy)
+            t1_part_nos.add(pno)
 
-        combined.drop_duplicates(subset=['part_no'], inplace=True)
+    # Group candidate parts by Functional Role
+    role_map = {}
+    for p in scored_parts:
+        r = p['role']
+        if r not in role_map:
+            role_map[r] = []
+        role_map[r].append(p)
+
+    structured_groups = []
+    
+    for group_title, roles in COMPONENT_ROLE_GROUPS:
+        matched_items = []
+        for r in roles:
+            matched_items.extend(role_map.get(r, []))
+            
+        if not matched_items:
+            continue
+            
+        # Deduplication & Ranking: Sort by Score descending
+        matched_items.sort(key=lambda x: (x['score'], x['in_stock'], x['verified_jobs']), reverse=True)
+        primary_item = matched_items[0]
+        alt_items = matched_items[1:]
         
-        # Decide effective price: priority to hist_price if > 0, then stock_price
-        combined['price'] = combined.apply(
-            lambda r: int(r['hist_price']) if r['hist_price'] > 0 else int(r['stock_price']),
-            axis=1
-        )
-        combined['bal_qty'] = pd.to_numeric(combined['bal_qty'], errors='coerce').fillna(0).astype(int)
+        in_stock_count = sum(1 for it in matched_items if it['in_stock'])
         
-        return combined
+        structured_groups.append({
+            'group_title': group_title,
+            'primary': primary_item,
+            'alternatives': alt_items,
+            'total_items': len(matched_items),
+            'in_stock_items': in_stock_count
+        })
+
+    return {
+        'model': selected_model,
+        'meta': tok,
+        'role_groups': structured_groups,
+        'total_verified_jobs': total_verified_jobs,
+        'total_parts_found': len(scored_parts)
+    }
+
+def fetch_parts_with_live_stock(selected_model):
+    res = fetch_tiered_compatible_parts(selected_model)
+    flat_list = []
+    for grp in res.get('role_groups', []):
+        flat_list.append(grp['primary'])
+        flat_list.extend(grp['alternatives'])
+    return pd.DataFrame(flat_list) if flat_list else pd.DataFrame()
 
 def search_stock_global(query_str, limit=60):
     init_db_schema()
@@ -162,7 +254,47 @@ def search_stock_global(query_str, limit=60):
             ORDER BY bal_qty DESC, item_desc ASC
             LIMIT ?
         """
-        return pd.read_sql_query(sql, conn, params=(q, q, q, limit))
+        df = pd.read_sql_query(sql, conn, params=(q, q, q, limit))
+        
+    baseline = load_ground_truth_baseline()
+    if df.empty:
+        g_stock = baseline.get('global_stock', {})
+        q_upper = query_str.strip().upper()
+        matches = []
+        for pno, item in g_stock.items():
+            if q_upper in pno or q_upper in item['item_desc'].upper() or q_upper in item['category'].upper():
+                matches.append({
+                    'part_no': pno,
+                    'part_name': item['item_desc'],
+                    'brand': item['brand'],
+                    'category': item['category'],
+                    'capacity': item['capacity'],
+                    'bal_qty': item['bal_qty'],
+                    'price': item['stock_cost']
+                })
+                if len(matches) >= limit:
+                    break
+        if matches:
+            df = pd.DataFrame(matches)
+            
+    if not df.empty:
+        price_book = baseline.get('price_book', {})
+        floors = baseline.get('category_floors', {})
+        from config import classify_component_role
+        
+        def resolve_price(r):
+            pr = int(r.get('price') or 0)
+            if pr > 0:
+                return pr
+            pno = str(r['part_no']).upper()
+            if pno in price_book and price_book[pno].get('price', 0) > 0:
+                return int(price_book[pno]['price'])
+            role = classify_component_role(r['part_name'])
+            return int(floors.get(role, 1500))
+            
+        df['price'] = df.apply(resolve_price, axis=1)
+            
+    return df
 
 def get_stock_metadata():
     init_db_schema()
@@ -170,13 +302,22 @@ def get_stock_metadata():
         cursor = conn.cursor()
         cursor.execute("SELECT count(*), SUM(CASE WHEN bal_qty > 0 THEN 1 ELSE 0 END), MAX(last_synced) FROM stock_master")
         row = cursor.fetchone()
-        if not row or row[0] == 0:
-            return {'total_items': 0, 'in_stock_items': 0, 'last_synced': 'Never'}
-        return {
-            'total_items': row[0] or 0,
-            'in_stock_items': row[1] or 0,
-            'last_synced': row[2] or 'Synced'
-        }
+        if row and row[0] > 0:
+            return {
+                'total_items': row[0] or 0,
+                'in_stock_items': row[1] or 0,
+                'last_synced': row[2] or 'Synced'
+            }
+            
+    baseline = load_ground_truth_baseline()
+    g_stock = baseline.get('global_stock', {})
+    tot = len(g_stock)
+    in_stk = sum(1 for it in g_stock.values() if it.get('bal_qty', 0) > 0)
+    return {
+        'total_items': tot,
+        'in_stock_items': in_stk,
+        'last_synced': baseline.get('generated_at', 'Bundled Baseline')
+    }
 
 def search_history_records(query_str, clean_phone_str):
     with get_connection() as conn:

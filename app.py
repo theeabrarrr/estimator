@@ -23,7 +23,8 @@ import database
 importlib.reload(database)
 from database import (
     fetch_parts_and_models, search_history_records, fetch_performance_data,
-    fetch_parts_with_live_stock, search_stock_global, get_stock_metadata
+    fetch_parts_with_live_stock, search_stock_global, get_stock_metadata,
+    fetch_tiered_compatible_parts
 )
 
 import etl
@@ -162,85 +163,82 @@ with tab_estimator:
 
         if selected_model != "-- Search Model --":
             ton_label, gas_charge_amount, def_evap, def_pcb, detected_category = get_tonnage_specs(selected_model)
-            overheads = CATEGORY_OVERHEADS.get(detected_category, CATEGORY_OVERHEADS['General'])
+            tiered_data = fetch_tiered_compatible_parts(selected_model)
+            meta = tiered_data.get('meta', {})
+            detected_category = meta.get('category', detected_category)
+            ton_label = meta.get('tonnage', ton_label)
+            series_name = meta.get('series', '')
+            total_v_jobs = tiered_data.get('total_verified_jobs', 0)
+            role_groups = tiered_data.get('role_groups', [])
 
-            st.info(f"**Appliance:** `{selected_model}` &nbsp;|&nbsp; **Category:** `{detected_category}` &nbsp;|&nbsp; **Spec:** `{ton_label}`")
+            series_badge = f" &nbsp;|&nbsp; **Series:** `{series_name}`" if series_name else ""
+            st.info(f"**Appliance:** `{selected_model}` &nbsp;|&nbsp; **Category:** `{detected_category}` &nbsp;|&nbsp; **Spec:** `{ton_label}`{series_badge} &nbsp;|&nbsp; 🏅 **{total_v_jobs:,} Field Jobs Verified**")
 
-            # Fetch live parts with stock
-            available = fetch_parts_with_live_stock(selected_model)
-
-            if available.empty:
-                st.warning("Is model ke compatible parts store list mein nahi milay. Aap neeche 'Direct Part Search' se part dhoond kar add kar saktay hain.")
+            if not role_groups:
+                st.warning("Is model ke verified parts direct baseline mein nahi milay. Aap neeche 'Direct Part Search' se part dhoond kar add kar saktay hain.")
             else:
-                # Apply fallback heuristics if price is still 0
-                for i, r in available.iterrows():
-                    if r['price'] == 0:
-                        nl = str(r['part_name']).lower()
-                        if 'evap' in nl:
-                            available.at[i, 'price'] = def_evap
-                        elif '1/4' in nl:
-                            available.at[i, 'price'] = 1600
-                        elif any(v in nl for v in ['1/2', '5/8', '3/8', 'valve']):
-                            available.at[i, 'price'] = 2100
-                        elif 'motor' in nl:
-                            available.at[i, 'price'] = 2000
-                        elif 'sensor' in nl:
-                            available.at[i, 'price'] = 1500
-                        elif any(b in nl for b in ['board', 'pcb']):
-                            available.at[i, 'price'] = def_pcb
+                st.markdown("##### 🛠️ Step 2: Compatible Parts & Live Stock (Ranked & Verified)")
+                st.caption("Primary recommended part highest-frequency aur stock status ke hisab se top par hai. Substitutions ke liye alternate revisions kholiye.")
 
-                st.markdown("##### 🛠️ Step 2: Faulty Parts & Live Stock (Select to Add)")
+                def render_part_row(part, is_primary=True, key_prefix="p"):
+                    p_no = part['part_no']
+                    p_name = part['part_name']
+                    p_price = int(part.get('price', 0))
+                    p_qty = int(part.get('bal_qty', 0))
+                    v_jobs = int(part.get('verified_jobs', 0))
+                    tier_str = part.get('tier', '')
 
-                # Categorized breakdown
-                part_cats = [
-                    ("❄️ Evaporator Assemblies", available[available['part_name'].str.contains('evap', case=False, na=False)]),
-                    ("🔩 Valves & Tubing", available[available['part_name'].str.contains('valve', case=False, na=False)]),
-                    ("⚡ Circuit Boards (PCBs)", available[available['part_name'].str.contains('board|pcb', case=False, na=False)]),
-                    ("🔄 Compressors", available[available['part_name'].str.contains('compressor', case=False, na=False)]),
-                    ("🔌 Motors & Sensors", available[available['part_name'].str.contains('motor|sensor', case=False, na=False)]),
-                    ("📦 Other Parts", available[~available['part_name'].str.contains('evap|valve|board|pcb|compressor|motor|sensor', case=False, na=False)])
-                ]
+                    if p_qty > 2:
+                        badge_html = f'<span class="stock-badge-in">🟢 In Stock ({p_qty} pcs)</span>'
+                    elif p_qty > 0:
+                        badge_html = f'<span class="stock-badge-low">🟡 Low Stock ({p_qty} left)</span>'
+                    else:
+                        badge_html = '<span class="stock-badge-out">🔴 Out of Stock / NIL</span>'
 
-                for cat_title, cat_data in part_cats:
-                    if cat_data.empty:
-                        continue
-                    in_stk_in_cat = (cat_data['bal_qty'] > 0).sum()
-                    with st.expander(f"{cat_title} ({len(cat_data)} Total | {in_stk_in_cat} In Stock)", expanded=(cat_title.startswith("❄️") or cat_title.startswith("⚡"))):
-                        for _, part in cat_data.iterrows():
-                            p_no = part['part_no']
-                            p_name = part['part_name']
-                            p_price = int(part['price'])
-                            p_qty = int(part['bal_qty'])
+                    v_badge = f'<span style="background-color:#E0E7FF; color:#3730A3; padding:2px 7px; border-radius:10px; font-size:0.72rem; font-weight:600; margin-left:4px;">🏅 {v_jobs} Jobs</span>' if v_jobs > 0 else ''
+                    tier_badge = f'<span style="background-color:#F1F5F9; color:#475569; padding:2px 6px; border-radius:10px; font-size:0.70rem; margin-left:4px;">{tier_str}</span>' if tier_str else ''
+                    star = "⭐ " if is_primary else ""
 
-                            if p_qty > 2:
-                                badge_html = f'<span class="stock-badge-in">🟢 In Stock ({p_qty} pcs)</span>'
-                            elif p_qty > 0:
-                                badge_html = f'<span class="stock-badge-low">🟡 Low Stock ({p_qty} left)</span>'
-                            else:
-                                badge_html = '<span class="stock-badge-out">🔴 Out of Stock / NIL</span>'
+                    col_p1, col_p2, col_p3 = st.columns([6, 2, 2])
+                    with col_p1:
+                        st.markdown(f"<b>{star}{p_name}</b><br><small style='color:#64748B;'>Code: <code>{p_no}</code> &nbsp;|&nbsp; {badge_html} {v_badge} {tier_badge}</small>", unsafe_allow_html=True)
+                    with col_p2:
+                        st.markdown(f"<span style='font-weight:700; color:#1E3A8A;'>Rs. {p_price:,}</span>", unsafe_allow_html=True)
+                    with col_p3:
+                        in_cart = p_no in st.session_state.cart_items
+                        if in_cart:
+                            if st.button("❌ Remove", key=f"{key_prefix}_rem_{p_no}", use_container_width=True):
+                                del st.session_state.cart_items[p_no]
+                                st.rerun()
+                        else:
+                            if st.button("➕ Add", key=f"{key_prefix}_add_{p_no}", use_container_width=True):
+                                st.session_state.cart_items[p_no] = {
+                                    'name': p_name,
+                                    'part_no': p_no,
+                                    'price': p_price,
+                                    'qty': 1,
+                                    'bal_qty': p_qty
+                                }
+                                st.rerun()
 
-                            col_p1, col_p2, col_p3 = st.columns([6, 2, 2])
-                            with col_p1:
-                                st.markdown(f"<b>{p_name}</b><br><small style='color:#64748B;'>Code: <code>{p_no}</code> &nbsp;|&nbsp; {badge_html}</small>", unsafe_allow_html=True)
-                            with col_p2:
-                                st.markdown(f"<span style='font-weight:700; color:#1E3A8A;'>Rs. {p_price:,}</span>", unsafe_allow_html=True)
-                            with col_p3:
-                                in_cart = p_no in st.session_state.cart_items
-                                if in_cart:
-                                    if st.button("❌ Remove", key=f"btn_rem_{p_no}", use_container_width=True):
-                                        del st.session_state.cart_items[p_no]
-                                        st.rerun()
-                                else:
-                                    if st.button("➕ Add", key=f"btn_add_{p_no}", use_container_width=True):
-                                        st.session_state.cart_items[p_no] = {
-                                            'name': p_name,
-                                            'part_no': p_no,
-                                            'price': p_price,
-                                            'qty': 1,
-                                            'bal_qty': p_qty
-                                        }
-                                        st.rerun()
-                            st.divider()
+                for g_idx, grp in enumerate(role_groups):
+                    grp_title = grp['group_title']
+                    primary = grp['primary']
+                    alts = grp['alternatives']
+                    tot = grp['total_items']
+                    in_stk = grp['in_stock_items']
+                    is_main_role = any(k in grp_title.lower() for k in ['evaporator', 'pcb', 'circuit board', 'compressor'])
+
+                    with st.expander(f"{grp_title} ({tot} item{'s' if tot > 1 else ''} | {in_stk} in stock)", expanded=is_main_role):
+                        st.markdown("<small style='color:#1E3A8A; font-weight:700;'>PRIMARY RECOMMENDED PART:</small>", unsafe_allow_html=True)
+                        render_part_row(primary, is_primary=True, key_prefix=f"p_{g_idx}")
+
+                        if alts:
+                            st.markdown(f"<div style='margin-top:6px; margin-bottom:4px;'><small style='color:#64748B;'><b>Alternate Part Numbers / Substitutions ({len(alts)}):</b></small></div>", unsafe_allow_html=True)
+                            for a_idx, alt in enumerate(alts):
+                                render_part_row(alt, is_primary=False, key_prefix=f"a_{g_idx}_{a_idx}")
+                                if a_idx < len(alts) - 1:
+                                    st.markdown("<hr style='margin:4px 0; border:0; border-top:1px dashed #E2E8F0;'>", unsafe_allow_html=True)
 
     else:
         # Direct Part Search
