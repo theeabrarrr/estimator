@@ -9,7 +9,10 @@ import re
 import glob
 from datetime import datetime
 import pandas as pd
-from config import COLUMN_ALIASES, DEFAULT_FB_FILE, DEFAULT_COLL_FILE, STOCK_SEARCH_DIRS, STOCK_CSV_PATH
+from config import (
+    COLUMN_ALIASES, DEFAULT_FB_FILE, DEFAULT_COLL_FILE, STOCK_SEARCH_DIRS, STOCK_CSV_PATH,
+    classify_component_role, get_role_price_floor
+)
 from database import get_connection, init_db_schema
 
 def clean_val(val):
@@ -111,11 +114,34 @@ def ingest_stock_file(stock_source):
             conn
         ).set_index('part_no')['hist_price'].to_dict()
 
-    # Determine final unit price (prefer history/retail price if available)
-    df['unit_price'] = df.apply(
-        lambda r: existing_prices.get(r['part_no'], r['calc_price']),
-        axis=1
-    )
+    # Determine final unit price (prefer collection verified price, protect with role floors)
+    def calculate_clean_unit_price(r):
+        pno = r['part_no']
+        if pno in existing_prices and existing_prices[pno] > 0:
+            return int(existing_prices[pno])
+            
+        calc = int(r['calc_price'])
+        desc = str(r.get('item_desc', ''))
+        role = classify_component_role(desc, pno)
+        
+        cap = str(r.get('capacity', ''))
+        desc_up = desc.upper()
+        ton = "1.5 Ton"
+        for t_str, token in [('4.0 Ton', '48'), ('4.0 Ton', '36'), ('2.0 Ton', '24'), ('1.0 Ton', '12'), ('1.5 Ton', '18')]:
+            if token in desc_up or token in cap:
+                ton = t_str
+                break
+                
+        cat = str(r.get('category', 'Split AC'))
+        floor = get_role_price_floor(role, ton, cat)
+        
+        if calc <= 0 or calc < floor:
+            return floor
+        if calc > 100000 and role not in ["Compressor & Fittings"]:
+            return floor
+        return calc
+
+    df['unit_price'] = df.apply(calculate_clean_unit_price, axis=1)
 
     stock_records = df[[
         'part_no', 'item_code', 'item_desc', 'product', 'brand', 
@@ -180,6 +206,9 @@ def bootstrap_master_data():
                 if updates:
                     cursor.executemany("""
                         UPDATE parts_master SET price = ? WHERE part_no = ? AND (price IS NULL OR price = 0)
+                    """, updates)
+                    cursor.executemany("""
+                        UPDATE stock_master SET unit_price = ? WHERE part_no = ? AND (unit_price IS NULL OR unit_price = 0)
                     """, updates)
     except Exception:
         pass

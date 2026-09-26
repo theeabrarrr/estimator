@@ -123,7 +123,7 @@ def fetch_tiered_compatible_parts(selected_model):
                 'unit_price': int(sr['unit_price'])
             }
 
-    def is_series_compatible(pname, target_series, role):
+    def is_series_compatible(pname, target_series, target_tonnage, target_cat, role):
         if not target_series:
             return True
         pn = pname.upper()
@@ -137,9 +137,21 @@ def fetch_tiered_compatible_parts(selected_model):
         found = [s for s in tokens if s in pn]
         if found:
             if target_series in found:
-                return True
-            if role in chassis_sensitive:
+                pass
+            elif role in chassis_sensitive:
                 return False
+                
+        # Tonnage check for chassis sensitive cooling/electrical roles
+        if role in chassis_sensitive and target_cat in ['Split AC', 'Floor Standing AC']:
+            t_markers = {'1.0 Ton': ['12', '10', '11'], '1.5 Ton': ['18', '16'], '2.0 Ton': ['24', '26'], '4.0 Ton': ['36', '48', '60']}
+            other_markers = []
+            for ton_name, markers in t_markers.items():
+                if ton_name != target_tonnage:
+                    other_markers.extend(markers)
+            target_markers = t_markers.get(target_tonnage, [])
+            if any(m in pn for m in other_markers) and not any(m in pn for m in target_markers):
+                return False
+
         return True
 
     # 1. Tier 1: Exact Model Match (Ground Truth)
@@ -149,7 +161,7 @@ def fetch_tiered_compatible_parts(selected_model):
     
     total_verified_jobs = 0
     for p in t1_records:
-        if not is_series_compatible(p['part_name'], tok['series'], p['role']):
+        if not is_series_compatible(p['part_name'], tok['series'], tok['tonnage'], tok['category'], p['role']):
             continue
         p_copy = p.copy()
         pno = p['part_no'].upper()
@@ -157,8 +169,14 @@ def fetch_tiered_compatible_parts(selected_model):
         if pno in live_stock_map:
             p_copy['bal_qty'] = live_stock_map[pno]['bal_qty']
             p_copy['in_stock'] = p_copy['bal_qty'] > 0
-            if p_copy['price'] <= 0 and live_stock_map[pno]['unit_price'] > 0:
+            if live_stock_map[pno]['unit_price'] > 0:
                 p_copy['price'] = live_stock_map[pno]['unit_price']
+                
+        if p_copy['price'] <= 0:
+            price_book = baseline.get('price_book', {})
+            p_copy['price'] = price_book.get(pno, {}).get('price', 0)
+            if p_copy['price'] <= 0:
+                p_copy['price'] = baseline.get('category_floors', {}).get(p['role'], 26000 if 'Evaporator' in p['role'] else 1500)
                 
         p_copy['tier'] = "Tier 1: Exact Model Verified"
         p_copy['tier_code'] = 1
@@ -170,7 +188,7 @@ def fetch_tiered_compatible_parts(selected_model):
     # 2. Tier 2: Strict Platform Series Match (Strictly Isolated by Series Key)
     series_records = baseline.get('series', {}).get(series_key, [])
     for p in series_records:
-        if not is_series_compatible(p['part_name'], tok['series'], p['role']):
+        if not is_series_compatible(p['part_name'], tok['series'], tok['tonnage'], tok['category'], p['role']):
             continue
         pno = p['part_no'].upper()
         if pno not in t1_part_nos:
@@ -178,8 +196,14 @@ def fetch_tiered_compatible_parts(selected_model):
             if pno in live_stock_map:
                 p_copy['bal_qty'] = live_stock_map[pno]['bal_qty']
                 p_copy['in_stock'] = p_copy['bal_qty'] > 0
-                if p_copy['price'] <= 0 and live_stock_map[pno]['unit_price'] > 0:
+                if live_stock_map[pno]['unit_price'] > 0:
                     p_copy['price'] = live_stock_map[pno]['unit_price']
+                    
+            if p_copy['price'] <= 0:
+                price_book = baseline.get('price_book', {})
+                p_copy['price'] = price_book.get(pno, {}).get('price', 0)
+                if p_copy['price'] <= 0:
+                    p_copy['price'] = baseline.get('category_floors', {}).get(p['role'], 26000 if 'Evaporator' in p['role'] else 1500)
                     
             p_copy['tier'] = f"Tier 2: {tok['series']} Series Platform"
             p_copy['tier_code'] = 2
@@ -205,14 +229,14 @@ def fetch_tiered_compatible_parts(selected_model):
         if pno not in t1_part_nos:
             p_desc = sr['part_name']
             role = classify_component_role(p_desc, pno)
-            if not is_series_compatible(p_desc, tok['series'], role):
+            if not is_series_compatible(p_desc, tok['series'], tok['tonnage'], tok['category'], role):
                 continue
             pr = int(sr['price'])
+            price_book = baseline.get('price_book', {})
+            if pno in price_book and price_book[pno].get('price', 0) > 0:
+                pr = int(price_book[pno]['price'])
             if pr <= 0:
-                price_book = baseline.get('price_book', {})
-                pr = price_book.get(pno, {}).get('price', 0)
-                if pr <= 0:
-                    pr = baseline.get('category_floors', {}).get(role, 26000 if 'Evaporator' in role else 1500)
+                pr = baseline.get('category_floors', {}).get(role, 26000 if 'Evaporator' in role else 1500)
             
             b_qty = int(sr['bal_qty'])
             p_record = {
@@ -326,14 +350,17 @@ def search_stock_global(query_str, limit=60):
         from config import classify_component_role
         
         def resolve_price(r):
-            pr = int(r.get('price') or 0)
-            if pr > 0:
-                return pr
             pno = str(r['part_no']).upper()
             if pno in price_book and price_book[pno].get('price', 0) > 0:
                 return int(price_book[pno]['price'])
-            role = classify_component_role(r['part_name'])
-            return int(floors.get(role, 1500))
+            pr = int(r.get('price') or 0)
+            role = classify_component_role(r['part_name'], pno)
+            floor = int(floors.get(role, 26000 if 'Evaporator' in role else 1500))
+            if pr <= 0 or pr < floor:
+                return floor
+            if pr > 100000 and role not in ["Compressor & Fittings"]:
+                return floor
+            return pr
             
         df['price'] = df.apply(resolve_price, axis=1)
             

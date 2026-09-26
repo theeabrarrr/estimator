@@ -128,8 +128,34 @@ def run_tests():
     assert wd_gas == 3500, f"WD gas must be 3500, got {wd_gas}"
     print(">>> PASS: All categories have Mobility=Rs. 2,000, Visit=Rs. 600, Ref Gas=Rs. 4,000, Dispenser Gas=Rs. 3,500.")
 
+    # 8. Price Consistency Test: Direct Part Search vs Model Search
+    print("\n[TEST 8] Testing Price Consistency (Direct vs Model Search)...")
+    zith_model_evap = zith_evap_grp['primary']
+    assert zith_model_evap['price'] == 30000, f"Expected Model Search price 30,000, got {zith_model_evap['price']}"
+    
+    stk_zith_df = search_stock_global("11001062414")
+    assert not stk_zith_df.empty, "Direct search for 11001062414 must return record"
+    direct_zith_price = int(stk_zith_df.iloc[0]['price'])
+    assert direct_zith_price == 30000, f"Expected Direct Search price 30,000, got {direct_zith_price}"
+    assert zith_model_evap['price'] == direct_zith_price, f"DISCREPANCY DETECTED: Model {zith_model_evap['price']} vs Direct {direct_zith_price}"
+    print(f">>> PASS: 100% Price Consistency: Part 11001062414 is Rs. {direct_zith_price:,} in BOTH Model & Direct Search.")
+
+    # 9. Packaging Carton Exclusion & Evaporator Price Floor Test
+    print("\n[TEST 9] Testing Packaging Carton Exclusion & Role Floor Protection...")
+    res_cith13 = fetch_tiered_compatible_parts("GS-18CITH13W")
+    cith13_evap_grp = next((g for g in res_cith13['role_groups'] if "Evaporator" in g['group_title']), None)
+    assert cith13_evap_grp is not None, "GS-18CITH13W must have Evaporator group"
+    cith13_evap_pnos = [cith13_evap_grp['primary']['part_no']] + [a['part_no'] for a in cith13_evap_grp['alternatives']]
+    assert "03010102510004" not in cith13_evap_pnos, "CRITICAL ERROR: Packing carton 03010102510004 leaked into Evaporator Assemblies!"
+    
+    # Check alternate evaporator 1000106068502 floor protection
+    zith_alt = next((a for a in zith_evap_grp['alternatives'] if a['part_no'] == "1000106068502"), None)
+    assert zith_alt is not None, "Alternate evaporator 1000106068502 must exist"
+    assert zith_alt['price'] == 26000, f"Expected floor price 26,000, got {zith_alt['price']}"
+    print(f">>> PASS: Packing carton excluded. Alternate Evaporator 1000106068502 protected with floor price Rs. {zith_alt['price']:,}.")
+
     print("\n" + "=" * 60)
-    print("ALL 7 SYSTEM TESTS PASSED SUCCESSFULLY!")
+    print("ALL 9 SYSTEM TESTS PASSED SUCCESSFULLY!")
     print("=" * 60)
 
 if __name__ == "__main__":

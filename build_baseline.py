@@ -4,6 +4,7 @@ import re
 import json
 import pandas as pd
 from datetime import datetime
+from config import classify_component_role, get_role_price_floor, tokenize_appliance_model
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FB_FILE = os.path.join(BASE_DIR, "quality_feedback_report_14SEP2026_170840.csv")
@@ -17,209 +18,16 @@ def clean_str(v):
     return str(v).strip().replace('=', '').replace('"', '').strip()
 
 def classify_role(part_name, part_no=""):
-    nl = (str(part_name) + " " + str(part_no)).lower()
-    
-    if any(k in nl for k in ['evap', 'evaporator', 'indoor coil']):
-        return "Evaporator Assembly"
-    elif any(k in nl for k in ['outdoor pcb', 'pcb odu', 'odu pcb', 'inverter board', 'outdoor board', 'pcb outdoor', '300027', '11222031']):
-        return "Outdoor Inverter PCB"
-    elif any(k in nl for k in ['indoor main board', 'main board indoor', 'pcb idu', 'indoor pcb', 'pcb indoor', 'display board', '300002', '300001']):
-        return "Indoor Main PCB"
-    elif any(k in nl for k in ['pcb', 'board', 'circuit']):
-        return "Circuit Board (PCB)"
-    elif any(k in nl for k in ['compressor']):
-        return "Compressor & Fittings"
-    elif any(k in nl for k in ['step motor', 'stepping motor', 'swing motor', 'mp24', '1521212', '1521210']):
-        return "Stepping / Swing Motor"
-    elif any(k in nl for k in ['indoor motor', 'fan motor indoor', 'motor idu', 'cross flow motor']):
-        return "Indoor Fan Motor"
-    elif any(k in nl for k in ['outdoor motor', 'fan motor outdoor', 'motor odu', 'propeller motor']):
-        return "Outdoor Fan Motor"
-    elif any(k in nl for k in ['motor']):
-        return "Fan Motor"
-    elif any(k in nl for k in ['1/4', 'quarter']) and 'valve' in nl:
-        return "Cut-Off Valve (1/4\")"
-    elif any(k in nl for k in ['1/2', 'half']) and 'valve' in nl:
-        return "Cut-Off Valve (1/2\")"
-    elif any(k in nl for k in ['3/8', '5/8']) and 'valve' in nl:
-        return "Cut-Off Valve (3/8\" - 5/8\")"
-    elif any(k in nl for k in ['4-way', '4 way', 'reversing valve']):
-        return "4-Way Valve Assembly"
-    elif any(k in nl for k in ['valve']):
-        return "Service Valve"
-    elif any(k in nl for k in ['sensor', 'temp sensor', 'thermistor', 'probe', 'ambient sensor', 'tube sensor']):
-        return "Temperature Sensor"
-    elif any(k in nl for k in ['capacitor', 'cap 50uf', 'cap 35uf', 'cap 60uf', 'cbb65']):
-        return "Capacitor"
-    elif any(k in nl for k in ['remote', 'controller']):
-        return "Remote Control"
-    elif any(k in nl for k in ['gear box', 'gearbox']):
-        return "Gear Box"
-    elif any(k in nl for k in ['t-con', 'glassboard', 'light bar', 'speaker', 'led panel']):
-        return "LED TV Module"
-    return "Component Hardware"
+    return classify_component_role(part_name, part_no)
 
 def tokenize_model(m_str):
-    m = clean_str(m_str).upper()
-    
-    brand = "Gree" if m.startswith(('GS-', 'GR-', 'GF-', 'GW-')) else ("EcoStar" if m.startswith(('ES-', 'EW-', 'CX-', 'EM-')) else "Other")
-    cat = "Split AC"
-    ton = "1.5 Ton"
-    series = "STANDARD"
-    
-    if any(k in m for k in ['GR-', 'REF-']):
-        cat = "Refrigerator"
-        ton = "Domestic Ref"
-        series = "REF"
-    elif any(k in m for k in ['EW-', 'WM-', 'SPIN']):
-        cat = "Washing Machine"
-        ton = "Standard Unit"
-        series = "WM"
-    elif any(k in m for k in ['GW-', 'WD-']):
-        cat = "Water Dispenser"
-        ton = "Dispenser"
-        series = "WD"
-    elif any(k in m for k in ['CX-', 'U57', 'U87', 'UD96', 'QD8', 'LED']):
-        cat = "LED TV"
-        ton = "Standard Unit"
-        series = "LED"
-    elif any(k in m for k in ['EM-', 'MW-']):
-        cat = "Microwave Oven"
-        ton = "Standard Unit"
-        series = "MW"
-    elif any(k in m for k in ['GF-', 'FLOOR', 'STANDING']) or any(x in m for x in ['48', '60', '36', '36TFIH', 'TFIH']):
-        cat = "Floor Standing AC"
-        ton = "4.0 Ton"
-        series = "FLOOR"
-    else:
-        cat = "Split AC"
-        cap_match = re.search(r'-(10|11|12|16|18|24|26|36|48|60)', m)
-        if cap_match:
-            cv = cap_match.group(1)
-            if cv in ['48', '60', '36']:
-                ton = "4.0 Ton"
-            elif cv in ['24', '26']:
-                ton = "2.0 Ton"
-            elif cv in ['18', '16']:
-                ton = "1.5 Ton"
-            elif cv in ['12', '11', '10']:
-                ton = "1.0 Ton"
-            
-        for s in ['PITH', 'CITH', 'FITH', 'AITH', 'VITH', 'LITH', 'ZITH', 'VTIH', 'UITH', 'TFIH', 'PIT', 'CIT', 'CM', 'LM', 'ECH', 'DU', 'EM', 'CZ', 'AR', 'PR', 'NV', 'GL', 'IB', 'TF', 'CD', 'CB']:
-            if s in m:
-                series = s
-                break
-                
-    return {
-        'model': m,
-        'brand': brand,
-        'category': cat,
-        'tonnage': ton,
-        'series': series
-    }
-
-def get_role_price_floor(role, ton, cat):
-    if cat == 'Split AC' or cat == 'Floor Standing AC':
-        if ton == '4.0 Ton':
-            floors = {
-                "Evaporator Assembly": 70000,
-                "Outdoor Inverter PCB": 55000,
-                "Indoor Main PCB": 9500,
-                "Compressor & Fittings": 75000,
-                "Fan Motor": 4500,
-                "Indoor Fan Motor": 4500,
-                "Outdoor Fan Motor": 5000,
-                "Stepping / Swing Motor": 2000,
-                "Cut-Off Valve (1/4\")": 2100,
-                "Cut-Off Valve (1/2\")": 2800,
-                "Cut-Off Valve (3/8\" - 5/8\")": 3200,
-                "4-Way Valve Assembly": 6500,
-                "Temperature Sensor": 1500,
-                "Capacitor": 1200
-            }
-        elif ton == '2.0 Ton':
-            floors = {
-                "Evaporator Assembly": 39000,
-                "Outdoor Inverter PCB": 45000,
-                "Indoor Main PCB": 7500,
-                "Compressor & Fittings": 48000,
-                "Fan Motor": 2500,
-                "Indoor Fan Motor": 2500,
-                "Outdoor Fan Motor": 3000,
-                "Stepping / Swing Motor": 1500,
-                "Cut-Off Valve (1/4\")": 1800,
-                "Cut-Off Valve (1/2\")": 2400,
-                "Cut-Off Valve (3/8\" - 5/8\")": 2800,
-                "4-Way Valve Assembly": 4500,
-                "Temperature Sensor": 1500,
-                "Capacitor": 1000
-            }
-        elif ton == '1.0 Ton':
-            floors = {
-                "Evaporator Assembly": 20000,
-                "Outdoor Inverter PCB": 35000,
-                "Indoor Main PCB": 6500,
-                "Compressor & Fittings": 32000,
-                "Fan Motor": 2000,
-                "Indoor Fan Motor": 2000,
-                "Outdoor Fan Motor": 2200,
-                "Stepping / Swing Motor": 1395,
-                "Cut-Off Valve (1/4\")": 1600,
-                "Cut-Off Valve (1/2\")": 2100,
-                "Cut-Off Valve (3/8\" - 5/8\")": 2400,
-                "4-Way Valve Assembly": 3300,
-                "Temperature Sensor": 1500,
-                "Capacitor": 800
-            }
-        else: # 1.5 Ton default
-            floors = {
-                "Evaporator Assembly": 26000,
-                "Outdoor Inverter PCB": 40000,
-                "Indoor Main PCB": 6500,
-                "Compressor & Fittings": 38000,
-                "Fan Motor": 2000,
-                "Indoor Fan Motor": 2000,
-                "Outdoor Fan Motor": 2500,
-                "Stepping / Swing Motor": 1395,
-                "Cut-Off Valve (1/4\")": 1600,
-                "Cut-Off Valve (1/2\")": 2100,
-                "Cut-Off Valve (3/8\" - 5/8\")": 2600,
-                "4-Way Valve Assembly": 3500,
-                "Temperature Sensor": 1500,
-                "Capacitor": 900
-            }
-        return floors.get(role, 2000)
-    elif cat == 'Refrigerator':
-        floors = {
-            "Evaporator Assembly": 8000,
-            "Compressor & Fittings": 18000,
-            "Temperature Sensor": 1500,
-            "Circuit Board (PCB)": 4500,
-            "Fan Motor": 2000
-        }
-        return floors.get(role, 1500)
-    elif cat == 'Washing Machine':
-        floors = {
-            "Gear Box": 16000,
-            "Circuit Board (PCB)": 14500,
-            "Fan Motor": 6500,
-            "Temperature Sensor": 6300
-        }
-        return floors.get(role, 1500)
-    elif cat == 'LED TV':
-        floors = {
-            "LED TV Module": 12000,
-            "Circuit Board (PCB)": 12000,
-            "Remote Control": 1500
-        }
-        return floors.get(role, 2000)
-    return 2000
+    return tokenize_appliance_model(m_str)
 
 def main():
     print("Starting Ground-Truth Baseline Indexer...")
     print("Reading Stock File:", STOCK_FILE)
     stock_df = pd.read_csv(STOCK_FILE)
-    stock_dict = {}
+    raw_stock_dict = {}
     for _, r in stock_df.iterrows():
         pno = clean_str(r.get('PART_NO')).upper()
         if not pno:
@@ -227,7 +35,7 @@ def main():
         bal = int(pd.to_numeric(r.get('BAL_QTY', 0), errors='coerce') or 0)
         amt = float(pd.to_numeric(r.get('AMOUNT', 0), errors='coerce') or 0.0)
         unit_calc = int(round(amt / bal)) if (bal > 0 and amt > 0) else 0
-        stock_dict[pno] = {
+        raw_stock_dict[pno] = {
             'part_no': pno,
             'item_desc': clean_str(r.get('ITEM_DESC')),
             'brand': clean_str(r.get('BRAND')),
@@ -236,7 +44,7 @@ def main():
             'bal_qty': bal,
             'stock_cost': unit_calc
         }
-    print(f"Loaded {len(stock_dict)} items from Stock Inventory.")
+    print(f"Loaded {len(raw_stock_dict)} items from Stock Inventory.")
 
     print("Reading Collection File:", COLL_FILE)
     coll_df = pd.read_excel(COLL_FILE)
@@ -293,12 +101,45 @@ def main():
 
     print(f"Verified {len(part_verified_prices)} parts with exact collection prices.")
 
+    # Standardize stock inventory unit prices with collection prices & role price floors
+    stock_dict = {}
+    for pno, s_item in raw_stock_dict.items():
+        desc = s_item['item_desc']
+        role = classify_role(desc, pno)
+        item_ton = s_item.get('capacity') or "1.5 Ton"
+        desc_up = desc.upper()
+        if not item_ton or item_ton == "1.5 Ton":
+            for t_str, token in [('4.0 Ton', '48'), ('4.0 Ton', '36'), ('2.0 Ton', '24'), ('1.0 Ton', '12'), ('1.5 Ton', '18')]:
+                if token in desc_up:
+                    item_ton = t_str
+                    break
+        floor = get_role_price_floor(role, item_ton, s_item.get('category', 'Split AC'))
+        raw_cost = s_item['stock_cost']
+
+        if pno in part_verified_prices and part_verified_prices[pno] > 0:
+            unit_pr = part_verified_prices[pno]
+        elif raw_cost > 0:
+            if raw_cost < floor:
+                unit_pr = floor
+            elif raw_cost > 100000 and role not in ["Compressor & Fittings"]:
+                unit_pr = floor
+            else:
+                unit_pr = raw_cost
+        else:
+            unit_pr = floor
+
+        s_copy = dict(s_item)
+        s_copy['stock_cost'] = unit_pr
+        s_copy['unit_price'] = unit_pr
+        s_copy['role'] = role
+        stock_dict[pno] = s_copy
+
     ground_truth_catalog = {}
     series_catalog = {}
 
     for m_raw, parts_dict in model_replacements.items():
         tok = tokenize_model(m_raw)
-        series_key = f"{tok['brand']}|{tok['category']}|{tok['tonnage']}|{tok['series']}"
+        series_key = tok['series_key']
         
         if series_key not in series_catalog:
             series_catalog[series_key] = {}
@@ -311,29 +152,41 @@ def main():
             
             stk_info = stock_dict.get(pno, {})
             bal_qty = stk_info.get('bal_qty', 0)
-            stock_cost = stk_info.get('stock_cost', 0)
             pname = stk_info.get('item_desc') or info['name'] or part_canonical_names.get(pno, "Component")
             
-            # Strict Platform Series Contamination Filter:
-            # If a chassis-sensitive part explicitly specifies another series and does not state COMMON, exclude from conflicting series
+            # Strict Platform Series & Tonnage Contamination Filter:
             p_upper = pname.upper()
             is_chassis_sensitive = role in ['Evaporator Assembly', 'Outdoor Inverter PCB', 'Indoor Main PCB', 'Display Board']
-            conflicting_series = False
+            conflicting = False
+            
             if is_chassis_sensitive and 'COMMON' not in p_upper:
+                # 1. Check conflicting series
                 for s in ['PITH', 'CITH', 'FITH', 'AITH', 'VITH', 'LITH', 'ZITH', 'VTIH', 'LM', 'ECH', 'CM', 'CZ']:
                     if s in p_upper and s != tok['series'] and tok['series'] not in p_upper:
-                        conflicting_series = True
+                        conflicting = True
                         break
+                # 2. Check conflicting tonnage for chassis-sensitive components
+                if not conflicting and tok['category'] in ['Split AC', 'Floor Standing AC']:
+                    t_markers = {'1.0 Ton': ['12', '10', '11'], '1.5 Ton': ['18', '16'], '2.0 Ton': ['24', '26'], '4.0 Ton': ['36', '48', '60']}
+                    target_ton = tok['tonnage']
+                    other_markers = []
+                    for ton_name, markers in t_markers.items():
+                        if ton_name != target_ton:
+                            other_markers.extend(markers)
+                    target_markers = t_markers.get(target_ton, [])
+                    if any(m in p_upper for m in other_markers) and not any(m in p_upper for m in target_markers):
+                        conflicting = True
             
-            if conflicting_series:
+            if conflicting:
                 continue
 
+            floor_price = get_role_price_floor(role, tok['tonnage'], tok['category'])
             if pno in part_verified_prices and part_verified_prices[pno] > 0:
                 final_price = part_verified_prices[pno]
-            elif stock_cost > 0:
-                final_price = stock_cost
+            elif pno in stock_dict and stock_dict[pno]['unit_price'] > 0:
+                final_price = stock_dict[pno]['unit_price']
             else:
-                final_price = get_role_price_floor(role, tok['tonnage'], tok['category'])
+                final_price = floor_price
                 
             part_record = {
                 'part_no': pno,
@@ -361,12 +214,12 @@ def main():
 
     for pno, s_item in stock_dict.items():
         desc = s_item['item_desc'].upper()
-        role = classify_role(desc, pno)
-        price = s_item['stock_cost'] if s_item['stock_cost'] > 0 else get_role_price_floor(role, "1.5 Ton", s_item['category'])
+        role = s_item['role']
+        price = s_item['unit_price']
         bal_qty = s_item['bal_qty']
         in_stk = bal_qty > 0
 
-        # Direct Model Attachment: If stock item explicitly names a model or model family, add to model's exact catalog
+        # Direct Model Attachment: If stock item explicitly names a model or model family
         for m_name, m_data in ground_truth_catalog.items():
             m_up = m_name.upper()
             m_parts = m_up.split('-')
@@ -388,6 +241,18 @@ def main():
                     if has_conflict:
                         continue
 
+                # Reject if desc mentions a conflicting tonnage
+                if is_chassis_sensitive and m_tok.get('category') in ['Split AC', 'Floor Standing AC']:
+                    t_markers = {'1.0 Ton': ['12', '10', '11'], '1.5 Ton': ['18', '16'], '2.0 Ton': ['24', '26'], '4.0 Ton': ['36', '48', '60']}
+                    target_ton = m_tok.get('tonnage')
+                    other_markers = []
+                    for ton_name, markers in t_markers.items():
+                        if ton_name != target_ton:
+                            other_markers.extend(markers)
+                    target_markers = t_markers.get(target_ton, [])
+                    if any(m in desc for m in other_markers) and not any(m in desc for m in target_markers):
+                        continue
+
                 existing_pnos = {p['part_no'] for p in m_data['parts']}
                 if pno not in existing_pnos:
                     m_data['parts'].append({
@@ -406,10 +271,10 @@ def main():
                 brand = s_item['brand'] or "Gree"
                 cat = s_item['category'] or "Split AC"
                 ton = "1.5 Ton"
-                for t_str in ['4.0 Ton', '2.0 Ton', '1.0 Ton', '1.5 Ton']:
-                    if ('48' in desc or '36' in desc) and t_str == '4.0 Ton': ton = t_str; break
-                    elif '24' in desc and t_str == '2.0 Ton': ton = t_str; break
-                    elif '12' in desc and t_str == '1.0 Ton': ton = t_str; break
+                for t_str, token in [('4.0 Ton', '48'), ('4.0 Ton', '36'), ('2.0 Ton', '24'), ('1.0 Ton', '12'), ('1.5 Ton', '18')]:
+                    if token in desc:
+                        ton = t_str
+                        break
                 
                 s_key = f"{brand}|{cat}|{ton}|{s}"
                 if s_key not in series_catalog:
@@ -431,6 +296,23 @@ def main():
         plist.sort(key=lambda x: (x['in_stock'], x['verified_jobs']), reverse=True)
         final_series_catalog[s_key] = plist
 
+    # Price Book of all known parts
+    price_book = {}
+    for pno, pr in part_verified_prices.items():
+        pname = part_canonical_names.get(pno, stock_dict.get(pno, {}).get('item_desc', "Component"))
+        price_book[pno] = {
+            'price': pr,
+            'part_name': pname,
+            'role': classify_role(pname, pno)
+        }
+    for pno, s_item in stock_dict.items():
+        if pno not in price_book:
+            price_book[pno] = {
+                'price': s_item['unit_price'],
+                'part_name': s_item['item_desc'],
+                'role': s_item['role']
+            }
+
     payload = {
         'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         'total_models': len(ground_truth_catalog),
@@ -438,14 +320,32 @@ def main():
         'total_stock_parts': len(stock_dict),
         'models': ground_truth_catalog,
         'series': final_series_catalog,
-        'global_stock': stock_dict
+        'global_stock': stock_dict,
+        'price_book': price_book,
+        'category_floors': {
+            "Evaporator Assembly": 26000,
+            "Outdoor Inverter PCB": 40000,
+            "Indoor Main PCB": 6500,
+            "Circuit Board (PCB)": 6500,
+            "Compressor & Fittings": 38000,
+            "Indoor Fan Motor": 2000,
+            "Outdoor Fan Motor": 2500,
+            "Fan Motor": 2000,
+            "Stepping / Swing Motor": 1395,
+            "Cut-Off Valve (1/4\")": 1600,
+            "Cut-Off Valve (1/2\")": 2100,
+            "Cut-Off Valve (3/8\" - 5/8\")": 2600,
+            "4-Way Valve Assembly": 3500,
+            "Temperature Sensor": 1500,
+            "Capacitor": 900
+        }
     }
 
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
         json.dump(payload, f, indent=2)
 
     print(f"SUCCESS: Baseline generated at {OUTPUT_FILE}")
-    print(f"Models indexed: {len(ground_truth_catalog)}, Series indexed: {len(final_series_catalog)}")
+    print(f"Models indexed: {len(ground_truth_catalog)}, Series indexed: {len(final_series_catalog)}, Price Book items: {len(price_book)}")
 
 if __name__ == '__main__':
     main()

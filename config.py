@@ -147,6 +147,10 @@ COMPONENT_ROLE_GROUPS = [
 def classify_component_role(part_name, part_no=""):
     nl = (str(part_name) + " " + str(part_no)).lower()
     
+    # Exclude non-functional packaging, cartons, trays, and supports from cooling/electrical roles
+    if any(k in nl for k in ['carton', 'caton', 'packing', 'tray', 'support', 'bracket', 'foam', 'box', 'panel', 'cover']):
+        return "Component Hardware"
+        
     if any(k in nl for k in ['evap', 'evaporator', 'indoor coil']):
         return "Evaporator Assembly"
     elif any(k in nl for k in ['outdoor pcb', 'pcb odu', 'odu pcb', 'inverter board', 'outdoor board', 'pcb outdoor', '300027', '11222031']):
@@ -274,4 +278,106 @@ def get_tonnage_specs(model_str):
         return '1.0 Ton', 5500, 20000, 35000, cat
         
     return '1.5 Ton', 7000, 26000, 40000, cat
+
+def get_role_price_floor(role, ton="1.5 Ton", cat="Split AC"):
+    if cat == 'Split AC' or cat == 'Floor Standing AC':
+        if ton == '4.0 Ton':
+            floors = {
+                "Evaporator Assembly": 70000,
+                "Outdoor Inverter PCB": 55000,
+                "Indoor Main PCB": 9500,
+                "Circuit Board (PCB)": 9500,
+                "Compressor & Fittings": 75000,
+                "Fan Motor": 4500,
+                "Indoor Fan Motor": 4500,
+                "Outdoor Fan Motor": 5000,
+                "Stepping / Swing Motor": 2000,
+                "Cut-Off Valve (1/4\")": 2100,
+                "Cut-Off Valve (1/2\")": 2800,
+                "Cut-Off Valve (3/8\" - 5/8\")": 3200,
+                "4-Way Valve Assembly": 6500,
+                "Temperature Sensor": 1500,
+                "Capacitor": 1200
+            }
+        elif ton == '2.0 Ton':
+            floors = {
+                "Evaporator Assembly": 39000,
+                "Outdoor Inverter PCB": 45000,
+                "Indoor Main PCB": 7500,
+                "Circuit Board (PCB)": 7500,
+                "Compressor & Fittings": 48000,
+                "Fan Motor": 2500,
+                "Indoor Fan Motor": 2500,
+                "Outdoor Fan Motor": 3000,
+                "Stepping / Swing Motor": 1500,
+                "Cut-Off Valve (1/4\")": 1800,
+                "Cut-Off Valve (1/2\")": 2400,
+                "Cut-Off Valve (3/8\" - 5/8\")": 2800,
+                "4-Way Valve Assembly": 4500,
+                "Temperature Sensor": 1500,
+                "Capacitor": 1000
+            }
+        elif ton == '1.0 Ton':
+            floors = {
+                "Evaporator Assembly": 20000,
+                "Outdoor Inverter PCB": 35000,
+                "Indoor Main PCB": 6500,
+                "Circuit Board (PCB)": 6500,
+                "Compressor & Fittings": 32000,
+                "Fan Motor": 2000,
+                "Indoor Fan Motor": 2000,
+                "Outdoor Fan Motor": 2200,
+                "Stepping / Swing Motor": 1395,
+                "Cut-Off Valve (1/4\")": 1600,
+                "Cut-Off Valve (1/2\")": 2100,
+                "Cut-Off Valve (3/8\" - 5/8\")": 2400,
+                "4-Way Valve Assembly": 3300,
+                "Temperature Sensor": 1500,
+                "Capacitor": 800
+            }
+        else: # 1.5 Ton default
+            floors = {
+                "Evaporator Assembly": 26000,
+                "Outdoor Inverter PCB": 40000,
+                "Indoor Main PCB": 6500,
+                "Circuit Board (PCB)": 6500,
+                "Compressor & Fittings": 38000,
+                "Fan Motor": 2000,
+                "Indoor Fan Motor": 2000,
+                "Outdoor Fan Motor": 2500,
+                "Stepping / Swing Motor": 1395,
+                "Cut-Off Valve (1/4\")": 1600,
+                "Cut-Off Valve (1/2\")": 2100,
+                "Cut-Off Valve (3/8\" - 5/8\")": 2600,
+                "4-Way Valve Assembly": 3500,
+                "Temperature Sensor": 1500,
+                "Capacitor": 900
+            }
+        return floors.get(role, 2000)
+    elif cat == 'Refrigerator':
+        floors = {
+            "Evaporator Assembly": 8000,
+            "Compressor & Fittings": 18000,
+            "Temperature Sensor": 1500,
+            "Circuit Board (PCB)": 4500,
+            "Fan Motor": 2000
+        }
+        return floors.get(role, 1500)
+    elif cat == 'Washing Machine':
+        floors = {
+            "Gear Box": 16000,
+            "Circuit Board (PCB)": 14500,
+            "Fan Motor": 6500,
+            "Temperature Sensor": 6300
+        }
+        return floors.get(role, 1500)
+    elif cat == 'LED TV':
+        floors = {
+            "LED TV Module": 12000,
+            "Circuit Board (PCB)": 12000,
+            "Remote Control": 1500
+        }
+        return floors.get(role, 2000)
+    return 2000
+
 
