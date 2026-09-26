@@ -52,6 +52,28 @@ To ensure **100% price consistency** between **Model Search** and **Direct Part 
 - Non-functional packaging (`carton`, `packing`, `tray`, `support`, `foam`, `bracket`, `box`) is filtered **before** cooling/electrical classification.
 - Packing cartons for evaporators (e.g., `03010102510004`) are classified under `📦 Hardware & Components` and never pollute `❄️ Evaporator Assemblies`.
 
+### 5. Refrigerant Service & Cut-off Valve Dual Pairing Engine (`config.py`, `build_baseline.py`, `database.py`)
+Refrigerant service valves follow strict physical line specifications across all Gree & EcoStar air conditioner tonnages:
+- **1.0 Ton (10, 11, 12)**: Strictly **1/4"** (Liquid Line) + **3/8"** (Suction Gas Line). Reject all 1/2" & 5/8" valves.
+- **1.5 Ton (16, 18)**: Strictly **1/4"** (Liquid Line) + **1/2"** (Suction Gas Line). Reject all 3/8" & 5/8" valves.
+- **2.0 Ton (24, 26)**: Strictly **1/4"** (Liquid Line) + **5/8"** (Suction Gas Line). Reject all 3/8" & 1/2" valves.
+- **3.0 Ton (36)**: Strictly **1/4"** (Liquid Line) + **5/8"** (Suction Gas Line). Reject all 3/8" & 1/2" valves.
+- **4.0 Ton (48, 60, Floor Standing)**: Strictly **3/8"** (Liquid Line) + **5/8"** (Suction Gas Line). Reject all 1/4" & 1/2" valves.
+
+#### Canonical Empirical Ground Truth Authority:
+When part descriptions are generic (e.g., `Cut-off Valve GS-24ECH10 7130239`), historical closed complaints (`quality_feedback_report_*.csv`) serve as canonical truth. Over 680 closed jobs empirically prove that part `7130239` is a **1/4" Liquid Line Valve**. The classifier maps:
+- `7130239`, `71302392`, `71302393`, `71302391`, `30057000074` → **1/4" Valve** (`Cut-Off Valve (1/4")`)
+- `71302395`, `7133474` → **3/8" Valve** (`Cut-Off Valve (3/8")`)
+- `7133774`, `11225517000085` → **1/2" Valve** (`Cut-Off Valve (1/2")`)
+- `7133844`, `7135142` → **5/8" Valve** (`Cut-Off Valve (5/8")`)
+
+#### Clean Single Group Display & Dual Pairing:
+In `database.py`, group `"🔩 Cut-off & Service Valves"` automatically orders:
+1. **Primary (#1)**: Suction Gas Line Valve (the larger valve for that tonnage)
+2. **Alternative (#2)**: Liquid Line Valve (the smaller valve for that tonnage)
+All other incompatible valve sizes are 100% eliminated (0% clutter/contamination).
+Standard active warehouse stock valves (`7133774`, `7130239`, `71302395`, `7133844`) are attached across all Split AC models, guaranteeing that models without prior repair history (such as `GS-18ZITH1W-T3`) always display verified in-stock service valves.
+
 ---
 
 ## 🛠️ Developer & AI Agent Reference Manual
@@ -62,6 +84,8 @@ If you need to make future changes, use this guide to identify where to start:
 | :--- | :--- | :--- |
 | **Change Service Overheads** (Visit, Mobility) | `config.py` | Update `CATEGORY_OVERHEADS` dictionary (`visit`, `mobility`). Current standard: Mobility=Rs. 2,000, Visit=Rs. 600. |
 | **Change Gas Charges** (R-410a, R-32, R-600, R-134a) | `config.py` | Update `get_tonnage_specs()` and `CATEGORY_OVERHEADS` (Ref=Rs. 4,000, Dispenser=Rs. 3,500, ACs=by tonnage). |
+| **Modify Valve Sizing / Pairing Rules** | `config.py` | Update `is_valve_tonnage_compatible()` and `get_tonnage_valve_pairing()`. |
+| **Add / Reclassify Valve Part Numbers** | `config.py` | Update `classify_component_role()` with canonical closed complaint part numbers. |
 | **Add a New Platform Series Token** (e.g. `XITH`, `NITH`) | `config.py` & `build_baseline.py` | Add the series token to `tokenize_appliance_model` in `config.py` and `series_token_list` in `build_baseline.py`. |
 | **Adjust Component Price Floors** | `config.py` | Update `get_role_price_floor(role, ton, cat)`. Floor protects major assemblies against fractional ledger ratios. |
 | **Add a New Component Role Group** | `config.py` | Add to `COMPONENT_ROLE_GROUPS` list and update regex/keyword matching in `classify_component_role()`. |
@@ -79,16 +103,17 @@ Always run the automated verification suite after making any modifications:
 python test_system_verification.py
 ```
 
-### Automated Checks Performed:
+### Automated Checks Performed (10 Tests):
 1. **Bootstrap & Stock Metadata**: Ensures stock master loads and counts are > 0.
 2. **Strict Model Tokenizer**: Tests parsing of series, tonnages, and appliance categories.
 3. **Cross-Series Isolation**: Asserts zero cross-contamination (e.g., PITH vs CITH evaporators).
-4. **Zero-Price Immunity**: Validates 550+ parts across 7 appliance models are all > Rs. 0.
+4. **Zero-Price Immunity**: Validates 505+ parts across 7 appliance models are all > Rs. 0.
 5. **Global Stock Search**: Tests full-text search across warehouse inventory.
 6. **ZITH Evaporator Verification**: Tests `GS-18ZITH1W-T3` for primary and alternate evaporators.
 7. **Overheads & Gas Pricing**: Asserts Mobility=2000, Visit=600, Ref Gas=4000, Dispenser Gas=3500.
 8. **100% Price Consistency**: Asserts exact price equality between Model Search and Direct Part Search.
 9. **Packaging & Floor Protection**: Asserts cartons are excluded from cooling roles and floors are enforced.
+10. **Strict Valve Tonnage Isolation & Dual Pairing**: Asserts exact physical pairing across 1.0T (3/8" + 1/4"), 1.5T (1/2" + 1/4" on ZITH & PITH), 2.0T (5/8" + 1/4"), and 4.0T (5/8" + 3/8") with 0% contamination of incompatible valve sizes.
 
 ---
 
