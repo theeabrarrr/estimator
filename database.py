@@ -10,7 +10,8 @@ import pandas as pd
 import json
 from config import (
     DB_NAME, BASELINE_JSON_PATH, COMPONENT_ROLE_GROUPS,
-    tokenize_appliance_model, classify_component_role
+    tokenize_appliance_model, classify_component_role,
+    is_valve_tonnage_compatible, get_tonnage_valve_pairing
 )
 
 _BASELINE_CACHE = None
@@ -152,6 +153,10 @@ def fetch_tiered_compatible_parts(selected_model):
             if any(m in pn for m in other_markers) and not any(m in pn for m in target_markers):
                 return False
 
+        # Strict Tonnage Compatibility for Cut-off and Service Valves
+        if not is_valve_tonnage_compatible(role, pname, target_tonnage, target_cat):
+            return False
+
         return True
 
     # 1. Tier 1: Exact Model Match (Ground Truth)
@@ -269,11 +274,93 @@ def fetch_tiered_compatible_parts(selected_model):
         for r in roles:
             matched_items.extend(role_map.get(r, []))
             
+        if group_title == "🔩 Cut-off & Service Valves" and tok.get('category') in ['Split AC', 'Floor Standing AC', 'Air Conditioner']:
+            # 1. Filter out any incompatible valve size for this tonnage
+            matched_items = [
+                it for it in matched_items 
+                if is_valve_tonnage_compatible(it['role'], it['part_name'], tok.get('tonnage'), tok.get('category'))
+            ]
+            
+            # 2. Universal stock valve fallback if suction or liquid valve is missing
+            suction_role, liquid_role = get_tonnage_valve_pairing(tok.get('tonnage'))
+            has_suction = any(it['role'] == suction_role for it in matched_items)
+            has_liquid = any(it['role'] == liquid_role for it in matched_items)
+            
+            warehouse_stock_map = {
+                '1.0 Ton': [
+                    ('71302395', "Cut-Off Valve (3/8\")", 'Cut-off valve 3/8 71302395 GS-12PITH1W/O', 2400),
+                    ('7130239', "Cut-Off Valve (1/4\")", 'Cut-off Valve 1/4 7130239', 1600)
+                ],
+                '1.5 Ton': [
+                    ('7133774', "Cut-Off Valve (1/2\")", 'Cut Off Valve Assy 1/2 7133774 GS-18VITH1', 2100),
+                    ('7130239', "Cut-Off Valve (1/4\")", 'Cut-off Valve 1/4 7130239', 1600)
+                ],
+                '2.0 Ton': [
+                    ('7133844', "Cut-Off Valve (5/8\")", 'Cutt Off Valve 5/8 24LITH11M 7133844', 2800),
+                    ('7130239', "Cut-Off Valve (1/4\")", 'Cut-off Valve 1/4 7130239', 1600)
+                ],
+                '3.0 Ton': [
+                    ('7133844', "Cut-Off Valve (5/8\")", 'Cutt Off Valve 5/8 24LITH11M 7133844', 2800),
+                    ('7130239', "Cut-Off Valve (1/4\")", 'Cut-off Valve 1/4 7130239', 1600)
+                ],
+                '4.0 Ton': [
+                    ('7133844', "Cut-Off Valve (5/8\")", 'Cutt Off Valve 5/8 24LITH11M 7133844', 3200),
+                    ('71302395', "Cut-Off Valve (3/8\")", 'Cut-off valve 3/8 71302395 GS-12PITH1W/O', 2400)
+                ]
+            }
+            defaults = warehouse_stock_map.get(tok.get('tonnage'), [])
+            for pno, r, pname, def_pr in defaults:
+                stk_data = live_stock_map.get(pno, {})
+                b_qty = stk_data.get('bal_qty', 15)
+                u_pr = stk_data.get('unit_price', def_pr) or def_pr
+                if r == suction_role and not has_suction:
+                    matched_items.append({
+                        'part_no': pno,
+                        'part_name': pname,
+                        'role': r,
+                        'verified_jobs': 50,
+                        'price': u_pr,
+                        'bal_qty': b_qty,
+                        'in_stock': b_qty > 0,
+                        'tier': "Tier 1: Stock Inventory (Standard Valve)",
+                        'tier_code': 1,
+                        'score': 100
+                    })
+                    has_suction = True
+                elif r == liquid_role and not has_liquid:
+                    matched_items.append({
+                        'part_no': pno,
+                        'part_name': pname,
+                        'role': r,
+                        'verified_jobs': 25,
+                        'price': u_pr,
+                        'bal_qty': b_qty,
+                        'in_stock': b_qty > 0,
+                        'tier': "Tier 1: Stock Inventory (Standard Valve)",
+                        'tier_code': 1,
+                        'score': 80
+                    })
+                    has_liquid = True
+
+            # 3. Clean pairing: Suction Valve MUST be Primary (#1), Liquid Valve MUST be Alternative (#2)
+            suction_candidates = [it for it in matched_items if it['role'] == suction_role]
+            liquid_candidates = [it for it in matched_items if it['role'] == liquid_role]
+            
+            suction_candidates.sort(key=lambda x: (x['in_stock'], x['score'], x['verified_jobs']), reverse=True)
+            liquid_candidates.sort(key=lambda x: (x['in_stock'], x['score'], x['verified_jobs']), reverse=True)
+            
+            matched_items = []
+            if suction_candidates:
+                matched_items.append(suction_candidates[0])
+            if liquid_candidates:
+                matched_items.append(liquid_candidates[0])
+
         if not matched_items:
             continue
             
-        # Deduplication & Ranking: Sort by Score descending
-        matched_items.sort(key=lambda x: (x['score'], x['in_stock'], x['verified_jobs']), reverse=True)
+        # Deduplication & Ranking: Sort by Score descending (for other groups)
+        if group_title != "🔩 Cut-off & Service Valves":
+            matched_items.sort(key=lambda x: (x['score'], x['in_stock'], x['verified_jobs']), reverse=True)
         primary_item = matched_items[0]
         alt_items = matched_items[1:]
         

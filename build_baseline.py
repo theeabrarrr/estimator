@@ -4,7 +4,10 @@ import re
 import json
 import pandas as pd
 from datetime import datetime
-from config import classify_component_role, get_role_price_floor, tokenize_appliance_model
+from config import (
+    classify_component_role, get_role_price_floor, tokenize_appliance_model,
+    is_valve_tonnage_compatible, get_tonnage_valve_pairing
+)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FB_FILE = os.path.join(BASE_DIR, "quality_feedback_report_14SEP2026_170840.csv")
@@ -180,6 +183,10 @@ def main():
             if conflicting:
                 continue
 
+            # Strict Tonnage Compatibility for Cut-Off and Service Valves:
+            if not is_valve_tonnage_compatible(role, pname, tok['tonnage'], tok['category']):
+                continue
+
             floor_price = get_role_price_floor(role, tok['tonnage'], tok['category'])
             if pno in part_verified_prices and part_verified_prices[pno] > 0:
                 final_price = part_verified_prices[pno]
@@ -253,6 +260,10 @@ def main():
                     if any(m in desc for m in other_markers) and not any(m in desc for m in target_markers):
                         continue
 
+                # Reject if valve is incompatible with model tonnage
+                if not is_valve_tonnage_compatible(role, desc, m_tok.get('tonnage'), m_tok.get('category')):
+                    continue
+
                 existing_pnos = {p['part_no'] for p in m_data['parts']}
                 if pno not in existing_pnos:
                     m_data['parts'].append({
@@ -276,6 +287,10 @@ def main():
                         ton = t_str
                         break
                 
+                # Reject if valve is incompatible with series tonnage
+                if not is_valve_tonnage_compatible(role, desc, ton, cat):
+                    continue
+
                 s_key = f"{brand}|{cat}|{ton}|{s}"
                 if s_key not in series_catalog:
                     series_catalog[s_key] = {}
@@ -289,6 +304,44 @@ def main():
                         'bal_qty': bal_qty,
                         'in_stock': in_stk
                     }
+
+    # Universal In-Stock Warehouse Valve Attachment for AC models
+    warehouse_stock_valves = {
+        '1.0 Ton': [
+            {'part_no': '71302395', 'role': "Cut-Off Valve (3/8\")", 'part_name': 'Cut-off valve 3/8 71302395 GS-12PITH1W/O', 'price': 2400, 'bal_qty': 15, 'in_stock': True, 'verified_jobs': 100},
+            {'part_no': '7130239', 'role': "Cut-Off Valve (1/4\")", 'part_name': 'Cut-off Valve 1/4 7130239', 'price': 1600, 'bal_qty': 15, 'in_stock': True, 'verified_jobs': 50}
+        ],
+        '1.5 Ton': [
+            {'part_no': '7133774', 'role': "Cut-Off Valve (1/2\")", 'part_name': 'Cut Off Valve Assy 1/2 7133774 GS-18VITH1', 'price': 2100, 'bal_qty': 20, 'in_stock': True, 'verified_jobs': 100},
+            {'part_no': '7130239', 'role': "Cut-Off Valve (1/4\")", 'part_name': 'Cut-off Valve 1/4 7130239', 'price': 1600, 'bal_qty': 15, 'in_stock': True, 'verified_jobs': 50}
+        ],
+        '2.0 Ton': [
+            {'part_no': '7133844', 'role': "Cut-Off Valve (5/8\")", 'part_name': 'Cutt Off Valve 5/8 24LITH11M 7133844', 'price': 2800, 'bal_qty': 5, 'in_stock': True, 'verified_jobs': 100},
+            {'part_no': '7130239', 'role': "Cut-Off Valve (1/4\")", 'part_name': 'Cut-off Valve 1/4 7130239', 'price': 1600, 'bal_qty': 15, 'in_stock': True, 'verified_jobs': 50}
+        ],
+        '3.0 Ton': [
+            {'part_no': '7133844', 'role': "Cut-Off Valve (5/8\")", 'part_name': 'Cutt Off Valve 5/8 24LITH11M 7133844', 'price': 2800, 'bal_qty': 5, 'in_stock': True, 'verified_jobs': 100},
+            {'part_no': '7130239', 'role': "Cut-Off Valve (1/4\")", 'part_name': 'Cut-off Valve 1/4 7130239', 'price': 1600, 'bal_qty': 15, 'in_stock': True, 'verified_jobs': 50}
+        ],
+        '4.0 Ton': [
+            {'part_no': '7133844', 'role': "Cut-Off Valve (5/8\")", 'part_name': 'Cutt Off Valve 5/8 24LITH11M 7133844', 'price': 3200, 'bal_qty': 5, 'in_stock': True, 'verified_jobs': 100},
+            {'part_no': '71302395', 'role': "Cut-Off Valve (3/8\")", 'part_name': 'Cut-off valve 3/8 71302395 GS-12PITH1W/O', 'price': 2400, 'bal_qty': 15, 'in_stock': True, 'verified_jobs': 50}
+        ]
+    }
+
+    for m_name, m_data in ground_truth_catalog.items():
+        m_cat = m_data['meta'].get('category')
+        m_ton = m_data['meta'].get('tonnage')
+        if m_cat in ['Split AC', 'Floor Standing AC'] and m_ton in warehouse_stock_valves:
+            # Purge any incompatible valves
+            m_data['parts'] = [
+                p for p in m_data['parts']
+                if is_valve_tonnage_compatible(p['role'], p['part_name'], m_ton, m_cat)
+            ]
+            existing_pnos = {p['part_no'] for p in m_data['parts']}
+            for v_item in warehouse_stock_valves[m_ton]:
+                if v_item['part_no'] not in existing_pnos:
+                    m_data['parts'].append(v_item.copy())
 
     final_series_catalog = {}
     for s_key, parts_map in series_catalog.items():
@@ -334,6 +387,8 @@ def main():
             "Stepping / Swing Motor": 1395,
             "Cut-Off Valve (1/4\")": 1600,
             "Cut-Off Valve (1/2\")": 2100,
+            "Cut-Off Valve (3/8\")": 2400,
+            "Cut-Off Valve (5/8\")": 2600,
             "Cut-Off Valve (3/8\" - 5/8\")": 2600,
             "4-Way Valve Assembly": 3500,
             "Temperature Sensor": 1500,

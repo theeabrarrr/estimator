@@ -154,8 +154,74 @@ def run_tests():
     assert zith_alt['price'] == 26000, f"Expected floor price 26,000, got {zith_alt['price']}"
     print(f">>> PASS: Packing carton excluded. Alternate Evaporator 1000106068502 protected with floor price Rs. {zith_alt['price']:,}.")
 
+    # 10. Strict Service Valve Tonnage Isolation & Dual Pairing Test
+    print("\n[TEST 10] Testing Strict Service Valve Tonnage Isolation & Dual Pairing...")
+    
+    # 1.0 Ton Models (1/4" liquid + 3/8" suction)
+    for m in ["GS-12PITH11W", "GS-12CITH11W"]:
+        res = fetch_tiered_compatible_parts(m)
+        vg = next((g for g in res['role_groups'] if "Cut-off & Service Valves" in g['group_title']), None)
+        assert vg is not None, f"{m} must have Cut-off & Service Valves group"
+        assert vg['primary']['role'] == "Cut-Off Valve (3/8\")", f"{m} Primary valve must be 3/8\" suction, got {vg['primary']['role']}"
+        assert vg['primary']['part_no'] == "71302395", f"{m} Primary valve part_no must be 71302395, got {vg['primary']['part_no']}"
+        assert len(vg['alternatives']) == 1, f"{m} must have exactly 1 alternative valve, got {len(vg['alternatives'])}"
+        assert vg['alternatives'][0]['role'] == "Cut-Off Valve (1/4\")", f"{m} Alt valve must be 1/4\" liquid, got {vg['alternatives'][0]['role']}"
+        all_roles = [vg['primary']['role']] + [a['role'] for a in vg['alternatives']]
+        assert "Cut-Off Valve (1/2\")" not in all_roles, f"{m} must NOT contain 1/2\" valve!"
+        assert "Cut-Off Valve (5/8\")" not in all_roles, f"{m} must NOT contain 5/8\" valve!"
+    print(">>> PASS: 1.0 Ton models strictly paired with 3/8\" Suction + 1/4\" Liquid valves (0% leakage of 1/2\" & 5/8\").")
+
+    # 1.5 Ton Models (1/4" liquid + 1/2" suction) including GS-18ZITH1W-T3
+    for m in ["GS-18ZITH1W-T3", "GS-18PITH11W", "GS-18CITH12G"]:
+        res = fetch_tiered_compatible_parts(m)
+        vg = next((g for g in res['role_groups'] if "Cut-off & Service Valves" in g['group_title']), None)
+        assert vg is not None, f"{m} must have Cut-off & Service Valves group"
+        assert vg['primary']['role'] == "Cut-Off Valve (1/2\")", f"{m} Primary valve must be 1/2\" suction, got {vg['primary']['role']}"
+        assert vg['primary']['part_no'] == "7133774", f"{m} Primary valve part_no must be 7133774, got {vg['primary']['part_no']}"
+        assert len(vg['alternatives']) == 1, f"{m} must have exactly 1 alternative valve, got {len(vg['alternatives'])}"
+        assert vg['alternatives'][0]['role'] == "Cut-Off Valve (1/4\")", f"{m} Alt valve must be 1/4\" liquid, got {vg['alternatives'][0]['role']}"
+        assert vg['alternatives'][0]['part_no'] == "7130239", f"{m} Alt valve part_no must be 7130239, got {vg['alternatives'][0]['part_no']}"
+        all_roles = [vg['primary']['role']] + [a['role'] for a in vg['alternatives']]
+        assert "Cut-Off Valve (3/8\")" not in all_roles, f"{m} must NOT contain 3/8\" valve!"
+        assert "Cut-Off Valve (5/8\")" not in all_roles, f"{m} must NOT contain 5/8\" valve!"
+        if m == "GS-18ZITH1W-T3":
+            assert vg['primary']['in_stock'] is True, "GS-18ZITH1W-T3 primary 1/2\" valve must be IN STOCK"
+            assert vg['alternatives'][0]['in_stock'] is True, "GS-18ZITH1W-T3 alt 1/4\" valve must be IN STOCK"
+            assert vg['primary']['price'] > 0, "GS-18ZITH1W-T3 primary valve price must be > 0"
+            assert vg['alternatives'][0]['price'] > 0, "GS-18ZITH1W-T3 alt valve price must be > 0"
+    print(">>> PASS: 1.5 Ton models (including GS-18ZITH1W-T3) strictly paired with 1/2\" Suction + 1/4\" Liquid valves (0% leakage of 3/8\" & 5/8\").")
+
+    # 2.0 Ton Models (1/4" liquid + 5/8" suction)
+    for m in ["GS-24PITH11W", "GS-24CITH1"]:
+        res = fetch_tiered_compatible_parts(m)
+        vg = next((g for g in res['role_groups'] if "Cut-off & Service Valves" in g['group_title']), None)
+        assert vg is not None, f"{m} must have Cut-off & Service Valves group"
+        assert vg['primary']['role'] == "Cut-Off Valve (5/8\")", f"{m} Primary valve must be 5/8\" suction, got {vg['primary']['role']}"
+        assert vg['primary']['part_no'] == "7133844", f"{m} Primary valve part_no must be 7133844, got {vg['primary']['part_no']}"
+        assert len(vg['alternatives']) == 1, f"{m} must have exactly 1 alternative valve, got {len(vg['alternatives'])}"
+        assert vg['alternatives'][0]['role'] == "Cut-Off Valve (1/4\")", f"{m} Alt valve must be 1/4\" liquid, got {vg['alternatives'][0]['role']}"
+        all_roles = [vg['primary']['role']] + [a['role'] for a in vg['alternatives']]
+        assert "Cut-Off Valve (3/8\")" not in all_roles, f"{m} must NOT contain 3/8\" valve!"
+        assert "Cut-Off Valve (1/2\")" not in all_roles, f"{m} must NOT contain 1/2\" valve!"
+    print(">>> PASS: 2.0 Ton models strictly paired with 5/8\" Suction + 1/4\" Liquid valves (0% leakage of 3/8\" & 1/2\").")
+
+    # 4.0 Ton Models (3/8" liquid + 5/8" suction)
+    for m in ["GF-48TF", "GS-36TFIH"]:
+        res = fetch_tiered_compatible_parts(m)
+        vg = next((g for g in res['role_groups'] if "Cut-off & Service Valves" in g['group_title']), None)
+        assert vg is not None, f"{m} must have Cut-off & Service Valves group"
+        assert vg['primary']['role'] == "Cut-Off Valve (5/8\")", f"{m} Primary valve must be 5/8\" suction, got {vg['primary']['role']}"
+        assert vg['primary']['part_no'] == "7133844", f"{m} Primary valve part_no must be 7133844, got {vg['primary']['part_no']}"
+        assert len(vg['alternatives']) == 1, f"{m} must have exactly 1 alternative valve, got {len(vg['alternatives'])}"
+        assert vg['alternatives'][0]['role'] == "Cut-Off Valve (3/8\")", f"{m} Alt valve must be 3/8\" liquid, got {vg['alternatives'][0]['role']}"
+        assert vg['alternatives'][0]['part_no'] == "71302395", f"{m} Alt valve part_no must be 71302395, got {vg['alternatives'][0]['part_no']}"
+        all_roles = [vg['primary']['role']] + [a['role'] for a in vg['alternatives']]
+        assert "Cut-Off Valve (1/4\")" not in all_roles, f"{m} must NOT contain 1/4\" valve!"
+        assert "Cut-Off Valve (1/2\")" not in all_roles, f"{m} must NOT contain 1/2\" valve!"
+    print(">>> PASS: 4.0 Ton models strictly paired with 5/8\" Suction + 3/8\" Liquid valves (0% leakage of 1/4\" & 1/2\").")
+
     print("\n" + "=" * 60)
-    print("ALL 9 SYSTEM TESTS PASSED SUCCESSFULLY!")
+    print("ALL 10 SYSTEM TESTS PASSED SUCCESSFULLY!")
     print("=" * 60)
 
 if __name__ == "__main__":
