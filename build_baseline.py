@@ -105,7 +105,7 @@ def tokenize_model(m_str):
             elif cv in ['12', '11', '10']:
                 ton = "1.0 Ton"
             
-        for s in ['PITH', 'CITH', 'FITH', 'AITH', 'VITH', 'LITH', 'PIT', 'CIT', 'LM', 'ECH', 'DU', 'EM', 'CZ']:
+        for s in ['PITH', 'CITH', 'FITH', 'AITH', 'VITH', 'LITH', 'ZITH', 'VTIH', 'UITH', 'TFIH', 'PIT', 'CIT', 'CM', 'LM', 'ECH', 'DU', 'EM', 'CZ', 'AR', 'PR', 'NV', 'GL', 'IB', 'TF', 'CD', 'CB']:
             if s in m:
                 series = s
                 break
@@ -320,7 +320,7 @@ def main():
             is_chassis_sensitive = role in ['Evaporator Assembly', 'Outdoor Inverter PCB', 'Indoor Main PCB', 'Display Board']
             conflicting_series = False
             if is_chassis_sensitive and 'COMMON' not in p_upper:
-                for s in ['PITH', 'CITH', 'FITH', 'AITH', 'VITH', 'LITH', 'LM', 'ECH']:
+                for s in ['PITH', 'CITH', 'FITH', 'AITH', 'VITH', 'LITH', 'ZITH', 'VTIH', 'LM', 'ECH', 'CM', 'CZ']:
                     if s in p_upper and s != tok['series'] and tok['series'] not in p_upper:
                         conflicting_series = True
                         break
@@ -357,11 +357,51 @@ def main():
             'parts': model_parts_list
         }
 
+    series_token_list = ['PITH', 'CITH', 'FITH', 'AITH', 'VITH', 'LITH', 'ZITH', 'VTIH', 'UITH', 'TFIH', 'PIT', 'CIT', 'CM', 'LM', 'ECH', 'DU', 'EM', 'CZ', 'AR', 'PR', 'NV', 'GL', 'IB', 'TF', 'CD', 'CB']
+
     for pno, s_item in stock_dict.items():
         desc = s_item['item_desc'].upper()
         role = classify_role(desc, pno)
         price = s_item['stock_cost'] if s_item['stock_cost'] > 0 else get_role_price_floor(role, "1.5 Ton", s_item['category'])
-        for s in ['PITH', 'CITH', 'FITH', 'AITH', 'VITH', 'LM', 'ECH', 'DU', 'EM', 'CZ']:
+        bal_qty = s_item['bal_qty']
+        in_stk = bal_qty > 0
+
+        # Direct Model Attachment: If stock item explicitly names a model or model family, add to model's exact catalog
+        for m_name, m_data in ground_truth_catalog.items():
+            m_up = m_name.upper()
+            m_parts = m_up.split('-')
+            m_prefix = m_parts[0] + '-' + m_parts[1][:6] if len(m_parts) > 1 else m_up
+            is_model_match = (m_up in desc) or (len(m_prefix) >= 7 and m_prefix in desc)
+
+            if is_model_match:
+                m_tok = m_data['meta']
+                m_series = m_tok.get('series', '')
+                is_chassis_sensitive = role in ['Evaporator Assembly', 'Outdoor Inverter PCB', 'Indoor Main PCB', 'Display Board']
+
+                # Reject if desc mentions a conflicting series
+                if is_chassis_sensitive and m_series and 'COMMON' not in desc:
+                    has_conflict = False
+                    for st in series_token_list:
+                        if st in desc and st != m_series and m_series not in desc:
+                            has_conflict = True
+                            break
+                    if has_conflict:
+                        continue
+
+                existing_pnos = {p['part_no'] for p in m_data['parts']}
+                if pno not in existing_pnos:
+                    m_data['parts'].append({
+                        'part_no': pno,
+                        'part_name': s_item['item_desc'],
+                        'role': role,
+                        'verified_jobs': 0,
+                        'price': price,
+                        'bal_qty': bal_qty,
+                        'in_stock': in_stk
+                    })
+
+        # Series platform attachment
+        for s in series_token_list:
             if s in desc:
                 brand = s_item['brand'] or "Gree"
                 cat = s_item['category'] or "Split AC"
@@ -372,17 +412,18 @@ def main():
                     elif '12' in desc and t_str == '1.0 Ton': ton = t_str; break
                 
                 s_key = f"{brand}|{cat}|{ton}|{s}"
-                if s_key in series_catalog:
-                    if pno not in series_catalog[s_key]:
-                        series_catalog[s_key][pno] = {
-                            'part_no': pno,
-                            'part_name': s_item['item_desc'],
-                            'role': role,
-                            'verified_jobs': 0,
-                            'price': price,
-                            'bal_qty': s_item['bal_qty'],
-                            'in_stock': s_item['bal_qty'] > 0
-                        }
+                if s_key not in series_catalog:
+                    series_catalog[s_key] = {}
+                if pno not in series_catalog[s_key]:
+                    series_catalog[s_key][pno] = {
+                        'part_no': pno,
+                        'part_name': s_item['item_desc'],
+                        'role': role,
+                        'verified_jobs': 0,
+                        'price': price,
+                        'bal_qty': bal_qty,
+                        'in_stock': in_stk
+                    }
 
     final_series_catalog = {}
     for s_key, parts_map in series_catalog.items():

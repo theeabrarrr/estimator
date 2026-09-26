@@ -101,8 +101,35 @@ def run_tests():
         print(f"Search '{q}': {len(res_df)} items found, all with prices > 0.")
     print(">>> PASS: Global search returns accurate results with verified prices.")
 
+    # 6. GS-18ZITH1W-T3 Evaporator Verification
+    print("\n[TEST 6] Testing GS-18ZITH1W-T3 Evaporator & Parts...")
+    tok_zith = tokenize_appliance_model("GS-18ZITH1W-T3")
+    assert tok_zith['series'] == "ZITH", f"Expected ZITH series, got {tok_zith['series']}"
+    res_zith = fetch_tiered_compatible_parts("GS-18ZITH1W-T3")
+    zith_evap_grp = next((g for g in res_zith['role_groups'] if "Evaporator" in g['group_title']), None)
+    assert zith_evap_grp is not None, "GS-18ZITH1W-T3 must have an Evaporator group!"
+    zith_primary_pno = zith_evap_grp['primary']['part_no']
+    print(f"GS-18ZITH1W-T3 Primary Evaporator: {zith_primary_pno} ({zith_evap_grp['primary']['part_name']}) Stock={zith_evap_grp['primary']['bal_qty']}")
+    assert zith_primary_pno == "11001062414", f"Expected 11001062414 as primary, got {zith_primary_pno}"
+    assert "1000106068502" in [a['part_no'] for a in zith_evap_grp['alternatives']], "1000106068502 should be in alternatives!"
+    print(">>> PASS: GS-18ZITH1W-T3 has primary in-stock Evaporator and alternate revision.")
+
+    # 7. Overheads Verification (Visit=600, Mobility=2000, Ref Gas=4000, Dispenser Gas=3500)
+    print("\n[TEST 7] Testing Standard Overheads & Gas Pricing...")
+    from config import CATEGORY_OVERHEADS
+    for cat_name, ov in CATEGORY_OVERHEADS.items():
+        assert ov['visit'] == 600, f"Visit charges for {cat_name} must be 600, got {ov['visit']}"
+        assert ov['mobility'] == 2000, f"Mobility charges for {cat_name} must be 2000, got {ov['mobility']}"
+    assert CATEGORY_OVERHEADS['Refrigerator']['gas_default'] == 4000, "Ref gas default must be 4000"
+    assert CATEGORY_OVERHEADS['Water Dispenser']['gas_default'] == 3500, "Water dispenser gas default must be 3500"
+    _, ref_gas, _, _, _ = get_tonnage_specs("GR-E8768G-CP1")
+    assert ref_gas == 4000, f"Ref gas must be 4000, got {ref_gas}"
+    _, wd_gas, _, _, _ = get_tonnage_specs("WD-E500")
+    assert wd_gas == 3500, f"WD gas must be 3500, got {wd_gas}"
+    print(">>> PASS: All categories have Mobility=Rs. 2,000, Visit=Rs. 600, Ref Gas=Rs. 4,000, Dispenser Gas=Rs. 3,500.")
+
     print("\n" + "=" * 60)
-    print("ALL 5 SYSTEM TESTS PASSED SUCCESSFULLY!")
+    print("ALL 7 SYSTEM TESTS PASSED SUCCESSFULLY!")
     print("=" * 60)
 
 if __name__ == "__main__":

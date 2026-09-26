@@ -133,7 +133,7 @@ def fetch_tiered_compatible_parts(selected_model):
             'Evaporator Assembly', 'Outdoor Inverter PCB', 'Indoor Main PCB', 
             'Display Board', 'Cross Flow Fan', 'Front Panel'
         ]
-        tokens = ['PITH', 'CITH', 'FITH', 'AITH', 'VITH', 'LITH', 'LM', 'ECH']
+        tokens = ['PITH', 'CITH', 'FITH', 'AITH', 'VITH', 'LITH', 'ZITH', 'VTIH', 'UITH', 'TFIH', 'PIT', 'CIT', 'CM', 'LM', 'ECH', 'DU', 'EM', 'CZ', 'AR', 'PR', 'NV', 'GL', 'IB', 'TF', 'CD', 'CB']
         found = [s for s in tokens if s in pn]
         if found:
             if target_series in found:
@@ -185,6 +185,49 @@ def fetch_tiered_compatible_parts(selected_model):
             p_copy['tier_code'] = 2
             p_copy['score'] = (p['verified_jobs'] * 2) + (10 if p_copy['in_stock'] else 0) + 5
             scored_parts.append(p_copy)
+            t1_part_nos.add(pno)
+
+    # 3. Direct Stock Model Match (Live Stock items explicitly referencing this model or family)
+    m_clean = model_name.upper().replace('=', '').replace('"', '').strip()
+    m_parts = m_clean.split('-')
+    m_prefix = m_parts[0] + '-' + m_parts[1][:6] if len(m_parts) > 1 else m_clean
+    
+    with get_connection() as conn:
+        direct_stk_sql = """
+            SELECT part_no, item_desc as part_name, category, bal_qty, unit_price as price
+            FROM stock_master
+            WHERE (UPPER(item_desc) LIKE ? OR (length(?) >= 7 AND UPPER(item_desc) LIKE ?))
+        """
+        stk_matches = pd.read_sql_query(direct_stk_sql, conn, params=(f"%{m_clean}%", m_prefix, f"%{m_prefix}%"))
+        
+    for _, sr in stk_matches.iterrows():
+        pno = sr['part_no'].upper()
+        if pno not in t1_part_nos:
+            p_desc = sr['part_name']
+            role = classify_component_role(p_desc, pno)
+            if not is_series_compatible(p_desc, tok['series'], role):
+                continue
+            pr = int(sr['price'])
+            if pr <= 0:
+                price_book = baseline.get('price_book', {})
+                pr = price_book.get(pno, {}).get('price', 0)
+                if pr <= 0:
+                    pr = baseline.get('category_floors', {}).get(role, 26000 if 'Evaporator' in role else 1500)
+            
+            b_qty = int(sr['bal_qty'])
+            p_record = {
+                'part_no': pno,
+                'part_name': p_desc,
+                'role': role,
+                'verified_jobs': 0,
+                'price': pr,
+                'bal_qty': b_qty,
+                'in_stock': b_qty > 0,
+                'tier': f"Tier 1: Stock Inventory ({tok['series']})",
+                'tier_code': 1,
+                'score': (10 if b_qty > 0 else 0) + 15
+            }
+            scored_parts.append(p_record)
             t1_part_nos.add(pno)
 
     # Group candidate parts by Functional Role

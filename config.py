@@ -74,49 +74,54 @@ CATEGORY_OVERHEADS = {
         'visit': 600,
         'mobility': 2000,
         'has_gas': True,
+        'gas_name': 'Refrigerant Gas',
         'label': 'Split AC'
     },
     'Floor Standing AC': {
         'visit': 600,
-        'mobility': 2500,
+        'mobility': 2000,
         'has_gas': True,
+        'gas_name': 'Commercial Refrigerant Gas',
+        'gas_default': 13000,
         'label': 'Floor Standing AC'
     },
     'Refrigerator': {
         'visit': 600,
-        'mobility': 1500,
+        'mobility': 2000,
         'has_gas': True,
-        'gas_default': 3500,
+        'gas_name': 'R-600 Gas',
+        'gas_default': 4000,
         'label': 'Refrigerator'
     },
     'Washing Machine': {
         'visit': 600,
-        'mobility': 1500,
+        'mobility': 2000,
         'has_gas': False,
         'label': 'Washing Machine'
     },
     'Water Dispenser': {
         'visit': 600,
-        'mobility': 1200,
+        'mobility': 2000,
         'has_gas': True,
-        'gas_default': 2500,
+        'gas_name': 'R-134a Gas',
+        'gas_default': 3500,
         'label': 'Water Dispenser'
     },
     'LED TV': {
         'visit': 600,
-        'mobility': 1500,
+        'mobility': 2000,
         'has_gas': False,
         'label': 'LED TV'
     },
     'Microwave Oven': {
         'visit': 600,
-        'mobility': 1000,
+        'mobility': 2000,
         'has_gas': False,
         'label': 'Microwave Oven'
     },
     'General': {
         'visit': 600,
-        'mobility': 1500,
+        'mobility': 2000,
         'has_gas': False,
         'label': 'General Appliance'
     }
@@ -229,7 +234,7 @@ def tokenize_appliance_model(model_str):
                 ton = "1.0 Ton"
             
         # Strict Platform Series Tokenizer
-        for s in ['PITH', 'CITH', 'FITH', 'AITH', 'VITH', 'LITH', 'PIT', 'CIT', 'LM', 'ECH', 'DU', 'EM', 'CZ']:
+        for s in ['PITH', 'CITH', 'FITH', 'AITH', 'VITH', 'LITH', 'ZITH', 'VTIH', 'UITH', 'TFIH', 'PIT', 'CIT', 'CM', 'LM', 'ECH', 'DU', 'EM', 'CZ', 'AR', 'PR', 'NV', 'GL', 'IB', 'TF', 'CD', 'CB']:
             if s in m:
                 series = s
                 break
@@ -255,9 +260,9 @@ def get_tonnage_specs(model_str):
         return 'Standard Unit', 0, 0, 0, cat
         
     if cat == 'Refrigerator':
-        return 'Domestic Ref', 3500, 0, 8000, cat
+        return 'Domestic Ref', 4000, 0, 8000, cat
     elif cat == 'Water Dispenser':
-        return 'Dispenser', 2500, 0, 4000, cat
+        return 'Dispenser', 3500, 0, 4000, cat
 
     if cat == 'Floor Standing AC' or ton == '4.0 Ton':
         return '4.0 Ton', 13000, 70000, 55000, cat

@@ -332,7 +332,7 @@ with tab_estimator:
         st.warning("⚠️ **Stock Warning:** Aapki basket mein selected part(s) branch store mein **OUT OF STOCK / NIL** hain. Customer ko part arrival ka time inform karein.")
 
     # Overheads & Service Section
-    st.markdown("##### ⛽ Service & Labor Overheads")
+    st.markdown("##### ⛽ Service & Labour Charges")
     overheads = CATEGORY_OVERHEADS.get(detected_category, CATEGORY_OVERHEADS['General'])
 
     col_v, col_m = st.columns(2)
@@ -340,13 +340,30 @@ with tab_estimator:
         inc_visit = st.checkbox(f"Technician Visit Charges (Rs. {overheads['visit']:,})", value=True)
         visit_cost = overheads['visit'] if inc_visit else 0
     with col_m:
-        inc_mobility = st.checkbox(f"Mobility / Labor Charges (Rs. {overheads['mobility']:,})", value=True)
+        inc_mobility = st.checkbox(f"Mobility / Labour Charges (Rs. {overheads['mobility']:,})", value=True)
         mobility_cost = overheads['mobility'] if inc_mobility else 0
 
     gas_cost = 0
+    wa_gas_title = ""
     if overheads.get('has_gas', False):
-        default_gas_price = gas_charge_amount if detected_category in ['Split AC', 'Floor Standing AC'] else overheads.get('gas_default', 3500)
-        inc_gas = st.checkbox(f"Gas Charging / Sealed System ({ton_label} - Rs. {default_gas_price:,})", value=has_cooling_part)
+        if detected_category == 'Refrigerator':
+            default_gas_price = 4000
+            gas_label = f"R-600 Gas Charges (Rs. {default_gas_price:,})"
+            wa_gas_title = f"R-600 Gas Charging: Rs. {default_gas_price:,}"
+        elif detected_category == 'Water Dispenser':
+            default_gas_price = 3500
+            gas_label = f"R-134a Gas Charges (Rs. {default_gas_price:,})"
+            wa_gas_title = f"R-134a Gas Charging: Rs. {default_gas_price:,}"
+        elif detected_category == 'Floor Standing AC':
+            default_gas_price = 13000
+            gas_label = f"Commercial Gas Charges (4.0 Ton - Rs. {default_gas_price:,})"
+            wa_gas_title = f"Commercial Gas (4.0 Ton): Rs. {default_gas_price:,}"
+        else: # Split AC
+            default_gas_price = gas_charge_amount
+            gas_label = f"Refrigerant Gas Charges ({ton_label} - Rs. {default_gas_price:,})"
+            wa_gas_title = f"Refrigerant Gas ({ton_label}): Rs. {default_gas_price:,}"
+
+        inc_gas = st.checkbox(gas_label, value=has_cooling_part)
         gas_cost = default_gas_price if inc_gas else 0
 
     # Custom Miscellaneous Charges (e.g. extra piping / bracket)
@@ -386,16 +403,16 @@ with tab_estimator:
         part_bullets = "• Nil (General Checking / Service Only)"
 
     misc_bullet = f"• Misc / Extra: {misc_desc} — Rs. {misc_amt:,}\n" if misc_amt > 0 else ""
-    gas_bullet = f"• Gas Charging ({ton_label}): Rs. {gas_cost:,}\n" if gas_cost > 0 else ""
+    gas_bullet = f"• {wa_gas_title}\n" if gas_cost > 0 else ""
 
     whatsapp_text = (
         f"*DWP OFFICIAL SERVICE & PARTS ESTIMATE*\n"
         f"-----------------------------------\n"
         f"Appliance: {ton_label} ({detected_category})\n\n"
         f"*Parts & Stock Availability:*\n{part_bullets}\n\n"
-        f"*Service & Standard Overheads:*\n"
+        f"*Service & Labour Charges:*\n"
         f"• Technician Visit: Rs. {visit_cost:,}\n"
-        f"• Mobility / Labor: Rs. {mobility_cost:,}\n"
+        f"• Mobility / Labour: Rs. {mobility_cost:,}\n"
         f"{gas_bullet}{misc_bullet}"
         f"-----------------------------------\n"
         f"*TOTAL ESTIMATE: Rs. {grand_total:,}*\n"
