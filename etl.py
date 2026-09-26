@@ -9,7 +9,10 @@ import re
 import glob
 from datetime import datetime
 import pandas as pd
-from config import COLUMN_ALIASES, DEFAULT_FB_FILE, DEFAULT_COLL_FILE, STOCK_SEARCH_DIRS
+from config import (
+    COLUMN_ALIASES, DEFAULT_FB_FILE, DEFAULT_COLL_FILE, STOCK_SEARCH_DIRS, STOCK_CSV_PATH,
+    classify_component_role, get_role_price_floor
+)
 from database import get_connection, init_db_schema
 
 def clean_val(val):
@@ -61,15 +64,19 @@ def standardize_columns(df):
 
 def find_latest_stock_file():
     candidates = []
+    if os.path.exists(STOCK_CSV_PATH):
+        candidates.append((os.path.getmtime(STOCK_CSV_PATH), STOCK_CSV_PATH))
+
     for d in STOCK_SEARCH_DIRS:
         if not os.path.exists(d):
             continue
-        for pattern in ["STOCK_DETAIL*.*", "Stock Balance*.*", "*STOCK*.*"]:
+        for pattern in ["*stock*.*", "*STOCK*.*", "*Stock*.*", "STOCK_DETAIL*.*", "Stock Balance*.*"]:
             for f in glob.glob(os.path.join(d, pattern)):
                 if f.endswith(('.csv', '.xlsx', '.xls')) and not os.path.basename(f).startswith('~$'):
                     candidates.append((os.path.getmtime(f), f))
     if not candidates:
         return None
+    # Sort candidates by modification time descending
     candidates.sort(key=lambda x: x[0], reverse=True)
     return candidates[0][1]
 
@@ -107,11 +114,34 @@ def ingest_stock_file(stock_source):
             conn
         ).set_index('part_no')['hist_price'].to_dict()
 
-    # Determine final unit price (prefer history/retail price if available)
-    df['unit_price'] = df.apply(
-        lambda r: existing_prices.get(r['part_no'], r['calc_price']),
-        axis=1
-    )
+    # Determine final unit price (prefer collection verified price, protect with role floors)
+    def calculate_clean_unit_price(r):
+        pno = r['part_no']
+        if pno in existing_prices and existing_prices[pno] > 0:
+            return int(existing_prices[pno])
+            
+        calc = int(r['calc_price'])
+        desc = str(r.get('item_desc', ''))
+        role = classify_component_role(desc, pno)
+        
+        cap = str(r.get('capacity', ''))
+        desc_up = desc.upper()
+        ton = "1.5 Ton"
+        for t_str, token in [('4.0 Ton', '48'), ('4.0 Ton', '36'), ('2.0 Ton', '24'), ('1.0 Ton', '12'), ('1.5 Ton', '18')]:
+            if token in desc_up or token in cap:
+                ton = t_str
+                break
+                
+        cat = str(r.get('category', 'Split AC'))
+        floor = get_role_price_floor(role, ton, cat)
+        
+        if calc <= 0 or calc < floor:
+            return floor
+        if calc > 100000 and role not in ["Compressor & Fittings"]:
+            return floor
+        return calc
+
+    df['unit_price'] = df.apply(calculate_clean_unit_price, axis=1)
 
     stock_records = df[[
         'part_no', 'item_code', 'item_desc', 'product', 'brand', 
@@ -163,6 +193,25 @@ def bootstrap_master_data():
         latest_stock = find_latest_stock_file()
         if latest_stock:
             ingest_stock_file(latest_stock)
+
+    # Cross-enrich parts_master with baseline ground-truth prices
+    try:
+        from database import load_ground_truth_baseline
+        baseline = load_ground_truth_baseline()
+        price_book = baseline.get("price_book", {})
+        if price_book:
+            with get_connection() as conn:
+                cursor = conn.cursor()
+                updates = [(int(info.get('price', 0)), pno) for pno, info in price_book.items() if info.get('price', 0) > 0]
+                if updates:
+                    cursor.executemany("""
+                        UPDATE parts_master SET price = ? WHERE part_no = ? AND (price IS NULL OR price = 0)
+                    """, updates)
+                    cursor.executemany("""
+                        UPDATE stock_master SET unit_price = ? WHERE part_no = ? AND (unit_price IS NULL OR unit_price = 0)
+                    """, updates)
+    except Exception:
+        pass
 
 def ingest_feedback_and_pricing(fb_source, coll_source=None):
     fb = standardize_columns(safe_read(fb_source))
