@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-26 14:20:17",
+  "generated_at": "2026-09-26 16:56:47",
   "total_models": 354,
   "total_series_keys": 186,
   "total_stock_parts": 766,
@@ -155,9 +155,9 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 33,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
@@ -470,9 +470,9 @@
         {
           "part_no": "7133474",
           "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 7,
-          "price": 2000,
+          "price": 2400,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -596,7 +596,7 @@
         {
           "part_no": "70001060029",
           "part_name": "Cut-off valve 3/8(N) GS-12AITH23S-T3 / GS-12PITC12W  70001060029",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 1,
           "price": 2400,
           "bal_qty": 0,
@@ -860,7 +860,7 @@
         {
           "part_no": "7130239",
           "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 27,
           "price": 1600,
           "bal_qty": 15,
@@ -1085,7 +1085,7 @@
         {
           "part_no": "71302392",
           "part_name": "Cut off Valve 71302392",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 1,
           "price": 1600,
           "bal_qty": 0,
@@ -1187,9 +1187,9 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 5,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
@@ -1227,15 +1227,6 @@
           "verified_jobs": 2,
           "price": 32000,
           "bal_qty": 2,
-          "in_stock": true
-        },
-        {
-          "part_no": "7133774",
-          "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-          "role": "Cut-Off Valve (1/2\")",
-          "verified_jobs": 1,
-          "price": 2100,
-          "bal_qty": 20,
           "in_stock": true
         },
         {
@@ -1412,9 +1403,9 @@
         {
           "part_no": "7133474",
           "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 1,
-          "price": 2000,
+          "price": 2400,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -1640,7 +1631,7 @@
         {
           "part_no": "71302392",
           "part_name": "Cut off Valve 71302392",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 1,
           "price": 1600,
           "bal_qty": 0,
@@ -2264,7 +2255,7 @@
         {
           "part_no": "7130239",
           "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 77,
           "price": 1600,
           "bal_qty": 15,
@@ -2633,7 +2624,7 @@
         {
           "part_no": "71302392",
           "part_name": "Cut off Valve 71302392",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 4,
           "price": 1600,
           "bal_qty": 0,
@@ -3354,15 +3345,6 @@
           "in_stock": true
         },
         {
-          "part_no": "71302395",
-          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
-          "verified_jobs": 1,
-          "price": 2600,
-          "bal_qty": 15,
-          "in_stock": true
-        },
-        {
           "part_no": "207ES10118007",
           "part_name": "Indoor Rear Case ES-18DU01W / ES-18EM01W 207ES10118007",
           "role": "Component Hardware",
@@ -3446,7 +3428,7 @@
         {
           "part_no": "71302392",
           "part_name": "Cut off Valve 71302392",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 2,
           "price": 1600,
           "bal_qty": 0,
@@ -3473,9 +3455,9 @@
         {
           "part_no": "11225517000085",
           "part_name": "Stop Valve ES-18EM01W / ES-18DU01W / ES-18DU02 11225517000085",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/2\")",
           "verified_jobs": 1,
-          "price": 2000,
+          "price": 2100,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -4478,9 +4460,9 @@
         {
           "part_no": "11225517000085",
           "part_name": "Stop Valve ES-18EM01W / ES-18DU01W / ES-18DU02 11225517000085",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/2\")",
           "verified_jobs": 1,
-          "price": 2000,
+          "price": 2100,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -4496,7 +4478,7 @@
         {
           "part_no": "71302392",
           "part_name": "Cut off Valve 71302392",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 1,
           "price": 1600,
           "bal_qty": 0,
@@ -4769,7 +4751,7 @@
         {
           "part_no": "71302392",
           "part_name": "Cut off Valve 71302392",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 1,
           "price": 1600,
           "bal_qty": 0,
@@ -5294,61 +5276,34 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 7,
           "price": 2200,
           "bal_qty": 5,
           "in_stock": true
         },
         {
-          "part_no": "7130239",
-          "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Cut-Off Valve (1/4\")",
-          "verified_jobs": 4,
-          "price": 1600,
-          "bal_qty": 15,
-          "in_stock": true
-        },
-        {
-          "part_no": "7133774",
-          "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-          "role": "Cut-Off Valve (1/2\")",
-          "verified_jobs": 2,
-          "price": 2100,
-          "bal_qty": 20,
-          "in_stock": true
-        },
-        {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 1,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
         {
           "part_no": "7133474",
           "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 4,
-          "price": 2000,
-          "bal_qty": 0,
-          "in_stock": false
-        },
-        {
-          "part_no": "71302393",
-          "part_name": "Cut-off valve 1/4 71302393 GS-18PITH1W/O",
-          "role": "Cut-Off Valve (1/4\")",
-          "verified_jobs": 1,
-          "price": 2100,
+          "price": 3000,
           "bal_qty": 0,
           "in_stock": false
         },
         {
           "part_no": "7135142",
           "part_name": "Cut-off valve 5/8(N) sub assy 7135142 GS-24FITH7C",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 1,
           "price": 3200,
           "bal_qty": 0,
@@ -5387,7 +5342,7 @@
         {
           "part_no": "7130239",
           "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 26,
           "price": 1600,
           "bal_qty": 15,
@@ -5457,15 +5412,6 @@
           "in_stock": true
         },
         {
-          "part_no": "71302395",
-          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
-          "verified_jobs": 1,
-          "price": 2600,
-          "bal_qty": 15,
-          "in_stock": true
-        },
-        {
           "part_no": "1002686LC",
           "part_name": "Evaporater Assy 18LM4 18LITH 1002686LC / 1002937",
           "role": "Evaporator Assembly",
@@ -5477,7 +5423,7 @@
         {
           "part_no": "71302392",
           "part_name": "Cut off Valve 71302392",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 2,
           "price": 1600,
           "bal_qty": 0,
@@ -5504,9 +5450,9 @@
         {
           "part_no": "11225517000085",
           "part_name": "Stop Valve ES-18EM01W / ES-18DU01W / ES-18DU02 11225517000085",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/2\")",
           "verified_jobs": 1,
-          "price": 2000,
+          "price": 2100,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -5681,7 +5627,7 @@
         {
           "part_no": "7130239",
           "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 14,
           "price": 1600,
           "bal_qty": 15,
@@ -5690,9 +5636,9 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 8,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
@@ -5717,9 +5663,9 @@
         {
           "part_no": "7133474",
           "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 6,
-          "price": 2000,
+          "price": 2400,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -5744,7 +5690,7 @@
         {
           "part_no": "30152060393",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 1,
           "price": 4000,
           "bal_qty": 0,
@@ -5873,7 +5819,7 @@
         {
           "part_no": "71302392",
           "part_name": "Cut off Valve 71302392",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 1,
           "price": 1600,
           "bal_qty": 0,
@@ -5989,6 +5935,24 @@
           "price": 40000,
           "bal_qty": 0,
           "in_stock": false
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -6262,6 +6226,24 @@
           "price": 49000,
           "bal_qty": 4,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -6799,6 +6781,24 @@
           "price": 4424,
           "bal_qty": 4,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -6815,7 +6815,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 2,
           "price": 2200,
           "bal_qty": 5,
@@ -6837,15 +6837,6 @@
           "verified_jobs": 1,
           "price": 1300,
           "bal_qty": 7,
-          "in_stock": true
-        },
-        {
-          "part_no": "7130239",
-          "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Service Valve",
-          "verified_jobs": 1,
-          "price": 1600,
-          "bal_qty": 15,
           "in_stock": true
         },
         {
@@ -6881,15 +6872,6 @@
           "role": "Component Hardware",
           "verified_jobs": 1,
           "price": 5250,
-          "bal_qty": 0,
-          "in_stock": false
-        },
-        {
-          "part_no": "71302393",
-          "part_name": "Cut-off valve 1/4 71302393 GS-18PITH1W/O",
-          "role": "Cut-Off Valve (1/4\")",
-          "verified_jobs": 1,
-          "price": 2100,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -6973,6 +6955,15 @@
           "price": 2000,
           "bal_qty": 1,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -6998,9 +6989,9 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 4,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
@@ -7038,15 +7029,6 @@
           "verified_jobs": 1,
           "price": 32000,
           "bal_qty": 3,
-          "in_stock": true
-        },
-        {
-          "part_no": "7133774",
-          "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-          "role": "Cut-Off Valve (1/2\")",
-          "verified_jobs": 1,
-          "price": 2100,
-          "bal_qty": 20,
           "in_stock": true
         },
         {
@@ -7106,9 +7088,9 @@
         {
           "part_no": "7133474",
           "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 2,
-          "price": 2000,
+          "price": 2400,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -7859,9 +7841,9 @@
         {
           "part_no": "7133474",
           "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 2,
-          "price": 2000,
+          "price": 2400,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -7900,6 +7882,15 @@
           "price": 11703,
           "bal_qty": 1,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
         }
       ]
     },
@@ -8264,7 +8255,7 @@
         {
           "part_no": "7130239",
           "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 30,
           "price": 1600,
           "bal_qty": 15,
@@ -8327,7 +8318,7 @@
         {
           "part_no": "71302392",
           "part_name": "Cut off Valve 71302392",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 2,
           "price": 1600,
           "bal_qty": 0,
@@ -8393,7 +8384,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 3,
           "price": 2200,
           "bal_qty": 5,
@@ -8846,19 +8837,10 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 2,
           "price": 2200,
           "bal_qty": 5,
-          "in_stock": true
-        },
-        {
-          "part_no": "7133774",
-          "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-          "role": "Cut-Off Valve (1/2\")",
-          "verified_jobs": 1,
-          "price": 2100,
-          "bal_qty": 20,
           "in_stock": true
         },
         {
@@ -9143,7 +9125,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 8,
           "price": 2200,
           "bal_qty": 5,
@@ -9332,7 +9314,7 @@
         {
           "part_no": "71302392",
           "part_name": "Cut off Valve 71302392",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 1,
           "price": 1600,
           "bal_qty": 0,
@@ -9779,7 +9761,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 24,
           "price": 2200,
           "bal_qty": 5,
@@ -9995,7 +9977,7 @@
         {
           "part_no": "7135142",
           "part_name": "Cut-off valve 5/8(N) sub assy 7135142 GS-24FITH7C",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 3,
           "price": 2800,
           "bal_qty": 0,
@@ -10076,7 +10058,7 @@
         {
           "part_no": "71302392",
           "part_name": "Cut off Valve 71302392",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 1,
           "price": 1600,
           "bal_qty": 0,
@@ -10715,7 +10697,7 @@
         {
           "part_no": "7130239",
           "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 9,
           "price": 1600,
           "bal_qty": 15,
@@ -10724,9 +10706,9 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 5,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
@@ -10737,15 +10719,6 @@
           "verified_jobs": 2,
           "price": 2000,
           "bal_qty": 72,
-          "in_stock": true
-        },
-        {
-          "part_no": "7133774",
-          "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-          "role": "Cut-Off Valve (1/2\")",
-          "verified_jobs": 1,
-          "price": 2100,
-          "bal_qty": 20,
           "in_stock": true
         },
         {
@@ -10760,9 +10733,9 @@
         {
           "part_no": "7133474",
           "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 4,
-          "price": 2000,
+          "price": 2400,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -11203,6 +11176,24 @@
           "price": 2000,
           "bal_qty": 0,
           "in_stock": false
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -11242,6 +11233,24 @@
           "price": 11703,
           "bal_qty": 1,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -11558,7 +11567,7 @@
         {
           "part_no": "7130239",
           "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 2,
           "price": 1600,
           "bal_qty": 15,
@@ -11567,18 +11576,18 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 1,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
         {
           "part_no": "7133474",
           "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 1,
-          "price": 2000,
+          "price": 2400,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -11853,18 +11862,9 @@
           "in_stock": true
         },
         {
-          "part_no": "7130239",
-          "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Cut-Off Valve (1/4\")",
-          "verified_jobs": 1,
-          "price": 1600,
-          "bal_qty": 15,
-          "in_stock": true
-        },
-        {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 1,
           "price": 2200,
           "bal_qty": 5,
@@ -11905,6 +11905,15 @@
           "price": 4958,
           "bal_qty": 2,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -11930,7 +11939,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 3,
           "price": 2200,
           "bal_qty": 5,
@@ -12023,7 +12032,7 @@
         {
           "part_no": "7130239",
           "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 1,
           "price": 1600,
           "bal_qty": 15,
@@ -12071,9 +12080,9 @@
         {
           "part_no": "11225517000085",
           "part_name": "Stop Valve ES-18EM01W / ES-18DU01W / ES-18DU02 11225517000085",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/2\")",
           "verified_jobs": 1,
-          "price": 2000,
+          "price": 2100,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -12175,6 +12184,15 @@
           "price": 2000,
           "bal_qty": 10,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
         }
       ]
     },
@@ -12191,9 +12209,9 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 2,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
@@ -12643,6 +12661,24 @@
           "price": 2000,
           "bal_qty": 6,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -12776,9 +12812,9 @@
         {
           "part_no": "11225517000085",
           "part_name": "Stop Valve ES-18EM01W / ES-18DU01W / ES-18DU02 11225517000085",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/2\")",
           "verified_jobs": 1,
-          "price": 2000,
+          "price": 2100,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -13000,6 +13036,24 @@
           "price": 2000,
           "bal_qty": 2,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -13034,9 +13088,9 @@
         {
           "part_no": "7133474",
           "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 1,
-          "price": 2000,
+          "price": 2400,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -13075,6 +13129,15 @@
           "price": 11703,
           "bal_qty": 1,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
         }
       ]
     },
@@ -13134,15 +13197,6 @@
           "in_stock": true
         },
         {
-          "part_no": "71302395",
-          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
-          "verified_jobs": 1,
-          "price": 2600,
-          "bal_qty": 15,
-          "in_stock": true
-        },
-        {
           "part_no": "35060059",
           "part_name": "IGBT FGH40N60SMD 35060059 GS-18CITH11S",
           "role": "Component Hardware",
@@ -13199,9 +13253,9 @@
         {
           "part_no": "11225517000085",
           "part_name": "Stop Valve ES-18EM01W / ES-18DU01W / ES-18DU02 11225517000085",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/2\")",
           "verified_jobs": 2,
-          "price": 2000,
+          "price": 2100,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -13226,7 +13280,7 @@
         {
           "part_no": "71302392",
           "part_name": "Cut off Valve 71302392",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 1,
           "price": 1600,
           "bal_qty": 0,
@@ -13531,6 +13585,24 @@
           "price": 2000,
           "bal_qty": 20,
           "in_stock": true
+        },
+        {
+          "part_no": "7133844",
+          "role": "Cut-Off Valve (5/8\")",
+          "part_name": "Cutt Off Valve 5/8 24LITH11M 7133844",
+          "price": 2800,
+          "bal_qty": 5,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -13556,9 +13628,9 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 1,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
@@ -13658,7 +13730,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 5,
           "price": 2200,
           "bal_qty": 5,
@@ -13692,18 +13764,9 @@
           "in_stock": true
         },
         {
-          "part_no": "71302395",
-          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
-          "verified_jobs": 1,
-          "price": 2600,
-          "bal_qty": 15,
-          "in_stock": true
-        },
-        {
           "part_no": "71302392",
           "part_name": "Cut off Valve 71302392",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 2,
           "price": 1600,
           "bal_qty": 0,
@@ -13721,7 +13784,7 @@
         {
           "part_no": "7135142",
           "part_name": "Cut-off valve 5/8(N) sub assy 7135142 GS-24FITH7C",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 1,
           "price": 2800,
           "bal_qty": 0,
@@ -13747,6 +13810,24 @@
           "price": 2000,
           "bal_qty": 0,
           "in_stock": false
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -13785,15 +13866,6 @@
           "verified_jobs": 0,
           "price": 5004,
           "bal_qty": 5,
-          "in_stock": true
-        },
-        {
-          "part_no": "200087060005",
-          "part_name": "Valve Cover GS-18AITH23S-T3/GF-24VTIH/GS-24CM11/24PITH21/ GS-24PITC12W-T3   200087060005",
-          "role": "Component Hardware",
-          "verified_jobs": 0,
-          "price": 2000,
-          "bal_qty": 3,
           "in_stock": true
         },
         {
@@ -14038,6 +14110,24 @@
           "price": 2000,
           "bal_qty": 2,
           "in_stock": true
+        },
+        {
+          "part_no": "7133844",
+          "role": "Cut-Off Valve (5/8\")",
+          "part_name": "Cutt Off Valve 5/8 24LITH11M 7133844",
+          "price": 3200,
+          "bal_qty": 5,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -14072,7 +14162,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 1,
           "price": 2200,
           "bal_qty": 5,
@@ -14143,6 +14233,24 @@
           "price": 13000,
           "bal_qty": 0,
           "in_stock": false
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -14294,9 +14402,9 @@
         {
           "part_no": "11225517000085",
           "part_name": "Stop Valve ES-18EM01W / ES-18DU01W / ES-18DU02 11225517000085",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/2\")",
           "verified_jobs": 1,
-          "price": 2000,
+          "price": 2100,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -15121,6 +15229,24 @@
           "price": 2000,
           "bal_qty": 1,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -15134,15 +15260,6 @@
         "series_key": "Gree|Split AC|1.0 Ton|LM"
       },
       "parts": [
-        {
-          "part_no": "7133774",
-          "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-          "role": "Cut-Off Valve (1/2\")",
-          "verified_jobs": 5,
-          "price": 2100,
-          "bal_qty": 20,
-          "in_stock": true
-        },
         {
           "part_no": "7130239",
           "part_name": "Cut-off Valve GS-24ECH10 7130239",
@@ -15178,6 +15295,15 @@
           "price": 1600,
           "bal_qty": 0,
           "in_stock": false
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
         }
       ]
     },
@@ -15431,9 +15557,9 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 7,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
@@ -15512,9 +15638,9 @@
         {
           "part_no": "7133474",
           "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 3,
-          "price": 2000,
+          "price": 2400,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -15812,16 +15938,16 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 1,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
         {
           "part_no": "71302392",
           "part_name": "Cut off Valve 71302392",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 1,
           "price": 1600,
           "bal_qty": 0,
@@ -15830,9 +15956,9 @@
         {
           "part_no": "7133474",
           "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 1,
-          "price": 2000,
+          "price": 2400,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -15871,6 +15997,15 @@
           "price": 2000,
           "bal_qty": 40,
           "in_stock": true
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -15887,19 +16022,10 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 3,
           "price": 2200,
           "bal_qty": 5,
-          "in_stock": true
-        },
-        {
-          "part_no": "7130239",
-          "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Cut-Off Valve (1/4\")",
-          "verified_jobs": 2,
-          "price": 1600,
-          "bal_qty": 15,
           "in_stock": true
         },
         {
@@ -15921,15 +16047,6 @@
           "in_stock": false
         },
         {
-          "part_no": "30057000074",
-          "part_name": "Cut off Valve Sub-Assy 1/4 30057000074 GS-18CITH2G",
-          "role": "Cut-Off Valve (1/4\")",
-          "verified_jobs": 1,
-          "price": 2100,
-          "bal_qty": 0,
-          "in_stock": false
-        },
-        {
           "part_no": "11002061517",
           "part_name": "Condenser Assy GS-24PITH11W 11002061517",
           "role": "Component Hardware",
@@ -15946,6 +16063,15 @@
           "price": 2500,
           "bal_qty": 0,
           "in_stock": false
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -16016,9 +16142,9 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 0,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
@@ -16237,6 +16363,15 @@
           "price": 10743,
           "bal_qty": 10,
           "in_stock": true
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -16262,7 +16397,7 @@
         {
           "part_no": "7130239",
           "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 22,
           "price": 1600,
           "bal_qty": 15,
@@ -16469,9 +16604,9 @@
         {
           "part_no": "11225517000085",
           "part_name": "Stop Valve ES-18EM01W / ES-18DU01W / ES-18DU02 11225517000085",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/2\")",
           "verified_jobs": 1,
-          "price": 2000,
+          "price": 2100,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -17130,15 +17265,6 @@
       },
       "parts": [
         {
-          "part_no": "7133774",
-          "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-          "role": "Cut-Off Valve (1/2\")",
-          "verified_jobs": 7,
-          "price": 2100,
-          "bal_qty": 20,
-          "in_stock": true
-        },
-        {
           "part_no": "7130239",
           "part_name": "Cut-off Valve GS-24ECH10 7130239",
           "role": "Cut-Off Valve (1/4\")",
@@ -17166,24 +17292,6 @@
           "in_stock": false
         },
         {
-          "part_no": "11225517000085",
-          "part_name": "Stop Valve ES-18EM01W / ES-18DU01W / ES-18DU02 11225517000085",
-          "role": "Service Valve",
-          "verified_jobs": 1,
-          "price": 2000,
-          "bal_qty": 0,
-          "in_stock": false
-        },
-        {
-          "part_no": "71302394",
-          "part_name": "Cut-off valve 1/2 71302394 GS-18PITH1W/O",
-          "role": "Cut-Off Valve (1/2\")",
-          "verified_jobs": 1,
-          "price": 2100,
-          "bal_qty": 0,
-          "in_stock": false
-        },
-        {
           "part_no": "9001060763",
           "part_name": "Compressors & FIttings GS-12LM6L/GS-12CM11 9001060763",
           "role": "Compressor & Fittings",
@@ -17191,6 +17299,15 @@
           "price": 44000,
           "bal_qty": 0,
           "in_stock": false
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
         }
       ]
     },
@@ -17216,16 +17333,16 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 5,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
         {
           "part_no": "7130239",
           "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 5,
           "price": 1600,
           "bal_qty": 15,
@@ -17468,9 +17585,9 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 9,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
@@ -17544,15 +17661,6 @@
           "verified_jobs": 1,
           "price": 25000,
           "bal_qty": 11,
-          "in_stock": true
-        },
-        {
-          "part_no": "7133774",
-          "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-          "role": "Cut-Off Valve (1/2\")",
-          "verified_jobs": 1,
-          "price": 2100,
-          "bal_qty": 20,
           "in_stock": true
         },
         {
@@ -17678,9 +17786,9 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 7,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
@@ -17700,15 +17808,6 @@
           "verified_jobs": 1,
           "price": 2900,
           "bal_qty": 42,
-          "in_stock": true
-        },
-        {
-          "part_no": "7133774",
-          "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-          "role": "Cut-Off Valve (1/2\")",
-          "verified_jobs": 1,
-          "price": 2100,
-          "bal_qty": 20,
           "in_stock": true
         },
         {
@@ -17759,9 +17858,9 @@
         {
           "part_no": "7133474",
           "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 3,
-          "price": 2000,
+          "price": 2400,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -17834,7 +17933,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 1,
           "price": 2200,
           "bal_qty": 5,
@@ -17843,7 +17942,7 @@
         {
           "part_no": "7130239",
           "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 1,
           "price": 1600,
           "bal_qty": 15,
@@ -17874,15 +17973,6 @@
           "verified_jobs": 0,
           "price": 2000,
           "bal_qty": 2,
-          "in_stock": true
-        },
-        {
-          "part_no": "200087060005",
-          "part_name": "Valve Cover GS-18AITH23S-T3/GF-24VTIH/GS-24CM11/24PITH21/ GS-24PITC12W-T3   200087060005",
-          "role": "Component Hardware",
-          "verified_jobs": 0,
-          "price": 2000,
-          "bal_qty": 3,
           "in_stock": true
         },
         {
@@ -18045,15 +18135,6 @@
           "in_stock": true
         },
         {
-          "part_no": "7133774",
-          "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-          "role": "Cut-Off Valve (1/2\")",
-          "verified_jobs": 9,
-          "price": 2100,
-          "bal_qty": 20,
-          "in_stock": true
-        },
-        {
           "part_no": "7130239",
           "part_name": "Cut-off Valve GS-24ECH10 7130239",
           "role": "Cut-Off Valve (1/4\")",
@@ -18124,6 +18205,15 @@
           "price": 3157,
           "bal_qty": 2,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
         }
       ]
     },
@@ -18149,9 +18239,9 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 1,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
@@ -18229,6 +18319,24 @@
           "price": 2000,
           "bal_qty": 0,
           "in_stock": false
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -18830,7 +18938,7 @@
         {
           "part_no": "7130239",
           "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 4,
           "price": 1600,
           "bal_qty": 15,
@@ -18839,19 +18947,10 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 3,
           "price": 2200,
           "bal_qty": 5,
-          "in_stock": true
-        },
-        {
-          "part_no": "7133774",
-          "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-          "role": "Cut-Off Valve (1/2\")",
-          "verified_jobs": 2,
-          "price": 2100,
-          "bal_qty": 20,
           "in_stock": true
         },
         {
@@ -19106,7 +19205,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 8,
           "price": 2200,
           "bal_qty": 5,
@@ -19541,9 +19640,9 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 0,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
@@ -19762,6 +19861,15 @@
           "price": 10743,
           "bal_qty": 10,
           "in_stock": true
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -19837,6 +19945,24 @@
           "price": 2000,
           "bal_qty": 3,
           "in_stock": true
+        },
+        {
+          "part_no": "7133844",
+          "role": "Cut-Off Valve (5/8\")",
+          "part_name": "Cutt Off Valve 5/8 24LITH11M 7133844",
+          "price": 2800,
+          "bal_qty": 5,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -19862,7 +19988,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 2,
           "price": 2200,
           "bal_qty": 5,
@@ -20167,6 +20293,24 @@
           "price": 5292,
           "bal_qty": 1,
           "in_stock": true
+        },
+        {
+          "part_no": "7133844",
+          "role": "Cut-Off Valve (5/8\")",
+          "part_name": "Cutt Off Valve 5/8 24LITH11M 7133844",
+          "price": 2800,
+          "bal_qty": 5,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -20192,9 +20336,9 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 6,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
@@ -20255,9 +20399,9 @@
         {
           "part_no": "7133474",
           "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 2,
-          "price": 2000,
+          "price": 2400,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -20573,18 +20717,18 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 1,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
         {
           "part_no": "7133474",
           "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 2,
-          "price": 2000,
+          "price": 2400,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -20621,7 +20765,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 5,
           "price": 2200,
           "bal_qty": 5,
@@ -21172,6 +21316,24 @@
           "price": 2000,
           "bal_qty": 10,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -21197,7 +21359,7 @@
         {
           "part_no": "7130239",
           "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 18,
           "price": 1600,
           "bal_qty": 15,
@@ -21269,9 +21431,9 @@
         {
           "part_no": "11225517000085",
           "part_name": "Stop Valve ES-18EM01W / ES-18DU01W / ES-18DU02 11225517000085",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/2\")",
           "verified_jobs": 1,
-          "price": 2000,
+          "price": 2100,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -21353,7 +21515,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 3,
           "price": 2200,
           "bal_qty": 5,
@@ -21964,6 +22126,24 @@
           "price": 32000,
           "bal_qty": 0,
           "in_stock": false
+        },
+        {
+          "part_no": "7133844",
+          "role": "Cut-Off Valve (5/8\")",
+          "part_name": "Cutt Off Valve 5/8 24LITH11M 7133844",
+          "price": 2800,
+          "bal_qty": 5,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -21998,7 +22178,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 3,
           "price": 2200,
           "bal_qty": 5,
@@ -22053,15 +22233,6 @@
       },
       "parts": [
         {
-          "part_no": "7133774",
-          "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-          "role": "Cut-Off Valve (1/2\")",
-          "verified_jobs": 2,
-          "price": 2100,
-          "bal_qty": 20,
-          "in_stock": true
-        },
-        {
           "part_no": "1002976",
           "part_name": "Evaporater Assy 12LM4 / 12LM5L 1002976",
           "role": "Evaporator Assembly",
@@ -22087,6 +22258,15 @@
           "price": 1600,
           "bal_qty": 0,
           "in_stock": false
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
         }
       ]
     },
@@ -22153,6 +22333,24 @@
           "price": 4500,
           "bal_qty": 1,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -22270,6 +22468,24 @@
           "price": 11703,
           "bal_qty": 1,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -22309,6 +22525,24 @@
           "price": 32000,
           "bal_qty": 1,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -22334,7 +22568,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 2,
           "price": 2200,
           "bal_qty": 5,
@@ -22382,7 +22616,7 @@
         {
           "part_no": "7130239",
           "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 8,
           "price": 1600,
           "bal_qty": 15,
@@ -22738,6 +22972,24 @@
           "price": 2000,
           "bal_qty": 0,
           "in_stock": false
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -22813,6 +23065,24 @@
           "price": 2000,
           "bal_qty": 0,
           "in_stock": false
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -22829,19 +23099,10 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 6,
           "price": 2200,
           "bal_qty": 5,
-          "in_stock": true
-        },
-        {
-          "part_no": "7130239",
-          "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Cut-Off Valve (1/4\")",
-          "verified_jobs": 4,
-          "price": 1600,
-          "bal_qty": 15,
           "in_stock": true
         },
         {
@@ -22935,15 +23196,6 @@
           "in_stock": false
         },
         {
-          "part_no": "71302392",
-          "part_name": "Cut off Valve 71302392",
-          "role": "Service Valve",
-          "verified_jobs": 1,
-          "price": 1600,
-          "bal_qty": 0,
-          "in_stock": false
-        },
-        {
           "part_no": "1501506409",
           "part_name": "Indoor Fan Motor GF-24TFIH/GS-24PITH21GB-T3 1501506409",
           "role": "Fan Motor",
@@ -22951,6 +23203,15 @@
           "price": 5292,
           "bal_qty": 1,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -23404,6 +23665,24 @@
           "price": 40000,
           "bal_qty": 2,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -23542,6 +23821,24 @@
           "price": 6500,
           "bal_qty": 2,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -23576,7 +23873,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 1,
           "price": 2200,
           "bal_qty": 5,
@@ -23653,6 +23950,15 @@
           "price": 2000,
           "bal_qty": 40,
           "in_stock": true
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -23882,7 +24188,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 2,
           "price": 2200,
           "bal_qty": 5,
@@ -24065,7 +24371,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 1,
           "price": 2200,
           "bal_qty": 5,
@@ -24301,6 +24607,24 @@
           "price": 2000,
           "bal_qty": 10,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -24317,19 +24641,10 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 16,
           "price": 2200,
           "bal_qty": 5,
-          "in_stock": true
-        },
-        {
-          "part_no": "7130239",
-          "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Cut-Off Valve (1/4\")",
-          "verified_jobs": 14,
-          "price": 1600,
-          "bal_qty": 15,
           "in_stock": true
         },
         {
@@ -24369,15 +24684,6 @@
           "in_stock": true
         },
         {
-          "part_no": "7133774",
-          "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-          "role": "Cut-Off Valve (1/2\")",
-          "verified_jobs": 1,
-          "price": 2100,
-          "bal_qty": 20,
-          "in_stock": true
-        },
-        {
           "part_no": "11225516001230",
           "part_name": "4-way valve tubing assembly ES-18DUO1W / ES-18AR02WS / ES-18NV02WT3 11225516001230",
           "role": "4-Way Valve Assembly",
@@ -24405,15 +24711,6 @@
           "in_stock": false
         },
         {
-          "part_no": "71302392",
-          "part_name": "Cut off Valve 71302392",
-          "role": "Service Valve",
-          "verified_jobs": 2,
-          "price": 1600,
-          "bal_qty": 0,
-          "in_stock": false
-        },
-        {
           "part_no": "15012143",
           "part_name": "Indoor Fan Motor GF-24ISH (1501214312) 15012143",
           "role": "Fan Motor",
@@ -24432,15 +24729,6 @@
           "in_stock": false
         },
         {
-          "part_no": "71302393",
-          "part_name": "Cut-off valve 1/4 71302393 GS-18PITH1W/O",
-          "role": "Cut-Off Valve (1/4\")",
-          "verified_jobs": 1,
-          "price": 2100,
-          "bal_qty": 0,
-          "in_stock": false
-        },
-        {
           "part_no": "3900013711",
           "part_name": "Indoor Temperature Sensor 24TFIH 3900013711",
           "role": "Temperature Sensor",
@@ -24452,18 +24740,9 @@
         {
           "part_no": "70001060032",
           "part_name": "Cut-off Valve 5/8(N) GS-24LM6L/O/GF-24VTIH / GS-24PITC12W-T3  70001060032",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 1,
           "price": 3200,
-          "bal_qty": 0,
-          "in_stock": false
-        },
-        {
-          "part_no": "30057000029",
-          "part_name": "Cut of  Valve 1/4 30057000029",
-          "role": "Cut-Off Valve (1/4\")",
-          "verified_jobs": 1,
-          "price": 2100,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -24502,6 +24781,15 @@
           "price": 10051,
           "bal_qty": 1,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -24525,20 +24813,11 @@
           "in_stock": true
         },
         {
-          "part_no": "7133774",
-          "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-          "role": "Cut-Off Valve (1/2\")",
-          "verified_jobs": 1,
-          "price": 2100,
-          "bal_qty": 20,
-          "in_stock": true
-        },
-        {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 1,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
@@ -24611,11 +24890,29 @@
         {
           "part_no": "7135142",
           "part_name": "Cut-off valve 5/8(N) sub assy 7135142 GS-24FITH7C",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 1,
           "price": 2800,
           "bal_qty": 0,
           "in_stock": false
+        },
+        {
+          "part_no": "7133844",
+          "role": "Cut-Off Valve (5/8\")",
+          "part_name": "Cutt Off Valve 5/8 24LITH11M 7133844",
+          "price": 2800,
+          "bal_qty": 5,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -24632,7 +24929,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 3,
           "price": 2200,
           "bal_qty": 5,
@@ -24766,6 +25063,24 @@
           "price": 26000,
           "bal_qty": 2,
           "in_stock": true
+        },
+        {
+          "part_no": "7133844",
+          "role": "Cut-Off Valve (5/8\")",
+          "part_name": "Cutt Off Valve 5/8 24LITH11M 7133844",
+          "price": 2800,
+          "bal_qty": 5,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -26251,6 +26566,24 @@
           "price": 11792,
           "bal_qty": 1,
           "in_stock": true
+        },
+        {
+          "part_no": "7133844",
+          "role": "Cut-Off Valve (5/8\")",
+          "part_name": "Cutt Off Valve 5/8 24LITH11M 7133844",
+          "price": 2800,
+          "bal_qty": 5,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -26390,7 +26723,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 3,
           "price": 2200,
           "bal_qty": 5,
@@ -26501,7 +26834,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 1,
           "price": 2200,
           "bal_qty": 5,
@@ -26846,7 +27179,7 @@
         {
           "part_no": "7130239",
           "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 1,
           "price": 1600,
           "bal_qty": 15,
@@ -27124,6 +27457,24 @@
           "price": 49000,
           "bal_qty": 4,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -27260,7 +27611,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 1,
           "price": 2200,
           "bal_qty": 5,
@@ -27269,9 +27620,9 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 1,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
@@ -27340,6 +27691,24 @@
           "price": 2000,
           "bal_qty": 2,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -27597,15 +27966,6 @@
           "in_stock": true
         },
         {
-          "part_no": "7133774",
-          "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-          "role": "Cut-Off Valve (1/2\")",
-          "verified_jobs": 1,
-          "price": 2100,
-          "bal_qty": 20,
-          "in_stock": true
-        },
-        {
           "part_no": "30510408",
           "part_name": "Remote Control  30510408 GS-12LITH11M",
           "role": "Remote Control",
@@ -27617,9 +27977,9 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 1,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
@@ -27690,18 +28050,9 @@
           "in_stock": true
         },
         {
-          "part_no": "7133774",
-          "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-          "role": "Cut-Off Valve (1/2\")",
-          "verified_jobs": 6,
-          "price": 2100,
-          "bal_qty": 20,
-          "in_stock": true
-        },
-        {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 3,
           "price": 2200,
           "bal_qty": 5,
@@ -27908,7 +28259,7 @@
         {
           "part_no": "7130239",
           "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 11,
           "price": 1600,
           "bal_qty": 15,
@@ -28262,7 +28613,7 @@
         {
           "part_no": "71302392",
           "part_name": "Cut off Valve 71302392",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 1,
           "price": 1600,
           "bal_qty": 0,
@@ -28517,7 +28868,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 1,
           "price": 2200,
           "bal_qty": 5,
@@ -28535,9 +28886,9 @@
         {
           "part_no": "7133474",
           "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 1,
-          "price": 2000,
+          "price": 3000,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -28585,6 +28936,15 @@
           "price": 13681,
           "bal_qty": 1,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -28633,6 +28993,24 @@
           "price": 4500,
           "bal_qty": 1,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -28801,6 +29179,24 @@
           "price": 20000,
           "bal_qty": 12,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -28946,7 +29342,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 2,
           "price": 2200,
           "bal_qty": 5,
@@ -29668,6 +30064,24 @@
           "price": 40000,
           "bal_qty": 25,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -30148,6 +30562,24 @@
           "price": 4500,
           "bal_qty": 1,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -30164,7 +30596,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 1,
           "price": 2200,
           "bal_qty": 5,
@@ -30208,6 +30640,24 @@
           "price": 30000,
           "bal_qty": 17,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -30349,6 +30799,24 @@
           "price": 10837,
           "bal_qty": 2,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -30444,15 +30912,6 @@
           "in_stock": false
         },
         {
-          "part_no": "7133474",
-          "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-          "role": "Service Valve",
-          "verified_jobs": 1,
-          "price": 2000,
-          "bal_qty": 0,
-          "in_stock": false
-        },
-        {
           "part_no": "3900030901",
           "part_name": "Outdoor Temperature Sensor GS-18CITH1 3900030901",
           "role": "Temperature Sensor",
@@ -30473,7 +30932,7 @@
         {
           "part_no": "71302392",
           "part_name": "Cut off Valve 71302392",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 1,
           "price": 1600,
           "bal_qty": 0,
@@ -30548,7 +31007,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 1,
           "price": 2200,
           "bal_qty": 5,
@@ -30580,6 +31039,15 @@
           "price": 42000,
           "bal_qty": 3,
           "in_stock": true
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -30889,6 +31357,24 @@
           "price": 5292,
           "bal_qty": 1,
           "in_stock": true
+        },
+        {
+          "part_no": "7133844",
+          "role": "Cut-Off Valve (5/8\")",
+          "part_name": "Cutt Off Valve 5/8 24LITH11M 7133844",
+          "price": 2800,
+          "bal_qty": 5,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -31036,6 +31522,24 @@
           "price": 2000,
           "bal_qty": 2,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -31111,6 +31615,24 @@
           "price": 5297,
           "bal_qty": 4,
           "in_stock": true
+        },
+        {
+          "part_no": "7133844",
+          "role": "Cut-Off Valve (5/8\")",
+          "part_name": "Cutt Off Valve 5/8 24LITH11M 7133844",
+          "price": 2800,
+          "bal_qty": 5,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -31171,6 +31693,24 @@
           "price": 24000,
           "bal_qty": 0,
           "in_stock": false
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -31287,15 +31827,6 @@
       },
       "parts": [
         {
-          "part_no": "7133774",
-          "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-          "role": "Cut-Off Valve (1/2\")",
-          "verified_jobs": 3,
-          "price": 2100,
-          "bal_qty": 20,
-          "in_stock": true
-        },
-        {
           "part_no": "103704",
           "part_name": "Compressors and Fitting 48FW / 48CB 103704",
           "role": "Compressor & Fittings",
@@ -31357,6 +31888,24 @@
           "price": 2000,
           "bal_qty": 25,
           "in_stock": true
+        },
+        {
+          "part_no": "7133844",
+          "role": "Cut-Off Valve (5/8\")",
+          "part_name": "Cutt Off Valve 5/8 24LITH11M 7133844",
+          "price": 3200,
+          "bal_qty": 5,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -31391,9 +31940,9 @@
         {
           "part_no": "11225517000085",
           "part_name": "Stop Valve ES-18EM01W / ES-18DU01W / ES-18DU02 11225517000085",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/2\")",
           "verified_jobs": 1,
-          "price": 2000,
+          "price": 2100,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -31648,6 +32197,15 @@
           "price": 49000,
           "bal_qty": 4,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
         }
       ]
     },
@@ -31834,6 +32392,24 @@
           "price": 5498,
           "bal_qty": 3,
           "in_stock": true
+        },
+        {
+          "part_no": "7133844",
+          "role": "Cut-Off Valve (5/8\")",
+          "part_name": "Cutt Off Valve 5/8 24LITH11M 7133844",
+          "price": 2800,
+          "bal_qty": 5,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -31847,15 +32423,6 @@
         "series_key": "Gree|Split AC|1.0 Ton|LM"
       },
       "parts": [
-        {
-          "part_no": "7133774",
-          "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-          "role": "Cut-Off Valve (1/2\")",
-          "verified_jobs": 5,
-          "price": 2100,
-          "bal_qty": 20,
-          "in_stock": true
-        },
         {
           "part_no": "7130239",
           "part_name": "Cut-off Valve GS-24ECH10 7130239",
@@ -31886,7 +32453,7 @@
         {
           "part_no": "71302392",
           "part_name": "Cut off Valve 71302392",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 1,
           "price": 1600,
           "bal_qty": 0,
@@ -31900,6 +32467,15 @@
           "price": 2000,
           "bal_qty": 0,
           "in_stock": false
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
         }
       ]
     },
@@ -31984,6 +32560,24 @@
           "price": 2000,
           "bal_qty": 20,
           "in_stock": true
+        },
+        {
+          "part_no": "7133844",
+          "role": "Cut-Off Valve (5/8\")",
+          "part_name": "Cutt Off Valve 5/8 24LITH11M 7133844",
+          "price": 2800,
+          "bal_qty": 5,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -32000,37 +32594,19 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 6,
           "price": 2200,
           "bal_qty": 5,
           "in_stock": true
         },
         {
-          "part_no": "7130239",
-          "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Cut-Off Valve (1/4\")",
-          "verified_jobs": 3,
-          "price": 1600,
-          "bal_qty": 15,
-          "in_stock": true
-        },
-        {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 3,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
-          "in_stock": true
-        },
-        {
-          "part_no": "7133774",
-          "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-          "role": "Cut-Off Valve (1/2\")",
-          "verified_jobs": 1,
-          "price": 2100,
-          "bal_qty": 20,
           "in_stock": true
         },
         {
@@ -32084,7 +32660,7 @@
         {
           "part_no": "71302392",
           "part_name": "Cut off Valve 71302392",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 2,
           "price": 1600,
           "bal_qty": 0,
@@ -32222,9 +32798,9 @@
         {
           "part_no": "7133474",
           "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 1,
-          "price": 2000,
+          "price": 2400,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -32281,6 +32857,15 @@
           "price": 33182,
           "bal_qty": 1,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
         }
       ]
     },
@@ -32302,6 +32887,24 @@
           "price": 20000,
           "bal_qty": 0,
           "in_stock": false
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -32468,7 +33071,7 @@
         {
           "part_no": "7130239",
           "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 2,
           "price": 1600,
           "bal_qty": 15,
@@ -32777,19 +33380,10 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 3,
           "price": 2200,
           "bal_qty": 5,
-          "in_stock": true
-        },
-        {
-          "part_no": "7130239",
-          "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Cut-Off Valve (1/4\")",
-          "verified_jobs": 3,
-          "price": 1600,
-          "bal_qty": 15,
           "in_stock": true
         },
         {
@@ -32845,6 +33439,15 @@
           "price": 3958,
           "bal_qty": 5,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -33033,15 +33636,6 @@
           "in_stock": true
         },
         {
-          "part_no": "7133774",
-          "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-          "role": "Cut-Off Valve (1/2\")",
-          "verified_jobs": 2,
-          "price": 2100,
-          "bal_qty": 20,
-          "in_stock": true
-        },
-        {
           "part_no": "7110010",
           "part_name": "REDUCER 1/2 TO 3/8 Common  7110010",
           "role": "Component Hardware",
@@ -33049,6 +33643,15 @@
           "price": 2000,
           "bal_qty": 0,
           "in_stock": false
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
         }
       ]
     },
@@ -33265,6 +33868,24 @@
           "price": 7000,
           "bal_qty": 0,
           "in_stock": false
+        },
+        {
+          "part_no": "7133844",
+          "role": "Cut-Off Valve (5/8\")",
+          "part_name": "Cutt Off Valve 5/8 24LITH11M 7133844",
+          "price": 2800,
+          "bal_qty": 5,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -34040,19 +34661,10 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 1,
           "price": 2200,
           "bal_qty": 5,
-          "in_stock": true
-        },
-        {
-          "part_no": "7133774",
-          "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-          "role": "Cut-Off Valve (1/2\")",
-          "verified_jobs": 1,
-          "price": 2100,
-          "bal_qty": 20,
           "in_stock": true
         }
       ]
@@ -34693,6 +35305,24 @@
           "price": 1000,
           "bal_qty": 9,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -35467,6 +36097,24 @@
           "price": 4394,
           "bal_qty": 2,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -35959,6 +36607,15 @@
           "price": 40000,
           "bal_qty": 2,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
         }
       ]
     },
@@ -36043,6 +36700,24 @@
           "price": 20000,
           "bal_qty": 12,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -36307,6 +36982,24 @@
           "price": 5773,
           "bal_qty": 2,
           "in_stock": true
+        },
+        {
+          "part_no": "7133844",
+          "role": "Cut-Off Valve (5/8\")",
+          "part_name": "Cutt Off Valve 5/8 24LITH11M 7133844",
+          "price": 2800,
+          "bal_qty": 5,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -36835,6 +37528,24 @@
           "price": 4000,
           "bal_qty": 0,
           "in_stock": false
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -36910,6 +37621,24 @@
           "price": 38000,
           "bal_qty": 1,
           "in_stock": true
+        },
+        {
+          "part_no": "7133844",
+          "role": "Cut-Off Valve (5/8\")",
+          "part_name": "Cutt Off Valve 5/8 24LITH11M 7133844",
+          "price": 3200,
+          "bal_qty": 5,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -36926,7 +37655,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 4,
           "price": 2200,
           "bal_qty": 5,
@@ -37058,9 +37787,9 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 1,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
@@ -37142,7 +37871,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 1,
           "price": 2200,
           "bal_qty": 5,
@@ -37169,7 +37898,7 @@
         {
           "part_no": "7135142",
           "part_name": "Cut-off valve 5/8(N) sub assy 7135142 GS-24FITH7C",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 1,
           "price": 2800,
           "bal_qty": 0,
@@ -37292,7 +38021,7 @@
         {
           "part_no": "7130239",
           "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 1,
           "price": 1600,
           "bal_qty": 15,
@@ -37889,7 +38618,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 1,
           "price": 2200,
           "bal_qty": 5,
@@ -37898,9 +38627,9 @@
         {
           "part_no": "7133474",
           "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 1,
-          "price": 2000,
+          "price": 3000,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -37912,6 +38641,15 @@
           "price": 9500,
           "bal_qty": 0,
           "in_stock": false
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -38015,7 +38753,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 2,
           "price": 2200,
           "bal_qty": 5,
@@ -38037,15 +38775,6 @@
           "verified_jobs": 1,
           "price": 9000,
           "bal_qty": 2,
-          "in_stock": true
-        },
-        {
-          "part_no": "7133774",
-          "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-          "role": "Cut-Off Valve (1/2\")",
-          "verified_jobs": 1,
-          "price": 2100,
-          "bal_qty": 20,
           "in_stock": true
         }
       ]
@@ -38131,6 +38860,24 @@
           "price": 33182,
           "bal_qty": 1,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -38147,7 +38894,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 3,
           "price": 2200,
           "bal_qty": 5,
@@ -38174,7 +38921,7 @@
         {
           "part_no": "71302392",
           "part_name": "Cut off Valve 71302392",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 1,
           "price": 1600,
           "bal_qty": 0,
@@ -38254,6 +39001,24 @@
           "price": 2000,
           "bal_qty": 0,
           "in_stock": false
+        },
+        {
+          "part_no": "7133844",
+          "role": "Cut-Off Valve (5/8\")",
+          "part_name": "Cutt Off Valve 5/8 24LITH11M 7133844",
+          "price": 3200,
+          "bal_qty": 5,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -38284,6 +39049,24 @@
           "price": 1000,
           "bal_qty": 9,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -38393,7 +39176,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 1,
           "price": 2200,
           "bal_qty": 5,
@@ -38441,7 +39224,7 @@
         {
           "part_no": "71302392",
           "part_name": "Cut off Valve 71302392",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 1,
           "price": 1600,
           "bal_qty": 0,
@@ -38725,6 +39508,24 @@
           "price": 5292,
           "bal_qty": 1,
           "in_stock": true
+        },
+        {
+          "part_no": "7133844",
+          "role": "Cut-Off Valve (5/8\")",
+          "part_name": "Cutt Off Valve 5/8 24LITH11M 7133844",
+          "price": 2800,
+          "bal_qty": 5,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -38782,6 +39583,24 @@
           "price": 6500,
           "bal_qty": 10,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -38807,11 +39626,20 @@
         {
           "part_no": "7133474",
           "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 2,
-          "price": 2000,
+          "price": 2400,
           "bal_qty": 0,
           "in_stock": false
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
         }
       ]
     },
@@ -38981,9 +39809,9 @@
         {
           "part_no": "7133474",
           "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 2,
-          "price": 2000,
+          "price": 2400,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -39031,6 +39859,15 @@
           "price": 11703,
           "bal_qty": 1,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
         }
       ]
     },
@@ -39097,6 +39934,24 @@
           "price": 4424,
           "bal_qty": 4,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -39157,6 +40012,24 @@
           "price": 1200,
           "bal_qty": 1,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -39173,7 +40046,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 1,
           "price": 2200,
           "bal_qty": 5,
@@ -39182,7 +40055,7 @@
         {
           "part_no": "7130239",
           "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 1,
           "price": 1600,
           "bal_qty": 15,
@@ -39275,16 +40148,16 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 1,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
         {
           "part_no": "7130239",
           "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 1,
           "price": 1600,
           "bal_qty": 15,
@@ -39371,7 +40244,7 @@
         {
           "part_no": "7130239",
           "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 3,
           "price": 1600,
           "bal_qty": 15,
@@ -39380,7 +40253,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 3,
           "price": 2200,
           "bal_qty": 5,
@@ -39574,6 +40447,24 @@
           "price": 32000,
           "bal_qty": 1,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -39738,22 +40629,22 @@
           "in_stock": true
         },
         {
-          "part_no": "7133774",
-          "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-          "role": "Cut-Off Valve (1/2\")",
-          "verified_jobs": 2,
-          "price": 2100,
-          "bal_qty": 20,
-          "in_stock": true
-        },
-        {
           "part_no": "7130239",
           "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 2,
           "price": 1600,
           "bal_qty": 15,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
         }
       ]
     },
@@ -40453,6 +41344,24 @@
           "price": 2000,
           "bal_qty": 2,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -40469,7 +41378,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 2,
           "price": 2200,
           "bal_qty": 5,
@@ -40720,6 +41629,24 @@
           "price": 2000,
           "bal_qty": 2,
           "in_stock": true
+        },
+        {
+          "part_no": "7133844",
+          "role": "Cut-Off Valve (5/8\")",
+          "part_name": "Cutt Off Valve 5/8 24LITH11M 7133844",
+          "price": 2800,
+          "bal_qty": 5,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -40856,7 +41783,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 1,
           "price": 2200,
           "bal_qty": 5,
@@ -40985,9 +41912,9 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 0,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
@@ -41206,6 +42133,15 @@
           "price": 10743,
           "bal_qty": 10,
           "in_stock": true
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -41842,6 +42778,24 @@
           "price": 2000,
           "bal_qty": 2,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -41995,6 +42949,24 @@
           "price": 6500,
           "bal_qty": 0,
           "in_stock": false
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -42055,6 +43027,24 @@
           "price": 6500,
           "bal_qty": 0,
           "in_stock": false
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -42124,6 +43114,24 @@
           "price": 2000,
           "bal_qty": 20,
           "in_stock": true
+        },
+        {
+          "part_no": "7133844",
+          "role": "Cut-Off Valve (5/8\")",
+          "part_name": "Cutt Off Valve 5/8 24LITH11M 7133844",
+          "price": 2800,
+          "bal_qty": 5,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -42149,7 +43157,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 2,
           "price": 2200,
           "bal_qty": 5,
@@ -42171,15 +43179,6 @@
           "verified_jobs": 1,
           "price": 42000,
           "bal_qty": 5,
-          "in_stock": true
-        },
-        {
-          "part_no": "7133774",
-          "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-          "role": "Cut-Off Valve (1/2\")",
-          "verified_jobs": 1,
-          "price": 2100,
-          "bal_qty": 20,
           "in_stock": true
         },
         {
@@ -42260,9 +43259,9 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 1,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
@@ -42919,6 +43918,24 @@
           "price": 2000,
           "bal_qty": 5,
           "in_stock": true
+        },
+        {
+          "part_no": "7133844",
+          "role": "Cut-Off Valve (5/8\")",
+          "part_name": "Cutt Off Valve 5/8 24LITH11M 7133844",
+          "price": 2800,
+          "bal_qty": 5,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -43498,6 +44515,24 @@
           "price": 2000,
           "bal_qty": 2,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -43519,6 +44554,24 @@
           "price": 2000,
           "bal_qty": -7,
           "in_stock": false
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -43636,6 +44689,24 @@
           "price": 2000,
           "bal_qty": 1,
           "in_stock": true
+        },
+        {
+          "part_no": "7133844",
+          "role": "Cut-Off Valve (5/8\")",
+          "part_name": "Cutt Off Valve 5/8 24LITH11M 7133844",
+          "price": 3200,
+          "bal_qty": 5,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -43657,6 +44728,24 @@
           "price": 1000,
           "bal_qty": 9,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -43723,6 +44812,24 @@
           "price": 11994,
           "bal_qty": 4,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -43744,6 +44851,24 @@
           "price": 6500,
           "bal_qty": 0,
           "in_stock": false
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -43781,7 +44906,7 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 2,
           "price": 2200,
           "bal_qty": 5,
@@ -43820,9 +44945,9 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 1,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
@@ -43877,7 +45002,7 @@
         {
           "part_no": "7130239",
           "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 1,
           "price": 1600,
           "bal_qty": 15,
@@ -43963,7 +45088,26 @@
         "series": "STANDARD",
         "series_key": "Other|Split AC|1.5 Ton|STANDARD"
       },
-      "parts": []
+      "parts": [
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
+        }
+      ]
     },
     "GS-18AITH24W-T3": {
       "meta": {
@@ -44415,6 +45559,24 @@
           "price": 40000,
           "bal_qty": 2,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -44440,7 +45602,7 @@
         {
           "part_no": "7130239",
           "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (1/4\")",
           "verified_jobs": 1,
           "price": 1600,
           "bal_qty": 15,
@@ -44545,9 +45707,9 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 1,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
@@ -44563,9 +45725,9 @@
         {
           "part_no": "7133474",
           "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 1,
-          "price": 2000,
+          "price": 2400,
           "bal_qty": 0,
           "in_stock": false
         }
@@ -44616,6 +45778,24 @@
           "price": 2000,
           "bal_qty": 40,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -44752,9 +45932,9 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 0,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
@@ -44973,6 +46153,15 @@
           "price": 10743,
           "bal_qty": 10,
           "in_stock": true
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -44989,19 +46178,10 @@
         {
           "part_no": "7133844",
           "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (5/8\")",
           "verified_jobs": 1,
           "price": 2200,
           "bal_qty": 5,
-          "in_stock": true
-        },
-        {
-          "part_no": "7130239",
-          "part_name": "Cut-off Valve GS-24ECH10 7130239",
-          "role": "Cut-Off Valve (1/4\")",
-          "verified_jobs": 1,
-          "price": 1600,
-          "bal_qty": 15,
           "in_stock": true
         },
         {
@@ -45012,6 +46192,15 @@
           "price": 2000,
           "bal_qty": 3,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -45045,7 +46234,26 @@
         "series": "CZ",
         "series_key": "Gree|Split AC|2.0 Ton|CZ"
       },
-      "parts": []
+      "parts": [
+        {
+          "part_no": "7133844",
+          "role": "Cut-Off Valve (5/8\")",
+          "part_name": "Cutt Off Valve 5/8 24LITH11M 7133844",
+          "price": 2800,
+          "bal_qty": 5,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
+        }
+      ]
     },
     "GS-18PITH17W-T3": {
       "meta": {
@@ -45623,6 +46831,24 @@
           "price": 2000,
           "bal_qty": 2,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -45676,20 +46902,11 @@
           "in_stock": true
         },
         {
-          "part_no": "7133774",
-          "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-          "role": "Cut-Off Valve (1/2\")",
-          "verified_jobs": 1,
-          "price": 2100,
-          "bal_qty": 20,
-          "in_stock": true
-        },
-        {
           "part_no": "7133474",
           "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-          "role": "Service Valve",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 1,
-          "price": 2000,
+          "price": 2400,
           "bal_qty": 0,
           "in_stock": false
         },
@@ -45737,6 +46954,15 @@
           "price": 11703,
           "bal_qty": 1,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
         }
       ]
     },
@@ -45758,6 +46984,24 @@
           "price": 26000,
           "bal_qty": 22,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -45779,6 +47023,24 @@
           "price": 5000,
           "bal_qty": 16,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -45854,6 +47116,24 @@
           "price": 2000,
           "bal_qty": 40,
           "in_stock": true
+        },
+        {
+          "part_no": "7133844",
+          "role": "Cut-Off Valve (5/8\")",
+          "part_name": "Cutt Off Valve 5/8 24LITH11M 7133844",
+          "price": 2800,
+          "bal_qty": 5,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -45875,6 +47155,24 @@
           "price": 40000,
           "bal_qty": 9,
           "in_stock": true
+        },
+        {
+          "part_no": "7133844",
+          "role": "Cut-Off Valve (5/8\")",
+          "part_name": "Cutt Off Valve 5/8 24LITH11M 7133844",
+          "price": 2800,
+          "bal_qty": 5,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -46190,6 +47488,24 @@
           "price": 5500,
           "bal_qty": 9,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -46281,9 +47597,9 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 0,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
@@ -46502,6 +47818,15 @@
           "price": 10743,
           "bal_qty": 10,
           "in_stock": true
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -46730,6 +48055,24 @@
           "price": 2000,
           "bal_qty": 5,
           "in_stock": true
+        },
+        {
+          "part_no": "7133844",
+          "role": "Cut-Off Valve (5/8\")",
+          "part_name": "Cutt Off Valve 5/8 24LITH11M 7133844",
+          "price": 2800,
+          "bal_qty": 5,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -47174,6 +48517,24 @@
           "price": 40000,
           "bal_qty": 2,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -47186,7 +48547,26 @@
         "series": "STANDARD",
         "series_key": "Other|Split AC|1.5 Ton|STANDARD"
       },
-      "parts": []
+      "parts": [
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
+        }
+      ]
     },
     "WD-351FC": {
       "meta": {
@@ -47240,9 +48620,9 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 1,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
@@ -47527,6 +48907,24 @@
           "price": 5500,
           "bal_qty": 9,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -47674,7 +49072,26 @@
         "series": "STANDARD",
         "series_key": "Other|Split AC|1.5 Ton|STANDARD"
       },
-      "parts": []
+      "parts": [
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
+        }
+      ]
     },
     "GR-310G-CR1": {
       "meta": {
@@ -47763,6 +49180,24 @@
           "price": 22120,
           "bal_qty": 2,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -47865,6 +49300,24 @@
           "price": 5297,
           "bal_qty": 4,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -47895,6 +49348,24 @@
           "price": 2500,
           "bal_qty": 6,
           "in_stock": true
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -47937,6 +49408,24 @@
           "price": 1395,
           "bal_qty": 0,
           "in_stock": false
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -48381,6 +49870,24 @@
           "price": 40000,
           "bal_qty": 2,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -48411,6 +49918,24 @@
           "price": 2000,
           "bal_qty": 0,
           "in_stock": false
+        },
+        {
+          "part_no": "7133844",
+          "role": "Cut-Off Valve (5/8\")",
+          "part_name": "Cutt Off Valve 5/8 24LITH11M 7133844",
+          "price": 3200,
+          "bal_qty": 5,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -48434,13 +49959,22 @@
           "in_stock": false
         },
         {
-          "part_no": "0710307901",
-          "part_name": "Cut off Valve 1/2",
-          "role": "Cut-Off Valve (1/2\")",
-          "verified_jobs": 1,
-          "price": 2400,
-          "bal_qty": 0,
-          "in_stock": false
+          "part_no": "7133844",
+          "role": "Cut-Off Valve (5/8\")",
+          "part_name": "Cutt Off Valve 5/8 24LITH11M 7133844",
+          "price": 2800,
+          "bal_qty": 5,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -48478,9 +50012,9 @@
         {
           "part_no": "71302395",
           "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-          "role": "Cut-Off Valve (3/8\" - 5/8\")",
+          "role": "Cut-Off Valve (3/8\")",
           "verified_jobs": 1,
-          "price": 2600,
+          "price": 2516,
           "bal_qty": 15,
           "in_stock": true
         },
@@ -48603,6 +50137,24 @@
           "price": 2000,
           "bal_qty": 10,
           "in_stock": true
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -48677,13 +50229,13 @@
           "in_stock": true
         },
         {
-          "part_no": "7133774",
-          "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-          "role": "Cut-Off Valve (1/2\")",
-          "verified_jobs": 1,
-          "price": 2100,
-          "bal_qty": 20,
-          "in_stock": true
+          "part_no": "71302395",
+          "role": "Cut-Off Valve (3/8\")",
+          "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
+          "price": 2400,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 100
         }
       ]
     },
@@ -48726,6 +50278,24 @@
           "price": 14947,
           "bal_qty": 0,
           "in_stock": false
+        },
+        {
+          "part_no": "7133774",
+          "role": "Cut-Off Valve (1/2\")",
+          "part_name": "Cut Off Valve Assy 1/2 7133774 GS-18VITH1",
+          "price": 2100,
+          "bal_qty": 20,
+          "in_stock": true,
+          "verified_jobs": 100
+        },
+        {
+          "part_no": "7130239",
+          "role": "Cut-Off Valve (1/4\")",
+          "part_name": "Cut-off Valve 1/4 7130239",
+          "price": 1600,
+          "bal_qty": 15,
+          "in_stock": true,
+          "verified_jobs": 50
         }
       ]
     },
@@ -49038,7 +50608,7 @@
       {
         "part_no": "71302392",
         "part_name": "Cut off Valve 71302392",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (1/4\")",
         "verified_jobs": 4,
         "price": 1600,
         "bal_qty": 0,
@@ -49065,9 +50635,9 @@
       {
         "part_no": "11225517000085",
         "part_name": "Stop Valve ES-18EM01W / ES-18DU01W / ES-18DU02 11225517000085",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (1/2\")",
         "verified_jobs": 2,
-        "price": 2000,
+        "price": 2100,
         "bal_qty": 0,
         "in_stock": false
       },
@@ -49180,15 +50750,6 @@
         "in_stock": false
       },
       {
-        "part_no": "7133474",
-        "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-        "role": "Service Valve",
-        "verified_jobs": 1,
-        "price": 2000,
-        "bal_qty": 0,
-        "in_stock": false
-      },
-      {
         "part_no": "3900030901",
         "part_name": "Outdoor Temperature Sensor GS-18CITH1 3900030901",
         "role": "Temperature Sensor",
@@ -49256,9 +50817,9 @@
       {
         "part_no": "71302395",
         "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
+        "role": "Cut-Off Valve (3/8\")",
         "verified_jobs": 56,
-        "price": 2600,
+        "price": 2516,
         "bal_qty": 15,
         "in_stock": true
       },
@@ -49413,15 +50974,6 @@
         "verified_jobs": 2,
         "price": 10853,
         "bal_qty": 2,
-        "in_stock": true
-      },
-      {
-        "part_no": "7133774",
-        "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-        "role": "Cut-Off Valve (1/2\")",
-        "verified_jobs": 2,
-        "price": 2100,
-        "bal_qty": 20,
         "in_stock": true
       },
       {
@@ -49769,9 +51321,9 @@
       {
         "part_no": "7133474",
         "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (3/8\")",
         "verified_jobs": 18,
-        "price": 2000,
+        "price": 2400,
         "bal_qty": 0,
         "in_stock": false
       },
@@ -49940,7 +51492,7 @@
       {
         "part_no": "70001060029",
         "part_name": "Cut-off valve 3/8(N) GS-12AITH23S-T3 / GS-12PITC12W  70001060029",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
+        "role": "Cut-Off Valve (3/8\")",
         "verified_jobs": 1,
         "price": 2400,
         "bal_qty": 0,
@@ -50023,7 +51575,7 @@
       {
         "part_no": "7130239",
         "part_name": "Cut-off Valve GS-24ECH10 7130239",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (1/4\")",
         "verified_jobs": 29,
         "price": 1600,
         "bal_qty": 15,
@@ -50284,7 +51836,7 @@
       {
         "part_no": "71302392",
         "part_name": "Cut off Valve 71302392",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (1/4\")",
         "verified_jobs": 3,
         "price": 1600,
         "bal_qty": 0,
@@ -50385,9 +51937,9 @@
       {
         "part_no": "71302395",
         "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
+        "role": "Cut-Off Valve (3/8\")",
         "verified_jobs": 6,
-        "price": 2600,
+        "price": 2516,
         "bal_qty": 15,
         "in_stock": true
       },
@@ -50443,15 +51995,6 @@
         "verified_jobs": 2,
         "price": 32000,
         "bal_qty": 2,
-        "in_stock": true
-      },
-      {
-        "part_no": "7133774",
-        "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-        "role": "Cut-Off Valve (1/2\")",
-        "verified_jobs": 1,
-        "price": 2100,
-        "bal_qty": 20,
         "in_stock": true
       },
       {
@@ -50907,9 +52450,9 @@
       {
         "part_no": "7133474",
         "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (3/8\")",
         "verified_jobs": 1,
-        "price": 2000,
+        "price": 2400,
         "bal_qty": 0,
         "in_stock": false
       },
@@ -51737,7 +53280,7 @@
       {
         "part_no": "71302392",
         "part_name": "Cut off Valve 71302392",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (1/4\")",
         "verified_jobs": 6,
         "price": 1600,
         "bal_qty": 0,
@@ -51836,9 +53379,9 @@
       {
         "part_no": "11225517000085",
         "part_name": "Stop Valve ES-18EM01W / ES-18DU01W / ES-18DU02 11225517000085",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (1/2\")",
         "verified_jobs": 2,
-        "price": 2000,
+        "price": 2100,
         "bal_qty": 0,
         "in_stock": false
       },
@@ -52133,15 +53676,6 @@
         "in_stock": true
       },
       {
-        "part_no": "71302395",
-        "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
-        "verified_jobs": 1,
-        "price": 2600,
-        "bal_qty": 15,
-        "in_stock": true
-      },
-      {
         "part_no": "207ES10118007",
         "part_name": "Indoor Rear Case ES-18DU01W / ES-18EM01W 207ES10118007",
         "role": "Component Hardware",
@@ -52315,7 +53849,7 @@
       {
         "part_no": "71302392",
         "part_name": "Cut off Valve 71302392",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (1/4\")",
         "verified_jobs": 2,
         "price": 1600,
         "bal_qty": 0,
@@ -52342,9 +53876,9 @@
       {
         "part_no": "11225517000085",
         "part_name": "Stop Valve ES-18EM01W / ES-18DU01W / ES-18DU02 11225517000085",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (1/2\")",
         "verified_jobs": 1,
-        "price": 2000,
+        "price": 2100,
         "bal_qty": 0,
         "in_stock": false
       },
@@ -52425,28 +53959,10 @@
       {
         "part_no": "7133844",
         "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
+        "role": "Cut-Off Valve (5/8\")",
         "verified_jobs": 48,
         "price": 2200,
         "bal_qty": 5,
-        "in_stock": true
-      },
-      {
-        "part_no": "7130239",
-        "part_name": "Cut-off Valve GS-24ECH10 7130239",
-        "role": "Cut-Off Valve (1/4\")",
-        "verified_jobs": 33,
-        "price": 1600,
-        "bal_qty": 15,
-        "in_stock": true
-      },
-      {
-        "part_no": "7133774",
-        "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-        "role": "Cut-Off Valve (1/2\")",
-        "verified_jobs": 7,
-        "price": 2100,
-        "bal_qty": 20,
         "in_stock": true
       },
       {
@@ -52461,9 +53977,9 @@
       {
         "part_no": "71302395",
         "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
+        "role": "Cut-Off Valve (3/8\")",
         "verified_jobs": 5,
-        "price": 2600,
+        "price": 2516,
         "bal_qty": 15,
         "in_stock": true
       },
@@ -52677,27 +54193,9 @@
       {
         "part_no": "7133474",
         "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (3/8\")",
         "verified_jobs": 6,
-        "price": 2000,
-        "bal_qty": 0,
-        "in_stock": false
-      },
-      {
-        "part_no": "71302393",
-        "part_name": "Cut-off valve 1/4 71302393 GS-18PITH1W/O",
-        "role": "Cut-Off Valve (1/4\")",
-        "verified_jobs": 3,
-        "price": 2100,
-        "bal_qty": 0,
-        "in_stock": false
-      },
-      {
-        "part_no": "71302392",
-        "part_name": "Cut off Valve 71302392",
-        "role": "Service Valve",
-        "verified_jobs": 3,
-        "price": 1600,
+        "price": 3000,
         "bal_qty": 0,
         "in_stock": false
       },
@@ -52776,7 +54274,7 @@
       {
         "part_no": "7135142",
         "part_name": "Cut-off valve 5/8(N) sub assy 7135142 GS-24FITH7C",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
+        "role": "Cut-Off Valve (5/8\")",
         "verified_jobs": 1,
         "price": 3200,
         "bal_qty": 0,
@@ -52837,15 +54335,6 @@
         "in_stock": false
       },
       {
-        "part_no": "30057000074",
-        "part_name": "Cut off Valve Sub-Assy 1/4 30057000074 GS-18CITH2G",
-        "role": "Cut-Off Valve (1/4\")",
-        "verified_jobs": 1,
-        "price": 2100,
-        "bal_qty": 0,
-        "in_stock": false
-      },
-      {
         "part_no": "11002061517",
         "part_name": "Condenser Assy GS-24PITH11W 11002061517",
         "role": "Component Hardware",
@@ -52902,18 +54391,9 @@
       {
         "part_no": "70001060032",
         "part_name": "Cut-off Valve 5/8(N) GS-24LM6L/O/GF-24VTIH / GS-24PITC12W-T3  70001060032",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
+        "role": "Cut-Off Valve (5/8\")",
         "verified_jobs": 1,
         "price": 3200,
-        "bal_qty": 0,
-        "in_stock": false
-      },
-      {
-        "part_no": "30057000029",
-        "part_name": "Cut of  Valve 1/4 30057000029",
-        "role": "Cut-Off Valve (1/4\")",
-        "verified_jobs": 1,
-        "price": 2100,
         "bal_qty": 0,
         "in_stock": false
       },
@@ -53012,7 +54492,7 @@
       {
         "part_no": "7130239",
         "part_name": "Cut-off Valve GS-24ECH10 7130239",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (1/4\")",
         "verified_jobs": 80,
         "price": 1600,
         "bal_qty": 15,
@@ -53088,15 +54568,6 @@
         "verified_jobs": 1,
         "price": 2000,
         "bal_qty": 98,
-        "in_stock": true
-      },
-      {
-        "part_no": "71302395",
-        "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
-        "verified_jobs": 1,
-        "price": 2600,
-        "bal_qty": 15,
         "in_stock": true
       },
       {
@@ -53219,7 +54690,7 @@
       {
         "part_no": "71302392",
         "part_name": "Cut off Valve 71302392",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (1/4\")",
         "verified_jobs": 4,
         "price": 1600,
         "bal_qty": 0,
@@ -53237,9 +54708,9 @@
       {
         "part_no": "11225517000085",
         "part_name": "Stop Valve ES-18EM01W / ES-18DU01W / ES-18DU02 11225517000085",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (1/2\")",
         "verified_jobs": 2,
-        "price": 2000,
+        "price": 2100,
         "bal_qty": 0,
         "in_stock": false
       },
@@ -53673,7 +55144,7 @@
       {
         "part_no": "7130239",
         "part_name": "Cut-off Valve GS-24ECH10 7130239",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (1/4\")",
         "verified_jobs": 24,
         "price": 1600,
         "bal_qty": 15,
@@ -53682,9 +55153,9 @@
       {
         "part_no": "71302395",
         "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
+        "role": "Cut-Off Valve (3/8\")",
         "verified_jobs": 18,
-        "price": 2600,
+        "price": 2516,
         "bal_qty": 15,
         "in_stock": true
       },
@@ -53853,9 +55324,9 @@
       {
         "part_no": "7133474",
         "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (3/8\")",
         "verified_jobs": 8,
-        "price": 2000,
+        "price": 2400,
         "bal_qty": 0,
         "in_stock": false
       },
@@ -53880,7 +55351,7 @@
       {
         "part_no": "30152060393",
         "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
+        "role": "Cut-Off Valve (3/8\")",
         "verified_jobs": 1,
         "price": 4000,
         "bal_qty": 0,
@@ -53907,7 +55378,7 @@
       {
         "part_no": "71302392",
         "part_name": "Cut off Valve 71302392",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (1/4\")",
         "verified_jobs": 1,
         "price": 1600,
         "bal_qty": 0,
@@ -54131,15 +55602,6 @@
         "verified_jobs": 2,
         "price": 5028,
         "bal_qty": 5,
-        "in_stock": true
-      },
-      {
-        "part_no": "71302395",
-        "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
-        "verified_jobs": 1,
-        "price": 2600,
-        "bal_qty": 15,
         "in_stock": true
       },
       {
@@ -54433,9 +55895,9 @@
       {
         "part_no": "11225517000085",
         "part_name": "Stop Valve ES-18EM01W / ES-18DU01W / ES-18DU02 11225517000085",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (1/2\")",
         "verified_jobs": 3,
-        "price": 2000,
+        "price": 2100,
         "bal_qty": 0,
         "in_stock": false
       },
@@ -54487,7 +55949,7 @@
       {
         "part_no": "71302392",
         "part_name": "Cut off Valve 71302392",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (1/4\")",
         "verified_jobs": 1,
         "price": 1600,
         "bal_qty": 0,
@@ -55870,19 +57332,10 @@
       {
         "part_no": "71302395",
         "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
+        "role": "Cut-Off Valve (3/8\")",
         "verified_jobs": 7,
-        "price": 2600,
+        "price": 2516,
         "bal_qty": 15,
-        "in_stock": true
-      },
-      {
-        "part_no": "7133774",
-        "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-        "role": "Cut-Off Valve (1/2\")",
-        "verified_jobs": 3,
-        "price": 2100,
-        "bal_qty": 20,
         "in_stock": true
       },
       {
@@ -55978,9 +57431,9 @@
       {
         "part_no": "7133474",
         "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (3/8\")",
         "verified_jobs": 8,
-        "price": 2000,
+        "price": 2400,
         "bal_qty": 0,
         "in_stock": false
       },
@@ -56324,7 +57777,7 @@
       {
         "part_no": "7133844",
         "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
+        "role": "Cut-Off Valve (5/8\")",
         "verified_jobs": 44,
         "price": 2200,
         "bal_qty": 5,
@@ -56580,15 +58033,6 @@
         "verified_jobs": 0,
         "price": 2000,
         "bal_qty": 5,
-        "in_stock": true
-      },
-      {
-        "part_no": "200087060005",
-        "part_name": "Valve Cover GS-18AITH23S-T3/GF-24VTIH/GS-24CM11/24PITH21/ GS-24PITC12W-T3   200087060005",
-        "role": "Component Hardware",
-        "verified_jobs": 0,
-        "price": 2000,
-        "bal_qty": 3,
         "in_stock": true
       },
       {
@@ -56936,7 +58380,7 @@
       {
         "part_no": "7135142",
         "part_name": "Cut-off valve 5/8(N) sub assy 7135142 GS-24FITH7C",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
+        "role": "Cut-Off Valve (5/8\")",
         "verified_jobs": 3,
         "price": 2800,
         "bal_qty": 0,
@@ -56972,7 +58416,7 @@
       {
         "part_no": "71302392",
         "part_name": "Cut off Valve 71302392",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (1/4\")",
         "verified_jobs": 2,
         "price": 1600,
         "bal_qty": 0,
@@ -57145,7 +58589,7 @@
       {
         "part_no": "7133844",
         "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
+        "role": "Cut-Off Valve (5/8\")",
         "verified_jobs": 21,
         "price": 2200,
         "bal_qty": 5,
@@ -57158,15 +58602,6 @@
         "verified_jobs": 8,
         "price": 42000,
         "bal_qty": 3,
-        "in_stock": true
-      },
-      {
-        "part_no": "7133774",
-        "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-        "role": "Cut-Off Valve (1/2\")",
-        "verified_jobs": 2,
-        "price": 2100,
-        "bal_qty": 20,
         "in_stock": true
       },
       {
@@ -57325,7 +58760,7 @@
       {
         "part_no": "7135142",
         "part_name": "Cut-off valve 5/8(N) sub assy 7135142 GS-24FITH7C",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
+        "role": "Cut-Off Valve (5/8\")",
         "verified_jobs": 1,
         "price": 2800,
         "bal_qty": 0,
@@ -57361,7 +58796,7 @@
       {
         "part_no": "71302392",
         "part_name": "Cut off Valve 71302392",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (1/4\")",
         "verified_jobs": 1,
         "price": 1600,
         "bal_qty": 0,
@@ -57869,7 +59304,7 @@
       {
         "part_no": "7133844",
         "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
+        "role": "Cut-Off Valve (5/8\")",
         "verified_jobs": 11,
         "price": 2200,
         "bal_qty": 5,
@@ -58071,15 +59506,6 @@
         "verified_jobs": 0,
         "price": 2000,
         "bal_qty": 1,
-        "in_stock": true
-      },
-      {
-        "part_no": "200087060005",
-        "part_name": "Valve Cover GS-18AITH23S-T3/GF-24VTIH/GS-24CM11/24PITH21/ GS-24PITC12W-T3   200087060005",
-        "role": "Component Hardware",
-        "verified_jobs": 0,
-        "price": 2000,
-        "bal_qty": 3,
         "in_stock": true
       },
       {
@@ -58427,7 +59853,7 @@
       {
         "part_no": "71302392",
         "part_name": "Cut off Valve 71302392",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (1/4\")",
         "verified_jobs": 1,
         "price": 1600,
         "bal_qty": 0,
@@ -58809,7 +60235,7 @@
       {
         "part_no": "7130239",
         "part_name": "Cut-off Valve GS-24ECH10 7130239",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (1/4\")",
         "verified_jobs": 1,
         "price": 1600,
         "bal_qty": 15,
@@ -58964,9 +60390,9 @@
       {
         "part_no": "11225517000085",
         "part_name": "Stop Valve ES-18EM01W / ES-18DU01W / ES-18DU02 11225517000085",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (1/2\")",
         "verified_jobs": 1,
-        "price": 2000,
+        "price": 2100,
         "bal_qty": 0,
         "in_stock": false
       },
@@ -59002,9 +60428,9 @@
       {
         "part_no": "71302395",
         "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
+        "role": "Cut-Off Valve (3/8\")",
         "verified_jobs": 9,
-        "price": 2600,
+        "price": 2516,
         "bal_qty": 15,
         "in_stock": true
       },
@@ -59087,15 +60513,6 @@
         "verified_jobs": 1,
         "price": 6500,
         "bal_qty": 1,
-        "in_stock": true
-      },
-      {
-        "part_no": "7133774",
-        "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-        "role": "Cut-Off Valve (1/2\")",
-        "verified_jobs": 1,
-        "price": 2100,
-        "bal_qty": 20,
         "in_stock": true
       },
       {
@@ -59706,15 +61123,6 @@
         "in_stock": true
       },
       {
-        "part_no": "200087060005",
-        "part_name": "Valve Cover GS-18AITH23S-T3/GF-24VTIH/GS-24CM11/24PITH21/ GS-24PITC12W-T3   200087060005",
-        "role": "Component Hardware",
-        "verified_jobs": 0,
-        "price": 2000,
-        "bal_qty": 3,
-        "in_stock": true
-      },
-      {
         "part_no": "3900030912",
         "part_name": "Outdoor Temperature Sensor GS-18AITH23S-T3/18AITH/24PITH/24VTIH/Zith GS-24PITC12W-T3  3900030912",
         "role": "Temperature Sensor",
@@ -59827,7 +61235,7 @@
       {
         "part_no": "7133844",
         "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
+        "role": "Cut-Off Valve (5/8\")",
         "verified_jobs": 15,
         "price": 2200,
         "bal_qty": 5,
@@ -59858,15 +61266,6 @@
         "verified_jobs": 1,
         "price": 1395,
         "bal_qty": 4,
-        "in_stock": true
-      },
-      {
-        "part_no": "71302395",
-        "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
-        "verified_jobs": 1,
-        "price": 2600,
-        "bal_qty": 15,
         "in_stock": true
       },
       {
@@ -59926,7 +61325,7 @@
       {
         "part_no": "71302392",
         "part_name": "Cut off Valve 71302392",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (1/4\")",
         "verified_jobs": 2,
         "price": 1600,
         "bal_qty": 0,
@@ -59953,7 +61352,7 @@
       {
         "part_no": "7135142",
         "part_name": "Cut-off valve 5/8(N) sub assy 7135142 GS-24FITH7C",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
+        "role": "Cut-Off Valve (5/8\")",
         "verified_jobs": 1,
         "price": 2800,
         "bal_qty": 0,
@@ -60218,15 +61617,6 @@
     ],
     "Gree|Split AC|1.0 Ton|LM": [
       {
-        "part_no": "7133774",
-        "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-        "role": "Cut-Off Valve (1/2\")",
-        "verified_jobs": 33,
-        "price": 2100,
-        "bal_qty": 20,
-        "in_stock": true
-      },
-      {
         "part_no": "1002976",
         "part_name": "Evaporater Assy 12LM4 / 12LM5L 1002976",
         "role": "Evaporator Assembly",
@@ -60326,24 +61716,6 @@
         "in_stock": false
       },
       {
-        "part_no": "11225517000085",
-        "part_name": "Stop Valve ES-18EM01W / ES-18DU01W / ES-18DU02 11225517000085",
-        "role": "Service Valve",
-        "verified_jobs": 1,
-        "price": 2000,
-        "bal_qty": 0,
-        "in_stock": false
-      },
-      {
-        "part_no": "71302394",
-        "part_name": "Cut-off valve 1/2 71302394 GS-18PITH1W/O",
-        "role": "Cut-Off Valve (1/2\")",
-        "verified_jobs": 1,
-        "price": 2100,
-        "bal_qty": 0,
-        "in_stock": false
-      },
-      {
         "part_no": "9001060763",
         "part_name": "Compressors & FIttings GS-12LM6L/GS-12CM11 9001060763",
         "role": "Compressor & Fittings",
@@ -60373,7 +61745,7 @@
       {
         "part_no": "71302392",
         "part_name": "Cut off Valve 71302392",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (1/4\")",
         "verified_jobs": 1,
         "price": 1600,
         "bal_qty": 0,
@@ -60411,9 +61783,9 @@
       {
         "part_no": "71302395",
         "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
+        "role": "Cut-Off Valve (3/8\")",
         "verified_jobs": 7,
-        "price": 2600,
+        "price": 2516,
         "bal_qty": 15,
         "in_stock": true
       },
@@ -60433,15 +61805,6 @@
         "verified_jobs": 1,
         "price": 2900,
         "bal_qty": 42,
-        "in_stock": true
-      },
-      {
-        "part_no": "7133774",
-        "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-        "role": "Cut-Off Valve (1/2\")",
-        "verified_jobs": 1,
-        "price": 2100,
-        "bal_qty": 20,
         "in_stock": true
       },
       {
@@ -60672,9 +62035,9 @@
       {
         "part_no": "7133474",
         "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (3/8\")",
         "verified_jobs": 3,
-        "price": 2000,
+        "price": 2400,
         "bal_qty": 0,
         "in_stock": false
       },
@@ -60764,7 +62127,7 @@
       {
         "part_no": "7133844",
         "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
+        "role": "Cut-Off Valve (5/8\")",
         "verified_jobs": 1,
         "price": 2200,
         "bal_qty": 5,
@@ -60773,7 +62136,7 @@
       {
         "part_no": "7130239",
         "part_name": "Cut-off Valve GS-24ECH10 7130239",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (1/4\")",
         "verified_jobs": 1,
         "price": 1600,
         "bal_qty": 15,
@@ -60840,15 +62203,6 @@
         "verified_jobs": 0,
         "price": 2000,
         "bal_qty": 6,
-        "in_stock": true
-      },
-      {
-        "part_no": "200087060005",
-        "part_name": "Valve Cover GS-18AITH23S-T3/GF-24VTIH/GS-24CM11/24PITH21/ GS-24PITC12W-T3   200087060005",
-        "role": "Component Hardware",
-        "verified_jobs": 0,
-        "price": 2000,
-        "bal_qty": 3,
         "in_stock": true
       },
       {
@@ -61000,7 +62354,7 @@
       {
         "part_no": "7130239",
         "part_name": "Cut-off Valve GS-24ECH10 7130239",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (1/4\")",
         "verified_jobs": 21,
         "price": 1600,
         "bal_qty": 15,
@@ -61009,7 +62363,7 @@
       {
         "part_no": "7133844",
         "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
+        "role": "Cut-Off Valve (5/8\")",
         "verified_jobs": 14,
         "price": 2200,
         "bal_qty": 5,
@@ -61022,15 +62376,6 @@
         "verified_jobs": 10,
         "price": 42000,
         "bal_qty": 5,
-        "in_stock": true
-      },
-      {
-        "part_no": "7133774",
-        "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-        "role": "Cut-Off Valve (1/2\")",
-        "verified_jobs": 9,
-        "price": 2100,
-        "bal_qty": 20,
         "in_stock": true
       },
       {
@@ -61207,7 +62552,7 @@
       {
         "part_no": "7135142",
         "part_name": "Cut-off valve 5/8(N) sub assy 7135142 GS-24FITH7C",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
+        "role": "Cut-Off Valve (5/8\")",
         "verified_jobs": 1,
         "price": 2800,
         "bal_qty": 0,
@@ -61968,7 +63313,7 @@
       {
         "part_no": "7133844",
         "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
+        "role": "Cut-Off Valve (5/8\")",
         "verified_jobs": 3,
         "price": 2200,
         "bal_qty": 5,
@@ -61981,15 +63326,6 @@
         "verified_jobs": 2,
         "price": 39000,
         "bal_qty": 12,
-        "in_stock": true
-      },
-      {
-        "part_no": "7133774",
-        "part_name": "Cut Off Valve Assy 1/2  7133774 GS-18VITH1",
-        "role": "Cut-Off Valve (1/2\")",
-        "verified_jobs": 1,
-        "price": 2100,
-        "bal_qty": 20,
         "in_stock": true
       },
       {
@@ -62071,7 +63407,7 @@
       {
         "part_no": "7133844",
         "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
+        "role": "Cut-Off Valve (5/8\")",
         "verified_jobs": 2,
         "price": 2200,
         "bal_qty": 5,
@@ -62446,7 +63782,7 @@
       {
         "part_no": "7130239",
         "part_name": "Cut-off Valve GS-24ECH10 7130239",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (1/4\")",
         "verified_jobs": 3,
         "price": 1600,
         "bal_qty": 15,
@@ -62895,9 +64231,9 @@
       {
         "part_no": "7133474",
         "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (3/8\")",
         "verified_jobs": 1,
-        "price": 2000,
+        "price": 2400,
         "bal_qty": 0,
         "in_stock": false
       }
@@ -63052,9 +64388,9 @@
       {
         "part_no": "7133474",
         "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (3/8\")",
         "verified_jobs": 2,
-        "price": 2000,
+        "price": 2400,
         "bal_qty": 0,
         "in_stock": false
       },
@@ -63265,7 +64601,7 @@
       {
         "part_no": "7133844",
         "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
+        "role": "Cut-Off Valve (5/8\")",
         "verified_jobs": 1,
         "price": 2200,
         "bal_qty": 5,
@@ -63285,7 +64621,7 @@
       {
         "part_no": "7133844",
         "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
+        "role": "Cut-Off Valve (5/8\")",
         "verified_jobs": 2,
         "price": 2200,
         "bal_qty": 5,
@@ -63439,9 +64775,9 @@
       {
         "part_no": "71302395",
         "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
+        "role": "Cut-Off Valve (3/8\")",
         "verified_jobs": 1,
-        "price": 2600,
+        "price": 2516,
         "bal_qty": 15,
         "in_stock": true
       },
@@ -63457,9 +64793,9 @@
       {
         "part_no": "7133474",
         "part_name": "Outdoor Cut off Valve Assy GS16CIT3F/12CITH12 7133474",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (3/8\")",
         "verified_jobs": 1,
-        "price": 2000,
+        "price": 2400,
         "bal_qty": 0,
         "in_stock": false
       }
@@ -63796,9 +65132,9 @@
       {
         "part_no": "71302395",
         "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-        "role": "Cut-Off Valve (3/8\" - 5/8\")",
+        "role": "Cut-Off Valve (3/8\")",
         "verified_jobs": 1,
-        "price": 2600,
+        "price": 2516,
         "bal_qty": 15,
         "in_stock": true
       },
@@ -63855,15 +65191,6 @@
         "role": "Service Valve",
         "verified_jobs": 1,
         "price": 2000,
-        "bal_qty": 0,
-        "in_stock": false
-      },
-      {
-        "part_no": "0710307901",
-        "part_name": "Cut off Valve 1/2",
-        "role": "Cut-Off Valve (1/2\")",
-        "verified_jobs": 1,
-        "price": 2400,
         "bal_qty": 0,
         "in_stock": false
       }
@@ -66453,15 +67780,6 @@
         "in_stock": true
       },
       {
-        "part_no": "200087060005",
-        "part_name": "Valve Cover GS-18AITH23S-T3/GF-24VTIH/GS-24CM11/24PITH21/ GS-24PITC12W-T3   200087060005",
-        "role": "Component Hardware",
-        "verified_jobs": 0,
-        "price": 2000,
-        "bal_qty": 3,
-        "in_stock": true
-      },
-      {
         "part_no": "3900030912",
         "part_name": "Outdoor Temperature Sensor GS-18AITH23S-T3/18AITH/24PITH/24VTIH/Zith GS-24PITC12W-T3  3900030912",
         "role": "Temperature Sensor",
@@ -67706,7 +69024,7 @@
       {
         "part_no": "7130239",
         "part_name": "Cut-off Valve GS-24ECH10 7130239",
-        "role": "Service Valve",
+        "role": "Cut-Off Valve (1/4\")",
         "verified_jobs": 0,
         "price": 1600,
         "bal_qty": 15,
@@ -72018,9 +73336,9 @@
       "category": "Split AC",
       "capacity": "12000 BTU",
       "bal_qty": 15,
-      "stock_cost": 2600,
-      "unit_price": 2600,
-      "role": "Cut-Off Valve (3/8\" - 5/8\")"
+      "stock_cost": 2516,
+      "unit_price": 2516,
+      "role": "Cut-Off Valve (3/8\")"
     },
     "200003060158T": {
       "part_no": "200003060158T",
@@ -75045,7 +76363,7 @@
       "bal_qty": 15,
       "stock_cost": 1600,
       "unit_price": 1600,
-      "role": "Service Valve"
+      "role": "Cut-Off Valve (1/4\")"
     },
     "1252229": {
       "part_no": "1252229",
@@ -75122,7 +76440,7 @@
       "bal_qty": 5,
       "stock_cost": 2200,
       "unit_price": 2200,
-      "role": "Cut-Off Valve (3/8\" - 5/8\")"
+      "role": "Cut-Off Valve (5/8\")"
     },
     "100002001069": {
       "part_no": "100002001069",
@@ -77884,7 +79202,7 @@
     "30152060393": {
       "price": 4000,
       "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-      "role": "Cut-Off Valve (3/8\" - 5/8\")"
+      "role": "Cut-Off Valve (3/8\")"
     },
     "13223003000144": {
       "price": 50000,
@@ -78214,7 +79532,7 @@
     "71302392": {
       "price": 1600,
       "part_name": "Cut off Valve 71302392",
-      "role": "Service Valve"
+      "role": "Cut-Off Valve (1/4\")"
     },
     "GR32-E51520003": {
       "price": 2000,
@@ -78269,7 +79587,7 @@
     "7133844": {
       "price": 2200,
       "part_name": "Cutt Off Valve 5/8  24LITH11M 7133844",
-      "role": "Cut-Off Valve (3/8\" - 5/8\")"
+      "role": "Cut-Off Valve (5/8\")"
     },
     "GR36-E77610092": {
       "price": 850,
@@ -79842,9 +81160,9 @@
       "role": "Component Hardware"
     },
     "71302395": {
-      "price": 2600,
+      "price": 2516,
       "part_name": "Cut-off valve 3/8 71302395 GS-12PITH1W/O",
-      "role": "Cut-Off Valve (3/8\" - 5/8\")"
+      "role": "Cut-Off Valve (3/8\")"
     },
     "200003060158T": {
       "price": 2000,
@@ -81939,6 +83257,8 @@
     "Stepping / Swing Motor": 1395,
     "Cut-Off Valve (1/4\")": 1600,
     "Cut-Off Valve (1/2\")": 2100,
+    "Cut-Off Valve (3/8\")": 2400,
+    "Cut-Off Valve (5/8\")": 2600,
     "Cut-Off Valve (3/8\" - 5/8\")": 2600,
     "4-Way Valve Assembly": 3500,
     "Temperature Sensor": 1500,

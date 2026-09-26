@@ -135,7 +135,7 @@ COMPONENT_ROLE_GROUPS = [
     ("🔄 Compressors & Fittings", ["Compressor & Fittings"]),
     ("💨 Fan Motors (Indoor & Outdoor)", ["Indoor Fan Motor", "Outdoor Fan Motor", "Fan Motor"]),
     ("🔄 Stepping & Swing Motors", ["Stepping / Swing Motor"]),
-    ("🔩 Cut-off & Service Valves", ["Cut-Off Valve (1/4\")", "Cut-Off Valve (1/2\")", "Cut-Off Valve (3/8\" - 5/8\")", "Service Valve"]),
+    ("🔩 Cut-off & Service Valves", ["Cut-Off Valve (1/2\")", "Cut-Off Valve (3/8\")", "Cut-Off Valve (5/8\")", "Cut-Off Valve (1/4\")", "Service Valve"]),
     ("🔀 4-Way Valve Assemblies", ["4-Way Valve Assembly"]),
     ("🌡️ Temperature Sensors", ["Temperature Sensor"]),
     ("🔋 Capacitors", ["Capacitor"]),
@@ -169,14 +169,17 @@ def classify_component_role(part_name, part_no=""):
         return "Outdoor Fan Motor"
     elif any(k in nl for k in ['motor']):
         return "Fan Motor"
-    elif any(k in nl for k in ['1/4', 'quarter']) and 'valve' in nl:
-        return "Cut-Off Valve (1/4\")"
-    elif any(k in nl for k in ['1/2', 'half']) and 'valve' in nl:
-        return "Cut-Off Valve (1/2\")"
-    elif any(k in nl for k in ['3/8', '5/8']) and 'valve' in nl:
-        return "Cut-Off Valve (3/8\" - 5/8\")"
     elif any(k in nl for k in ['4-way', '4 way', 'reversing valve']):
         return "4-Way Valve Assembly"
+    # Strict Valve Sizing Classification (Historical closed complaints are canonical ground truth)
+    elif (any(k in nl for k in ['3/8', 'three eighth']) and 'valve' in nl) or any(p in nl for p in ['71302395', '7133474']):
+        return "Cut-Off Valve (3/8\")"
+    elif (any(k in nl for k in ['5/8', 'five eighth']) and 'valve' in nl) or any(p in nl for p in ['7133844', '7135142']):
+        return "Cut-Off Valve (5/8\")"
+    elif (any(k in nl for k in ['1/2', 'half']) and 'valve' in nl) or any(p in nl for p in ['7133774', '11225517000085']):
+        return "Cut-Off Valve (1/2\")"
+    elif (any(k in nl for k in ['1/4', 'quarter']) and 'valve' in nl) or any(p in nl for p in ['7130239', '71302392', '71302393', '71302391', '30057000074']):
+        return "Cut-Off Valve (1/4\")"
     elif any(k in nl for k in ['valve']):
         return "Service Valve"
     elif any(k in nl for k in ['sensor', 'temp sensor', 'thermistor', 'probe', 'ambient sensor', 'tube sensor']):
@@ -294,6 +297,8 @@ def get_role_price_floor(role, ton="1.5 Ton", cat="Split AC"):
                 "Stepping / Swing Motor": 2000,
                 "Cut-Off Valve (1/4\")": 2100,
                 "Cut-Off Valve (1/2\")": 2800,
+                "Cut-Off Valve (3/8\")": 3000,
+                "Cut-Off Valve (5/8\")": 3200,
                 "Cut-Off Valve (3/8\" - 5/8\")": 3200,
                 "4-Way Valve Assembly": 6500,
                 "Temperature Sensor": 1500,
@@ -312,6 +317,8 @@ def get_role_price_floor(role, ton="1.5 Ton", cat="Split AC"):
                 "Stepping / Swing Motor": 1500,
                 "Cut-Off Valve (1/4\")": 1800,
                 "Cut-Off Valve (1/2\")": 2400,
+                "Cut-Off Valve (3/8\")": 2400,
+                "Cut-Off Valve (5/8\")": 2800,
                 "Cut-Off Valve (3/8\" - 5/8\")": 2800,
                 "4-Way Valve Assembly": 4500,
                 "Temperature Sensor": 1500,
@@ -330,6 +337,8 @@ def get_role_price_floor(role, ton="1.5 Ton", cat="Split AC"):
                 "Stepping / Swing Motor": 1395,
                 "Cut-Off Valve (1/4\")": 1600,
                 "Cut-Off Valve (1/2\")": 2100,
+                "Cut-Off Valve (3/8\")": 2400,
+                "Cut-Off Valve (5/8\")": 2600,
                 "Cut-Off Valve (3/8\" - 5/8\")": 2400,
                 "4-Way Valve Assembly": 3300,
                 "Temperature Sensor": 1500,
@@ -348,6 +357,8 @@ def get_role_price_floor(role, ton="1.5 Ton", cat="Split AC"):
                 "Stepping / Swing Motor": 1395,
                 "Cut-Off Valve (1/4\")": 1600,
                 "Cut-Off Valve (1/2\")": 2100,
+                "Cut-Off Valve (3/8\")": 2400,
+                "Cut-Off Valve (5/8\")": 2600,
                 "Cut-Off Valve (3/8\" - 5/8\")": 2600,
                 "4-Way Valve Assembly": 3500,
                 "Temperature Sensor": 1500,
@@ -379,5 +390,86 @@ def get_role_price_floor(role, ton="1.5 Ton", cat="Split AC"):
         }
         return floors.get(role, 2000)
     return 2000
+
+def is_valve_tonnage_compatible(role, part_name, target_tonnage, target_cat="Split AC"):
+    """
+    Validates physical line pairing and tonnage compatibility for Refrigerant Cut-Off & Service Valves.
+    Strict pairing standards based on empirical closed complaint history:
+      - 1.0 Ton: Strictly 1/4" (Liquid) + 3/8" (Suction Gas). Reject 1/2" and 5/8".
+      - 1.5 Ton: Strictly 1/4" (Liquid) + 1/2" (Suction Gas). Reject 3/8" and 5/8".
+      - 2.0 Ton: Strictly 1/4" (Liquid) + 5/8" (Suction Gas). Reject 3/8" and 1/2".
+      - 3.0 Ton: Strictly 1/4" (Liquid) + 5/8" (Suction Gas). Reject 3/8" and 1/2".
+      - 4.0 Ton: Strictly 3/8" (Liquid) + 5/8" (Suction Gas). Reject 1/4" and 1/2".
+    """
+    if target_cat not in ['Split AC', 'Floor Standing AC', 'Air Conditioner']:
+        return True
+        
+    valve_roles = [
+        "Cut-Off Valve (1/4\")", "Cut-Off Valve (3/8\")", 
+        "Cut-Off Valve (1/2\")", "Cut-Off Valve (5/8\")", 
+        "Cut-Off Valve (3/8\" - 5/8\")", "Service Valve"
+    ]
+    if role not in valve_roles and 'valve' not in str(part_name).lower():
+        return True
+        
+    if role == "4-Way Valve Assembly" or any(k in str(part_name).lower() for k in ['4-way', '4 way', 'reversing']):
+        return True
+
+    pn = str(part_name).lower()
+    
+    size_1_4 = (role == "Cut-Off Valve (1/4\")") or ('1/4' in pn) or ('quarter' in pn) or ('7130239' in pn and '71302395' not in pn)
+    size_3_8 = (role == "Cut-Off Valve (3/8\")") or ('3/8' in pn) or ('71302395' in pn) or ('7133474' in pn)
+    size_1_2 = (role == "Cut-Off Valve (1/2\")") or ('1/2' in pn) or ('half' in pn) or ('7133774' in pn)
+    size_5_8 = (role == "Cut-Off Valve (5/8\")") or ('5/8' in pn) or ('7133844' in pn) or ('7135142' in pn)
+    
+    if target_tonnage == '1.0 Ton':
+        if size_1_2 or size_5_8:
+            return False
+        if size_1_4 or size_3_8:
+            return True
+        return True
+        
+    elif target_tonnage == '1.5 Ton':
+        if size_3_8 or size_5_8:
+            return False
+        if size_1_4 or size_1_2:
+            return True
+        return True
+        
+    elif target_tonnage in ['2.0 Ton', '3.0 Ton']:
+        if size_3_8 or size_1_2:
+            return False
+        if size_1_4 or size_5_8:
+            return True
+        return True
+        
+    elif target_tonnage == '4.0 Ton':
+        if size_1_4 or size_1_2:
+            return False
+        if size_3_8 or size_5_8:
+            return True
+        return True
+        
+    return True
+
+def get_tonnage_valve_pairing(target_tonnage):
+    """
+    Returns the tuple of (suction_role, liquid_role) for a given tonnage:
+      - 1.0 Ton: ("Cut-Off Valve (3/8\")", "Cut-Off Valve (1/4\")")
+      - 1.5 Ton: ("Cut-Off Valve (1/2\")", "Cut-Off Valve (1/4\")")
+      - 2.0 Ton: ("Cut-Off Valve (5/8\")", "Cut-Off Valve (1/4\")")
+      - 3.0 Ton: ("Cut-Off Valve (5/8\")", "Cut-Off Valve (1/4\")")
+      - 4.0 Ton: ("Cut-Off Valve (5/8\")", "Cut-Off Valve (3/8\")")
+    """
+    if target_tonnage == '1.0 Ton':
+        return "Cut-Off Valve (3/8\")", "Cut-Off Valve (1/4\")"
+    elif target_tonnage == '1.5 Ton':
+        return "Cut-Off Valve (1/2\")", "Cut-Off Valve (1/4\")"
+    elif target_tonnage in ['2.0 Ton', '3.0 Ton']:
+        return "Cut-Off Valve (5/8\")", "Cut-Off Valve (1/4\")"
+    elif target_tonnage == '4.0 Ton':
+        return "Cut-Off Valve (5/8\")", "Cut-Off Valve (3/8\")"
+    return "Cut-Off Valve (1/2\")", "Cut-Off Valve (1/4\")"
+
 
 
