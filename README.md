@@ -78,7 +78,27 @@ Standard active warehouse stock valves (`7133774`, `7130239`, `71302395`, `71338
 
 ## 🛠️ Developer & AI Agent Reference Manual
 
-If you need to make future changes, use this guide to identify where to start:
+### 🚨 Strict Engineering Rules for AI Agents Working on This Codebase:
+1. **Canonical Ground Truth Authority**: NEVER guess or invent part numbers, compatibility mappings, or prices. Closed complaints (`quality_feedback_report_*.csv`) and customer collections (`Detail_Collection_*.xlsx`) are canonical truth.
+2. **Floor Standing AC Separation**: Floor Standing models have distinct physical capacities and chassis platforms:
+   - `GF-24...` / `EF-24...` $\rightarrow$ **2.0 Ton** (TFIH, ISH, TF, FW, CD, CB)
+   - `GF-36...` $\rightarrow$ **3.0 Ton** (TFIH, e.g. `GF-36TFIH` with genuine Evaporator `11001000602` @ Rs. 58,000)
+   - `GF-48...` $\rightarrow$ **4.0 Ton** (TF, FW, FWITH, CB, e.g. Evaporator `1004169` / `11001060246`)
+   - `GF-60...` $\rightarrow$ **5.0 Ton**
+   - NEVER lump floor models into a generic `"FLOOR"` series or blanket `4.0 Ton`. Always preserve their genuine series tokens.
+3. **Refrigerant Valve Pairing Standards**:
+   - 1.0 Ton: 1/4" Liquid (`7130239` @ Rs. 1,600) + 3/8" Suction (`71302395` @ Rs. 1,500).
+   - 1.5 Ton: 1/4" Liquid (`7130239` @ Rs. 1,600) + 1/2" Suction (`7133774` @ Rs. 2,100).
+   - 2.0 Ton: 1/4" Liquid (`7130239` @ Rs. 1,600) + 5/8" Suction (`7133844` @ Rs. 2,800).
+   - 3.0 Ton: 1/4" Liquid (`7130239` @ Rs. 1,600) + 5/8" Suction (`7133844` @ Rs. 2,200).
+   - 4.0 Ton / 5.0 Ton: 3/8" Liquid (`71302395` @ Rs. 2,400) + 5/8" Suction (`7133844` @ Rs. 3,200).
+4. **Authoritative Field Billing over Ledger Ratios**:
+   - Raw stock inventory CSV amounts reflect accounting warehouse balance ratios, not customer billing rates.
+   - For example, part `71302395` has ledger ratio Rs. 2,516 (Rs. 2,968 with tax), but customer receipts prove Rs. 1,500. Field collection receipts ALWAYS take precedence over accounting balances.
+5. **No Direct Commits to `main`**:
+   - Always branch to `feature/...`, run `python test_system_verification.py`, verify all 12 tests pass, and obtain user confirmation before merging.
+
+### Reference Modification Guide:
 
 | Goal / Modification | Target File | What to Edit / Functions Involved |
 | :--- | :--- | :--- |
