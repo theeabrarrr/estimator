@@ -1,11 +1,34 @@
 # config.py
 import re
 import os
+import glob
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_NAME = os.path.join(BASE_DIR, "dwp_service.db")
-DEFAULT_FB_FILE = os.path.join(BASE_DIR, "quality_feedback_report_14SEP2026_170840.csv")
-DEFAULT_COLL_FILE = os.path.join(BASE_DIR, "Detail_Collection_14SEP26_052528PM.xlsx")
+
+def find_latest_feedback_file():
+    candidates = []
+    for pattern in ["quality_feedback_report_*.csv", "*feedback*.csv"]:
+        for f in glob.glob(os.path.join(BASE_DIR, pattern)):
+            candidates.append((os.path.getmtime(f), f))
+    if candidates:
+        candidates.sort(key=lambda x: x[0], reverse=True)
+        return candidates[0][1]
+    return os.path.join(BASE_DIR, "quality_feedback_report_28SEP2026_142900.csv")
+
+def find_latest_collection_file():
+    candidates = []
+    for pattern in ["Detail_Collection_*.xlsx", "*Collection*.xlsx", "*collection*.xlsx"]:
+        for f in glob.glob(os.path.join(BASE_DIR, pattern)):
+            if not os.path.basename(f).startswith('~$'):
+                candidates.append((os.path.getmtime(f), f))
+    if candidates:
+        candidates.sort(key=lambda x: x[0], reverse=True)
+        return candidates[0][1]
+    return os.path.join(BASE_DIR, "Detail_Collection_28SEP26_023634PM.xlsx")
+
+DEFAULT_FB_FILE = find_latest_feedback_file()
+DEFAULT_COLL_FILE = find_latest_collection_file()
 STOCK_SEARCH_DIRS = [os.path.join(BASE_DIR, "data"), BASE_DIR, ".", r"C:\temp", "/tmp"]
 
 VISIT_CHARGES = 600
@@ -222,17 +245,37 @@ def tokenize_appliance_model(model_str):
         cat = "Microwave Oven"
         ton = "Standard Unit"
         series = "MW"
-    elif any(k in m for k in ['GF-', 'FLOOR', 'STANDING']) or any(x in m for x in ['48', '60', '36', '36TFIH', 'TFIH']):
+    elif m.startswith(('GF-', 'EF-')) or any(k in m for k in ['FLOOR', 'STANDING']):
         cat = "Floor Standing AC"
-        ton = "4.0 Ton"
+        # Determine Floor Standing Capacity
+        if any(x in m for x in ['60', '5TON']):
+            ton = "5.0 Ton"
+        elif any(x in m for x in ['48', '4TON']):
+            ton = "4.0 Ton"
+        elif any(x in m for x in ['36', '3TON']):
+            ton = "3.0 Ton"
+        elif any(x in m for x in ['24', '26', '2TON']):
+            ton = "2.0 Ton"
+        else:
+            ton = "3.0 Ton"
+            
+        # Determine Floor Standing Series
         series = "FLOOR"
+        for s in ['TFIH', 'FWITH', 'VTIH', 'TF', 'FW', 'ISH', 'CD', 'CB', 'IPH', 'PITH', 'CITH']:
+            if s in m:
+                series = s
+                break
     else:
         cat = "Split AC"
         cap_match = re.search(r'-(10|11|12|16|18|24|26|36|48|60)', m)
         if cap_match:
             cv = cap_match.group(1)
-            if cv in ['48', '60', '36']:
+            if cv in ['60']:
+                ton = "5.0 Ton"
+            elif cv in ['48']:
                 ton = "4.0 Ton"
+            elif cv in ['36']:
+                ton = "3.0 Ton"
             elif cv in ['24', '26']:
                 ton = "2.0 Ton"
             elif cv in ['18', '16']:
@@ -241,7 +284,7 @@ def tokenize_appliance_model(model_str):
                 ton = "1.0 Ton"
             
         # Strict Platform Series Tokenizer
-        for s in ['PITH', 'CITH', 'FITH', 'AITH', 'VITH', 'LITH', 'ZITH', 'VTIH', 'UITH', 'TFIH', 'PIT', 'CIT', 'CM', 'LM', 'ECH', 'DU', 'EM', 'CZ', 'AR', 'PR', 'NV', 'GL', 'IB', 'TF', 'CD', 'CB']:
+        for s in ['PITH', 'CITH', 'FITH', 'AITH', 'VITH', 'LITH', 'ZITH', 'VTIH', 'UITH', 'TFIH', 'FWITH', 'PIT', 'CIT', 'CM', 'LM', 'ECH', 'DU', 'EM', 'CZ', 'AR', 'PR', 'NV', 'GL', 'IB', 'ISH', 'FW', 'TF', 'CD', 'CB']:
             if s in m:
                 series = s
                 break
@@ -271,12 +314,12 @@ def get_tonnage_specs(model_str):
     elif cat == 'Water Dispenser':
         return 'Dispenser', 3500, 0, 4000, cat
 
-    if cat == 'Floor Standing AC' or ton == '4.0 Ton':
-        return '4.0 Ton', 13000, 70000, 55000, cat
+    if ton in ['4.0 Ton', '5.0 Ton']:
+        return ton, 13000, 70000, 55000, cat
+    elif ton == '3.0 Ton':
+        return '3.0 Ton', 10000, 58000, 50000, cat
     elif ton == '2.0 Ton':
         return '2.0 Ton', 8500, 39000, 45000, cat
-    elif ton == '1.5 Ton':
-        return '1.5 Ton', 7000, 26000, 40000, cat
     elif ton == '1.0 Ton':
         return '1.0 Ton', 5500, 20000, 35000, cat
         
@@ -284,7 +327,7 @@ def get_tonnage_specs(model_str):
 
 def get_role_price_floor(role, ton="1.5 Ton", cat="Split AC"):
     if cat == 'Split AC' or cat == 'Floor Standing AC':
-        if ton == '4.0 Ton':
+        if ton in ['4.0 Ton', '5.0 Ton']:
             floors = {
                 "Evaporator Assembly": 70000,
                 "Outdoor Inverter PCB": 55000,
@@ -303,6 +346,26 @@ def get_role_price_floor(role, ton="1.5 Ton", cat="Split AC"):
                 "4-Way Valve Assembly": 6500,
                 "Temperature Sensor": 1500,
                 "Capacitor": 1200
+            }
+        elif ton == '3.0 Ton':
+            floors = {
+                "Evaporator Assembly": 55000,
+                "Outdoor Inverter PCB": 50000,
+                "Indoor Main PCB": 8500,
+                "Circuit Board (PCB)": 8500,
+                "Compressor & Fittings": 58000,
+                "Fan Motor": 3500,
+                "Indoor Fan Motor": 3500,
+                "Outdoor Fan Motor": 4000,
+                "Stepping / Swing Motor": 1800,
+                "Cut-Off Valve (1/4\")": 1600,
+                "Cut-Off Valve (1/2\")": 2400,
+                "Cut-Off Valve (3/8\")": 2400,
+                "Cut-Off Valve (5/8\")": 2800,
+                "Cut-Off Valve (3/8\" - 5/8\")": 2800,
+                "4-Way Valve Assembly": 5000,
+                "Temperature Sensor": 1500,
+                "Capacitor": 1100
             }
         elif ton == '2.0 Ton':
             floors = {
@@ -337,9 +400,9 @@ def get_role_price_floor(role, ton="1.5 Ton", cat="Split AC"):
                 "Stepping / Swing Motor": 1395,
                 "Cut-Off Valve (1/4\")": 1600,
                 "Cut-Off Valve (1/2\")": 2100,
-                "Cut-Off Valve (3/8\")": 2400,
+                "Cut-Off Valve (3/8\")": 1500,
                 "Cut-Off Valve (5/8\")": 2600,
-                "Cut-Off Valve (3/8\" - 5/8\")": 2400,
+                "Cut-Off Valve (3/8\" - 5/8\")": 1500,
                 "4-Way Valve Assembly": 3300,
                 "Temperature Sensor": 1500,
                 "Capacitor": 800
@@ -443,7 +506,7 @@ def is_valve_tonnage_compatible(role, part_name, target_tonnage, target_cat="Spl
             return True
         return True
         
-    elif target_tonnage == '4.0 Ton':
+    elif target_tonnage in ['4.0 Ton', '5.0 Ton']:
         if size_1_4 or size_1_2:
             return False
         if size_3_8 or size_5_8:
@@ -459,7 +522,7 @@ def get_tonnage_valve_pairing(target_tonnage):
       - 1.5 Ton: ("Cut-Off Valve (1/2\")", "Cut-Off Valve (1/4\")")
       - 2.0 Ton: ("Cut-Off Valve (5/8\")", "Cut-Off Valve (1/4\")")
       - 3.0 Ton: ("Cut-Off Valve (5/8\")", "Cut-Off Valve (1/4\")")
-      - 4.0 Ton: ("Cut-Off Valve (5/8\")", "Cut-Off Valve (3/8\")")
+      - 4.0 Ton / 5.0 Ton: ("Cut-Off Valve (5/8\")", "Cut-Off Valve (3/8\")")
     """
     if target_tonnage == '1.0 Ton':
         return "Cut-Off Valve (3/8\")", "Cut-Off Valve (1/4\")"
@@ -467,7 +530,7 @@ def get_tonnage_valve_pairing(target_tonnage):
         return "Cut-Off Valve (1/2\")", "Cut-Off Valve (1/4\")"
     elif target_tonnage in ['2.0 Ton', '3.0 Ton']:
         return "Cut-Off Valve (5/8\")", "Cut-Off Valve (1/4\")"
-    elif target_tonnage == '4.0 Ton':
+    elif target_tonnage in ['4.0 Ton', '5.0 Ton']:
         return "Cut-Off Valve (5/8\")", "Cut-Off Valve (3/8\")"
     return "Cut-Off Valve (1/2\")", "Cut-Off Valve (1/4\")"
 

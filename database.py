@@ -8,6 +8,7 @@ if BASE_DIR not in sys.path:
 import sqlite3
 import pandas as pd
 import json
+import re
 from config import (
     DB_NAME, BASELINE_JSON_PATH, COMPONENT_ROLE_GROUPS,
     tokenize_appliance_model, classify_component_role,
@@ -134,24 +135,30 @@ def fetch_tiered_compatible_parts(selected_model):
             'Evaporator Assembly', 'Outdoor Inverter PCB', 'Indoor Main PCB', 
             'Display Board', 'Cross Flow Fan', 'Front Panel'
         ]
-        tokens = ['PITH', 'CITH', 'FITH', 'AITH', 'VITH', 'LITH', 'ZITH', 'VTIH', 'UITH', 'TFIH', 'PIT', 'CIT', 'CM', 'LM', 'ECH', 'DU', 'EM', 'CZ', 'AR', 'PR', 'NV', 'GL', 'IB', 'TF', 'CD', 'CB']
+        tokens = ['PITH', 'CITH', 'FITH', 'AITH', 'VITH', 'LITH', 'ZITH', 'VTIH', 'UITH', 'TFIH', 'FWITH', 'PIT', 'CIT', 'CM', 'LM', 'ECH', 'DU', 'EM', 'CZ', 'AR', 'PR', 'NV', 'GL', 'IB', 'ISH', 'FW', 'TF', 'CD', 'CB']
         found = [s for s in tokens if s in pn]
         if found:
             if target_series in found:
+                pass
+            elif target_series == "FLOOR":
                 pass
             elif role in chassis_sensitive:
                 return False
                 
         # Tonnage check for chassis sensitive cooling/electrical roles
         if role in chassis_sensitive and target_cat in ['Split AC', 'Floor Standing AC']:
-            t_markers = {'1.0 Ton': ['12', '10', '11'], '1.5 Ton': ['18', '16'], '2.0 Ton': ['24', '26'], '4.0 Ton': ['36', '48', '60']}
-            other_markers = []
-            for ton_name, markers in t_markers.items():
-                if ton_name != target_tonnage:
-                    other_markers.extend(markers)
-            target_markers = t_markers.get(target_tonnage, [])
-            if any(m in pn for m in other_markers) and not any(m in pn for m in target_markers):
-                return False
+            cap_tokens = re.findall(r'(?:GS-|GF-|ES-|EF-|\b)(10|11|12|16|18|24|26|36|48|60)(?=[A-Za-z]|\b|-)', pn)
+            if cap_tokens:
+                ton_map = {
+                    '10': '1.0 Ton', '11': '1.0 Ton', '12': '1.0 Ton',
+                    '16': '1.5 Ton', '18': '1.5 Ton',
+                    '24': '2.0 Ton', '26': '2.0 Ton',
+                    '36': '3.0 Ton',
+                    '48': '4.0 Ton', '60': '4.0 Ton'
+                }
+                detected_tons = {ton_map[ct] for ct in cap_tokens if ct in ton_map}
+                if detected_tons and target_tonnage not in detected_tons:
+                    return False
 
         # Strict Tonnage Compatibility for Cut-off and Service Valves
         if not is_valve_tonnage_compatible(role, pname, target_tonnage, target_cat):
@@ -170,18 +177,18 @@ def fetch_tiered_compatible_parts(selected_model):
             continue
         p_copy = p.copy()
         pno = p['part_no'].upper()
-        # Override with live stock if available
+        price_book = baseline.get('price_book', {})
         if pno in live_stock_map:
             p_copy['bal_qty'] = live_stock_map[pno]['bal_qty']
             p_copy['in_stock'] = p_copy['bal_qty'] > 0
-            if live_stock_map[pno]['unit_price'] > 0:
-                p_copy['price'] = live_stock_map[pno]['unit_price']
+            
+        if pno in price_book and price_book[pno].get('price', 0) > 0:
+            p_copy['price'] = int(price_book[pno]['price'])
+        elif pno in live_stock_map and live_stock_map[pno]['unit_price'] > 0:
+            p_copy['price'] = live_stock_map[pno]['unit_price']
                 
         if p_copy['price'] <= 0:
-            price_book = baseline.get('price_book', {})
-            p_copy['price'] = price_book.get(pno, {}).get('price', 0)
-            if p_copy['price'] <= 0:
-                p_copy['price'] = baseline.get('category_floors', {}).get(p['role'], 26000 if 'Evaporator' in p['role'] else 1500)
+            p_copy['price'] = baseline.get('category_floors', {}).get(p['role'], 26000 if 'Evaporator' in p['role'] else 1500)
                 
         p_copy['tier'] = "Tier 1: Exact Model Verified"
         p_copy['tier_code'] = 1
@@ -201,14 +208,14 @@ def fetch_tiered_compatible_parts(selected_model):
             if pno in live_stock_map:
                 p_copy['bal_qty'] = live_stock_map[pno]['bal_qty']
                 p_copy['in_stock'] = p_copy['bal_qty'] > 0
-                if live_stock_map[pno]['unit_price'] > 0:
-                    p_copy['price'] = live_stock_map[pno]['unit_price']
+                
+            if pno in price_book and price_book[pno].get('price', 0) > 0:
+                p_copy['price'] = int(price_book[pno]['price'])
+            elif pno in live_stock_map and live_stock_map[pno]['unit_price'] > 0:
+                p_copy['price'] = live_stock_map[pno]['unit_price']
                     
             if p_copy['price'] <= 0:
-                price_book = baseline.get('price_book', {})
-                p_copy['price'] = price_book.get(pno, {}).get('price', 0)
-                if p_copy['price'] <= 0:
-                    p_copy['price'] = baseline.get('category_floors', {}).get(p['role'], 26000 if 'Evaporator' in p['role'] else 1500)
+                p_copy['price'] = baseline.get('category_floors', {}).get(p['role'], 26000 if 'Evaporator' in p['role'] else 1500)
                     
             p_copy['tier'] = f"Tier 2: {tok['series']} Series Platform"
             p_copy['tier_code'] = 2
@@ -288,7 +295,7 @@ def fetch_tiered_compatible_parts(selected_model):
             
             warehouse_stock_map = {
                 '1.0 Ton': [
-                    ('71302395', "Cut-Off Valve (3/8\")", 'Cut-off valve 3/8 71302395 GS-12PITH1W/O', 2400),
+                    ('71302395', "Cut-Off Valve (3/8\")", 'Cut-off valve 3/8 71302395 GS-12PITH1W/O', 1500),
                     ('7130239', "Cut-Off Valve (1/4\")", 'Cut-off Valve 1/4 7130239', 1600)
                 ],
                 '1.5 Ton': [
@@ -306,13 +313,22 @@ def fetch_tiered_compatible_parts(selected_model):
                 '4.0 Ton': [
                     ('7133844', "Cut-Off Valve (5/8\")", 'Cutt Off Valve 5/8 24LITH11M 7133844', 3200),
                     ('71302395', "Cut-Off Valve (3/8\")", 'Cut-off valve 3/8 71302395 GS-12PITH1W/O', 2400)
+                ],
+                '5.0 Ton': [
+                    ('7133844', "Cut-Off Valve (5/8\")", 'Cutt Off Valve 5/8 24LITH11M 7133844', 3200),
+                    ('71302395', "Cut-Off Valve (3/8\")", 'Cut-off valve 3/8 71302395 GS-12PITH1W/O', 2400)
                 ]
             }
             defaults = warehouse_stock_map.get(tok.get('tonnage'), [])
+            price_book = baseline.get('price_book', {})
             for pno, r, pname, def_pr in defaults:
                 stk_data = live_stock_map.get(pno, {})
                 b_qty = stk_data.get('bal_qty', 15)
-                u_pr = stk_data.get('unit_price', def_pr) or def_pr
+                u_pr = def_pr
+                if pno in price_book and price_book[pno].get('price', 0) > 0:
+                    u_pr = int(price_book[pno]['price'])
+                elif stk_data.get('unit_price', 0) > 0:
+                    u_pr = stk_data.get('unit_price')
                 if r == suction_role and not has_suction:
                     matched_items.append({
                         'part_no': pno,

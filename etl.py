@@ -115,8 +115,16 @@ def ingest_stock_file(stock_source):
         ).set_index('part_no')['hist_price'].to_dict()
 
     # Determine final unit price (prefer collection verified price, protect with role floors)
+    known_price_overrides = {
+        '71302395': 1500,     # Cut-off valve 3/8 1.0 Ton verified field price
+        '7130239': 1600,      # Cut-off valve 1/4 verified field price
+        '11001000602': 58000, # Evaporator Assy GF-36TFIH verified customer collection price
+    }
+
     def calculate_clean_unit_price(r):
         pno = r['part_no']
+        if pno in known_price_overrides:
+            return known_price_overrides[pno]
         if pno in existing_prices and existing_prices[pno] > 0:
             return int(existing_prices[pno])
             
@@ -127,7 +135,7 @@ def ingest_stock_file(stock_source):
         cap = str(r.get('capacity', ''))
         desc_up = desc.upper()
         ton = "1.5 Ton"
-        for t_str, token in [('4.0 Ton', '48'), ('4.0 Ton', '36'), ('2.0 Ton', '24'), ('1.0 Ton', '12'), ('1.5 Ton', '18')]:
+        for t_str, token in [('4.0 Ton', '48'), ('3.0 Ton', '36'), ('2.0 Ton', '24'), ('1.0 Ton', '12'), ('1.5 Ton', '18')]:
             if token in desc_up or token in cap:
                 ton = t_str
                 break
@@ -205,10 +213,10 @@ def bootstrap_master_data():
                 updates = [(int(info.get('price', 0)), pno) for pno, info in price_book.items() if info.get('price', 0) > 0]
                 if updates:
                     cursor.executemany("""
-                        UPDATE parts_master SET price = ? WHERE part_no = ? AND (price IS NULL OR price = 0)
+                        UPDATE parts_master SET price = ? WHERE part_no = ?
                     """, updates)
                     cursor.executemany("""
-                        UPDATE stock_master SET unit_price = ? WHERE part_no = ? AND (unit_price IS NULL OR unit_price = 0)
+                        UPDATE stock_master SET unit_price = ? WHERE part_no = ?
                     """, updates)
     except Exception:
         pass

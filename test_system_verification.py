@@ -206,7 +206,7 @@ def run_tests():
     print(">>> PASS: 2.0 Ton models strictly paired with 5/8\" Suction + 1/4\" Liquid valves (0% leakage of 3/8\" & 1/2\").")
 
     # 4.0 Ton Models (3/8" liquid + 5/8" suction)
-    for m in ["GF-48TF", "GS-36TFIH"]:
+    for m in ["GF-48TF", "GF-48FW"]:
         res = fetch_tiered_compatible_parts(m)
         vg = next((g for g in res['role_groups'] if "Cut-off & Service Valves" in g['group_title']), None)
         assert vg is not None, f"{m} must have Cut-off & Service Valves group"
@@ -220,8 +220,53 @@ def run_tests():
         assert "Cut-Off Valve (1/2\")" not in all_roles, f"{m} must NOT contain 1/2\" valve!"
     print(">>> PASS: 4.0 Ton models strictly paired with 5/8\" Suction + 3/8\" Liquid valves (0% leakage of 1/4\" & 1/2\").")
 
+    # 11. Floor Standing AC Isolation & Genuine Evaporator Protection
+    print("\n[TEST 11] Testing Floor Standing AC Isolation & Genuine Evaporator Protection...")
+    tok_36 = tokenize_appliance_model("GF-36TFIH")
+    assert tok_36['category'] == "Floor Standing AC", f"Expected Floor Standing AC, got {tok_36['category']}"
+    assert tok_36['tonnage'] == "3.0 Ton", f"Expected 3.0 Ton, got {tok_36['tonnage']}"
+    assert tok_36['series'] == "TFIH", f"Expected TFIH series, got {tok_36['series']}"
+
+    res_36 = fetch_tiered_compatible_parts("GF-36TFIH")
+    evap_36 = next((g for g in res_36['role_groups'] if "Evaporator" in g['group_title']), None)
+    assert evap_36 is not None, "GF-36TFIH must have Evaporator group"
+    assert evap_36['primary']['part_no'] == "11001000602", f"Expected primary evaporator 11001000602, got {evap_36['primary']['part_no']}"
+    assert evap_36['primary']['price'] == 58000, f"Expected verified price 58,000, got {evap_36['primary']['price']}"
+
+    all_36_evap_pnos = [evap_36['primary']['part_no']] + [a['part_no'] for a in evap_36['alternatives']]
+    assert "11001060092" not in all_36_evap_pnos, "CRITICAL ERROR: 2.0 Ton 24ISH (11001060092) leaked into GF-36TFIH!"
+    assert "1004169" not in all_36_evap_pnos, "CRITICAL ERROR: 4.0 Ton 48FW (1004169) leaked into GF-36TFIH!"
+    assert "11001060246" not in all_36_evap_pnos, "CRITICAL ERROR: 4.0 Ton 48FWITH (11001060246) leaked into GF-36TFIH!"
+
+    # 3.0 Ton Valve Pairing: 5/8" suction + 1/4" liquid
+    vg_36 = next((g for g in res_36['role_groups'] if "Cut-off & Service Valves" in g['group_title']), None)
+    assert vg_36 is not None, "GF-36TFIH must have Cut-off & Service Valves group"
+    assert vg_36['primary']['role'] == "Cut-Off Valve (5/8\")", f"GF-36TFIH primary valve must be 5/8\", got {vg_36['primary']['role']}"
+    assert vg_36['alternatives'][0]['role'] == "Cut-Off Valve (1/4\")", f"GF-36TFIH alt valve must be 1/4\", got {vg_36['alternatives'][0]['role']}"
+    print(f"GF-36TFIH Evaporator: {evap_36['primary']['part_no']} (Price: Rs. {evap_36['primary']['price']:,}, Stock: {evap_36['primary']['bal_qty']})")
+    print(f"GF-36TFIH Valves: Suction={vg_36['primary']['part_no']} ({vg_36['primary']['role']}), Liquid={vg_36['alternatives'][0]['part_no']} ({vg_36['alternatives'][0]['role']})")
+    print(">>> PASS: GF-36TFIH 100% verified with genuine Evaporator 11001000602 at Rs. 58,000 (0% leakage of 24ISH & 48FW).")
+
+    # 12. 1.0 Ton 3/8" Valve Customer Verified Pricing (Rs. 1,500) & Dual Pairing Consistency
+    print("\n[TEST 12] Testing 1.0 Ton 3/8\" Valve Customer Verified Pricing (Rs. 1,500)...")
+    res_12 = fetch_tiered_compatible_parts("GS-12PITH11W")
+    vg_12 = next((g for g in res_12['role_groups'] if "Cut-off & Service Valves" in g['group_title']), None)
+    assert vg_12 is not None, "GS-12PITH11W must have Cut-off & Service Valves group"
+    assert vg_12['primary']['part_no'] == "71302395", f"Primary valve must be 71302395, got {vg_12['primary']['part_no']}"
+    assert vg_12['primary']['price'] == 1500, f"Expected 1.0 Ton 3/8\" valve price 1,500, got {vg_12['primary']['price']}"
+    assert vg_12['alternatives'][0]['part_no'] == "7130239", f"Alt valve must be 7130239, got {vg_12['alternatives'][0]['part_no']}"
+    assert vg_12['alternatives'][0]['price'] == 1600, f"Expected 1.0 Ton 1/4\" valve price 1,600, got {vg_12['alternatives'][0]['price']}"
+
+    stk_12_valve = search_stock_global("71302395")
+    assert not stk_12_valve.empty, "Direct search for 71302395 must return item"
+    direct_valve_price = int(stk_12_valve.iloc[0]['price'])
+    assert direct_valve_price == 1500, f"Direct stock search for 71302395 must return 1,500, got {direct_valve_price}"
+    assert vg_12['primary']['price'] == direct_valve_price, "Price discrepancy between model search and stock search for 3/8\" valve!"
+    print(f"1.0 Ton 3/8\" Valve 71302395: Rs. {vg_12['primary']['price']:,} (Model Search) == Rs. {direct_valve_price:,} (Direct Stock Search)")
+    print(">>> PASS: 1.0 Ton 3/8\" valve accurately verified at customer billing rate Rs. 1,500 with 100% system consistency.")
+
     print("\n" + "=" * 60)
-    print("ALL 10 SYSTEM TESTS PASSED SUCCESSFULLY!")
+    print("ALL 12 SYSTEM TESTS PASSED SUCCESSFULLY!")
     print("=" * 60)
 
 if __name__ == "__main__":

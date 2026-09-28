@@ -6,12 +6,13 @@ import pandas as pd
 from datetime import datetime
 from config import (
     classify_component_role, get_role_price_floor, tokenize_appliance_model,
-    is_valve_tonnage_compatible, get_tonnage_valve_pairing
+    is_valve_tonnage_compatible, get_tonnage_valve_pairing,
+    DEFAULT_FB_FILE, DEFAULT_COLL_FILE
 )
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-FB_FILE = os.path.join(BASE_DIR, "quality_feedback_report_14SEP2026_170840.csv")
-COLL_FILE = os.path.join(BASE_DIR, "Detail_Collection_14SEP26_052528PM.xlsx")
+FB_FILE = DEFAULT_FB_FILE
+COLL_FILE = DEFAULT_COLL_FILE
 STOCK_FILE = os.path.join(BASE_DIR, "data", "stock_inventory_latest.csv")
 OUTPUT_FILE = os.path.join(BASE_DIR, "data", "ground_truth_baseline.json")
 
@@ -102,6 +103,14 @@ def main():
         s = pd.Series(pr_list)
         part_verified_prices[pno] = int(s.mode()[0]) if not s.mode().empty else int(s.median())
 
+    known_price_overrides = {
+        '71302395': 1500,     # Cut-off valve 3/8 1.0 Ton verified field price
+        '7130239': 1600,      # Cut-off valve 1/4 verified field price
+        '11001000602': 58000, # Evaporator Assy GF-36TFIH verified customer collection price
+    }
+    for pno, ov_pr in known_price_overrides.items():
+        part_verified_prices[pno] = ov_pr
+
     print(f"Verified {len(part_verified_prices)} parts with exact collection prices.")
 
     # Standardize stock inventory unit prices with collection prices & role price floors
@@ -112,7 +121,7 @@ def main():
         item_ton = s_item.get('capacity') or "1.5 Ton"
         desc_up = desc.upper()
         if not item_ton or item_ton == "1.5 Ton":
-            for t_str, token in [('4.0 Ton', '48'), ('4.0 Ton', '36'), ('2.0 Ton', '24'), ('1.0 Ton', '12'), ('1.5 Ton', '18')]:
+            for t_str, token in [('4.0 Ton', '48'), ('3.0 Ton', '36'), ('2.0 Ton', '24'), ('1.0 Ton', '12'), ('1.5 Ton', '18')]:
                 if token in desc_up:
                     item_ton = t_str
                     break
@@ -164,21 +173,25 @@ def main():
             
             if is_chassis_sensitive and 'COMMON' not in p_upper:
                 # 1. Check conflicting series
-                for s in ['PITH', 'CITH', 'FITH', 'AITH', 'VITH', 'LITH', 'ZITH', 'VTIH', 'LM', 'ECH', 'CM', 'CZ']:
-                    if s in p_upper and s != tok['series'] and tok['series'] not in p_upper:
-                        conflicting = True
-                        break
+                series_tokens = ['PITH', 'CITH', 'FITH', 'AITH', 'VITH', 'LITH', 'ZITH', 'VTIH', 'UITH', 'TFIH', 'FWITH', 'PIT', 'CIT', 'CM', 'LM', 'ECH', 'DU', 'EM', 'CZ', 'AR', 'PR', 'NV', 'GL', 'IB', 'ISH', 'FW', 'TF', 'CD', 'CB']
+                found_series = [s for s in series_tokens if s in p_upper]
+                if found_series and tok['series'] not in found_series and tok['series'] != "FLOOR":
+                    conflicting = True
+                    
                 # 2. Check conflicting tonnage for chassis-sensitive components
                 if not conflicting and tok['category'] in ['Split AC', 'Floor Standing AC']:
-                    t_markers = {'1.0 Ton': ['12', '10', '11'], '1.5 Ton': ['18', '16'], '2.0 Ton': ['24', '26'], '4.0 Ton': ['36', '48', '60']}
-                    target_ton = tok['tonnage']
-                    other_markers = []
-                    for ton_name, markers in t_markers.items():
-                        if ton_name != target_ton:
-                            other_markers.extend(markers)
-                    target_markers = t_markers.get(target_ton, [])
-                    if any(m in p_upper for m in other_markers) and not any(m in p_upper for m in target_markers):
-                        conflicting = True
+                    cap_tokens = re.findall(r'(?:GS-|GF-|ES-|EF-|\b)(10|11|12|16|18|24|26|36|48|60)(?=[A-Za-z]|\b|-)', p_upper)
+                    if cap_tokens:
+                        ton_map = {
+                            '10': '1.0 Ton', '11': '1.0 Ton', '12': '1.0 Ton',
+                            '16': '1.5 Ton', '18': '1.5 Ton',
+                            '24': '2.0 Ton', '26': '2.0 Ton',
+                            '36': '3.0 Ton',
+                            '48': '4.0 Ton', '60': '4.0 Ton'
+                        }
+                        detected_tons = {ton_map[ct] for ct in cap_tokens if ct in ton_map}
+                        if detected_tons and tok['tonnage'] not in detected_tons:
+                            conflicting = True
             
             if conflicting:
                 continue
@@ -217,7 +230,7 @@ def main():
             'parts': model_parts_list
         }
 
-    series_token_list = ['PITH', 'CITH', 'FITH', 'AITH', 'VITH', 'LITH', 'ZITH', 'VTIH', 'UITH', 'TFIH', 'PIT', 'CIT', 'CM', 'LM', 'ECH', 'DU', 'EM', 'CZ', 'AR', 'PR', 'NV', 'GL', 'IB', 'TF', 'CD', 'CB']
+    series_token_list = ['PITH', 'CITH', 'FITH', 'AITH', 'VITH', 'LITH', 'ZITH', 'VTIH', 'UITH', 'TFIH', 'FWITH', 'PIT', 'CIT', 'CM', 'LM', 'ECH', 'DU', 'EM', 'CZ', 'AR', 'PR', 'NV', 'GL', 'IB', 'ISH', 'FW', 'TF', 'CD', 'CB']
 
     for pno, s_item in stock_dict.items():
         desc = s_item['item_desc'].upper()
@@ -250,15 +263,18 @@ def main():
 
                 # Reject if desc mentions a conflicting tonnage
                 if is_chassis_sensitive and m_tok.get('category') in ['Split AC', 'Floor Standing AC']:
-                    t_markers = {'1.0 Ton': ['12', '10', '11'], '1.5 Ton': ['18', '16'], '2.0 Ton': ['24', '26'], '4.0 Ton': ['36', '48', '60']}
-                    target_ton = m_tok.get('tonnage')
-                    other_markers = []
-                    for ton_name, markers in t_markers.items():
-                        if ton_name != target_ton:
-                            other_markers.extend(markers)
-                    target_markers = t_markers.get(target_ton, [])
-                    if any(m in desc for m in other_markers) and not any(m in desc for m in target_markers):
-                        continue
+                    cap_tokens = re.findall(r'(?:GS-|GF-|ES-|EF-|\b)(10|11|12|16|18|24|26|36|48|60)(?=[A-Za-z]|\b|-)', desc)
+                    if cap_tokens:
+                        ton_map = {
+                            '10': '1.0 Ton', '11': '1.0 Ton', '12': '1.0 Ton',
+                            '16': '1.5 Ton', '18': '1.5 Ton',
+                            '24': '2.0 Ton', '26': '2.0 Ton',
+                            '36': '3.0 Ton',
+                            '48': '4.0 Ton', '60': '4.0 Ton'
+                        }
+                        detected_tons = {ton_map[ct] for ct in cap_tokens if ct in ton_map}
+                        if detected_tons and m_tok.get('tonnage') not in detected_tons:
+                            continue
 
                 # Reject if valve is incompatible with model tonnage
                 if not is_valve_tonnage_compatible(role, desc, m_tok.get('tonnage'), m_tok.get('category')):
@@ -282,7 +298,7 @@ def main():
                 brand = s_item['brand'] or "Gree"
                 cat = s_item['category'] or "Split AC"
                 ton = "1.5 Ton"
-                for t_str, token in [('4.0 Ton', '48'), ('4.0 Ton', '36'), ('2.0 Ton', '24'), ('1.0 Ton', '12'), ('1.5 Ton', '18')]:
+                for t_str, token in [('4.0 Ton', '48'), ('3.0 Ton', '36'), ('2.0 Ton', '24'), ('1.0 Ton', '12'), ('1.5 Ton', '18')]:
                     if token in desc:
                         ton = t_str
                         break
@@ -308,7 +324,7 @@ def main():
     # Universal In-Stock Warehouse Valve Attachment for AC models
     warehouse_stock_valves = {
         '1.0 Ton': [
-            {'part_no': '71302395', 'role': "Cut-Off Valve (3/8\")", 'part_name': 'Cut-off valve 3/8 71302395 GS-12PITH1W/O', 'price': 2400, 'bal_qty': 15, 'in_stock': True, 'verified_jobs': 100},
+            {'part_no': '71302395', 'role': "Cut-Off Valve (3/8\")", 'part_name': 'Cut-off valve 3/8 71302395 GS-12PITH1W/O', 'price': 1500, 'bal_qty': 15, 'in_stock': True, 'verified_jobs': 100},
             {'part_no': '7130239', 'role': "Cut-Off Valve (1/4\")", 'part_name': 'Cut-off Valve 1/4 7130239', 'price': 1600, 'bal_qty': 15, 'in_stock': True, 'verified_jobs': 50}
         ],
         '1.5 Ton': [
@@ -387,9 +403,9 @@ def main():
             "Stepping / Swing Motor": 1395,
             "Cut-Off Valve (1/4\")": 1600,
             "Cut-Off Valve (1/2\")": 2100,
-            "Cut-Off Valve (3/8\")": 2400,
+            "Cut-Off Valve (3/8\")": 1500,
             "Cut-Off Valve (5/8\")": 2600,
-            "Cut-Off Valve (3/8\" - 5/8\")": 2600,
+            "Cut-Off Valve (3/8\" - 5/8\")": 1500,
             "4-Way Valve Assembly": 3500,
             "Temperature Sensor": 1500,
             "Capacitor": 900

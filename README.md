@@ -103,17 +103,19 @@ Always run the automated verification suite after making any modifications:
 python test_system_verification.py
 ```
 
-### Automated Checks Performed (10 Tests):
+### Automated Checks Performed (12 Tests):
 1. **Bootstrap & Stock Metadata**: Ensures stock master loads and counts are > 0.
 2. **Strict Model Tokenizer**: Tests parsing of series, tonnages, and appliance categories.
 3. **Cross-Series Isolation**: Asserts zero cross-contamination (e.g., PITH vs CITH evaporators).
-4. **Zero-Price Immunity**: Validates 505+ parts across 7 appliance models are all > Rs. 0.
+4. **Zero-Price Immunity**: Validates 460+ parts across 7 appliance models are all > Rs. 0.
 5. **Global Stock Search**: Tests full-text search across warehouse inventory.
 6. **ZITH Evaporator Verification**: Tests `GS-18ZITH1W-T3` for primary and alternate evaporators.
 7. **Overheads & Gas Pricing**: Asserts Mobility=2000, Visit=600, Ref Gas=4000, Dispenser Gas=3500.
 8. **100% Price Consistency**: Asserts exact price equality between Model Search and Direct Part Search.
 9. **Packaging & Floor Protection**: Asserts cartons are excluded from cooling roles and floors are enforced.
 10. **Strict Valve Tonnage Isolation & Dual Pairing**: Asserts exact physical pairing across 1.0T (3/8" + 1/4"), 1.5T (1/2" + 1/4" on ZITH & PITH), 2.0T (5/8" + 1/4"), and 4.0T (5/8" + 3/8") with 0% contamination of incompatible valve sizes.
+11. **Floor Standing AC Isolation & Genuine Evaporator Protection**: Asserts `GF-36TFIH` strictly matches genuine Evaporator `11001000602` at verified customer price Rs. 58,000 with 0% leakage of 2.0T `24ISH` or 4.0T `48FW`. Also validates 3.0T physical valve pairing (5/8" suction + 1/4" liquid).
+12. **1.0 Ton 3/8" Valve Customer Verified Pricing (Rs. 1,500)**: Asserts 1.0 Ton 3/8" valve (`71302395`) reflects actual customer collection billing rate Rs. 1,500 rather than raw ledger accounting cost (Rs. 2,968) with 100% price consistency between model search and direct stock search.
 
 ---
 
