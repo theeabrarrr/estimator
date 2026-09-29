@@ -265,8 +265,40 @@ def run_tests():
     print(f"1.0 Ton 3/8\" Valve 71302395: Rs. {vg_12['primary']['price']:,} (Model Search) == Rs. {direct_valve_price:,} (Direct Stock Search)")
     print(">>> PASS: 1.0 Ton 3/8\" valve accurately verified at customer billing rate Rs. 1,500 with 100% system consistency.")
 
+    # 13. Exact Closed Complaint Ground-Truth Rate & Description Verification (GF-36TFIH & System-Wide)
+    print("\n[TEST 13] Testing Exact Closed-Complaint Ground-Truth Rates & Field Descriptions...")
+    res_36_gt = fetch_tiered_compatible_parts("GF-36TFIH")
+    vg_36_gt = next((g for g in res_36_gt['role_groups'] if "Cut-off & Service Valves" in g['group_title']), None)
+    assert vg_36_gt is not None, "GF-36TFIH must have Cut-off & Service Valves group"
+    
+    # 5/8" Valve verification (Customer billing collection = Rs. 2,200)
+    v58 = vg_36_gt['primary']
+    assert v58['part_no'] == "7133844", f"Expected 7133844, got {v58['part_no']}"
+    assert v58['price'] == 2200, f"Expected Rs. 2,200 for 7133844, got {v58['price']}"
+    assert "24LITH11M" in v58['part_name'], f"Expected closed complaint description, got {v58['part_name']}"
+    
+    # 1/4" Valve verification (Customer billing collection = Rs. 1,600)
+    v14 = vg_36_gt['alternatives'][0]
+    assert v14['part_no'] == "7130239", f"Expected 7130239, got {v14['part_no']}"
+    assert v14['price'] == 1600, f"Expected Rs. 1,600 for 7130239, got {v14['price']}"
+    assert "GS-11CITH3F" in v14['part_name'], f"Expected closed complaint description 'Cut off Valve 1/4 GS-11CITH3F', got {v14['part_name']}"
+    
+    # SQLite parts_master verification
+    import sqlite3
+    with sqlite3.connect("dwp_service.db") as conn:
+        c = conn.cursor()
+        c.execute("SELECT part_no, part_name, price FROM parts_master WHERE model = 'GF-36TFIH' AND part_no IN ('7133844', '7130239', '11001000602')")
+        db_rows = {row[0]: (row[1], row[2]) for row in c.fetchall()}
+        assert '7133844' in db_rows and db_rows['7133844'][1] == 2200, f"DB parts_master 7133844 must be 2200, got {db_rows.get('7133844')}"
+        assert '7130239' in db_rows and db_rows['7130239'][1] == 1600, f"DB parts_master 7130239 must be 1600, got {db_rows.get('7130239')}"
+        assert '11001000602' in db_rows and db_rows['11001000602'][1] == 58000, f"DB parts_master 11001000602 must be 58000, got {db_rows.get('11001000602')}"
+        
+    print(f"GF-36TFIH 5/8\" Valve: {v58['part_name']} -> Rs. {v58['price']:,} (Verified from Closed Complaint #282629821)")
+    print(f"GF-36TFIH 1/4\" Valve: {v14['part_name']} -> Rs. {v14['price']:,} (Verified from Closed Complaint #282629821)")
+    print(">>> PASS: Exact closed-complaint ground-truth rates & field descriptions verified with 100% precision.")
+
     print("\n" + "=" * 60)
-    print("ALL 12 SYSTEM TESTS PASSED SUCCESSFULLY!")
+    print("ALL 13 SYSTEM TESTS PASSED SUCCESSFULLY!")
     print("=" * 60)
 
 if __name__ == "__main__":

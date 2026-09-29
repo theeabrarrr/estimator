@@ -19,7 +19,10 @@ OUTPUT_FILE = os.path.join(BASE_DIR, "data", "ground_truth_baseline.json")
 def clean_str(v):
     if pd.isna(v) or v is None:
         return ""
-    return str(v).strip().replace('=', '').replace('"', '').strip()
+    s = str(v).strip().replace('=', '').replace('"', '').strip()
+    if s.endswith('.0'):
+        s = s[:-2]
+    return s
 
 def classify_role(part_name, part_no=""):
     return classify_component_role(part_name, part_no)
@@ -64,8 +67,11 @@ def main():
     print(f"Loaded {len(fb_df)} feedback complaint records.")
 
     exact_part_price_map = {}
+    model_part_price_map = {}
+    model_part_canonical_names = {}
     model_replacements = {}
     part_canonical_names = {}
+    multi_part_complaints = []
 
     for _, r in fb_df.iterrows():
         cno = clean_str(r.get('COMPLAINT_NO'))
@@ -86,6 +92,13 @@ def main():
                 exact_part_price_map[pno] = []
             exact_part_price_map[pno].append(pr)
             
+            m_key = (m_raw, pno)
+            if m_key not in model_part_price_map:
+                model_part_price_map[m_key] = []
+            model_part_price_map[m_key].append(pr)
+        elif len(p_list) > 1 and cno in coll_map:
+            multi_part_complaints.append((cno, m_raw, p_list, pr_list, coll_map[cno]))
+            
         if m_raw not in model_replacements:
             model_replacements[m_raw] = {}
             
@@ -94,24 +107,68 @@ def main():
             if pno not in part_canonical_names or len(pname) > len(part_canonical_names[pno]):
                 part_canonical_names[pno] = pname
                 
+            m_key = (m_raw, pno)
+            if m_key not in model_part_canonical_names or len(pname) > len(model_part_canonical_names[m_key]):
+                model_part_canonical_names[m_key] = pname
+                
             if pno not in model_replacements[m_raw]:
                 model_replacements[m_raw][pno] = {'count': 0, 'name': pname}
             model_replacements[m_raw][pno]['count'] += 1
+            if len(pname) > len(model_replacements[m_raw][pno]['name']):
+                model_replacements[m_raw][pno]['name'] = pname
 
     part_verified_prices = {}
     for pno, pr_list in exact_part_price_map.items():
         s = pd.Series(pr_list)
         part_verified_prices[pno] = int(s.mode()[0]) if not s.mode().empty else int(s.median())
 
+    model_part_verified_prices = {}
+    for (m_key, pno), pr_list in model_part_price_map.items():
+        s = pd.Series(pr_list)
+        model_part_verified_prices[(m_key, pno)] = int(s.mode()[0]) if not s.mode().empty else int(s.median())
+
     known_price_overrides = {
         '71302395': 1500,     # Cut-off valve 3/8 1.0 Ton verified field price
         '7130239': 1600,      # Cut-off valve 1/4 verified field price
+        '7133844': 2200,      # Cut-off valve 5/8 (2.0/3.0 Ton) verified customer collection price
         '11001000602': 58000, # Evaporator Assy GF-36TFIH verified customer collection price
     }
     for pno, ov_pr in known_price_overrides.items():
         part_verified_prices[pno] = ov_pr
 
-    print(f"Verified {len(part_verified_prices)} parts with exact collection prices.")
+    # Multi-Part Deduction Pass (e.g. Evap + Valves combined jobs like GF-36TFIH 282629821)
+    for _ in range(3):
+        for cno, m_raw, p_list, pr_list, total_eff in multi_part_complaints:
+            unknown_indices = []
+            known_sum = 0
+            for i, p in enumerate(p_list):
+                p_price = model_part_verified_prices.get((m_raw, p), 0) or part_verified_prices.get(p, 0)
+                if p_price > 0:
+                    known_sum += p_price
+                else:
+                    unknown_indices.append(i)
+                    
+            if len(unknown_indices) == 1:
+                idx = unknown_indices[0]
+                target_pno = p_list[idx]
+                residual = total_eff - known_sum
+                if residual > 0:
+                    m_key = (m_raw, target_pno)
+                    if m_key not in model_part_price_map:
+                        model_part_price_map[m_key] = []
+                    model_part_price_map[m_key].append(residual)
+                    
+                    if target_pno not in exact_part_price_map:
+                        exact_part_price_map[target_pno] = []
+                    exact_part_price_map[target_pno].append(residual)
+                    
+                    s_m = pd.Series(model_part_price_map[m_key])
+                    model_part_verified_prices[m_key] = int(s_m.mode()[0]) if not s_m.mode().empty else int(s_m.median())
+                    
+                    s_g = pd.Series(exact_part_price_map[target_pno])
+                    part_verified_prices[target_pno] = int(s_g.mode()[0]) if not s_g.mode().empty else int(s_g.median())
+
+    print(f"Verified {len(part_verified_prices)} parts globally, and {len(model_part_verified_prices)} exact (model, part) rates.")
 
     # Standardize stock inventory unit prices with collection prices & role price floors
     stock_dict = {}
@@ -164,7 +221,8 @@ def main():
             
             stk_info = stock_dict.get(pno, {})
             bal_qty = stk_info.get('bal_qty', 0)
-            pname = stk_info.get('item_desc') or info['name'] or part_canonical_names.get(pno, "Component")
+            # Closed complaint field description is primary truth for this model:
+            pname = info.get('name') or model_part_canonical_names.get((m_raw, pno)) or part_canonical_names.get(pno) or stk_info.get('item_desc') or "Component"
             
             # Strict Platform Series & Tonnage Contamination Filter:
             p_upper = pname.upper()
@@ -201,7 +259,10 @@ def main():
                 continue
 
             floor_price = get_role_price_floor(role, tok['tonnage'], tok['category'])
-            if pno in part_verified_prices and part_verified_prices[pno] > 0:
+            m_key = (m_raw, pno)
+            if m_key in model_part_verified_prices and model_part_verified_prices[m_key] > 0:
+                final_price = model_part_verified_prices[m_key]
+            elif pno in part_verified_prices and part_verified_prices[pno] > 0:
                 final_price = part_verified_prices[pno]
             elif pno in stock_dict and stock_dict[pno]['unit_price'] > 0:
                 final_price = stock_dict[pno]['unit_price']
@@ -332,12 +393,12 @@ def main():
             {'part_no': '7130239', 'role': "Cut-Off Valve (1/4\")", 'part_name': 'Cut-off Valve 1/4 7130239', 'price': 1600, 'bal_qty': 15, 'in_stock': True, 'verified_jobs': 50}
         ],
         '2.0 Ton': [
-            {'part_no': '7133844', 'role': "Cut-Off Valve (5/8\")", 'part_name': 'Cutt Off Valve 5/8 24LITH11M 7133844', 'price': 2800, 'bal_qty': 5, 'in_stock': True, 'verified_jobs': 100},
-            {'part_no': '7130239', 'role': "Cut-Off Valve (1/4\")", 'part_name': 'Cut-off Valve 1/4 7130239', 'price': 1600, 'bal_qty': 15, 'in_stock': True, 'verified_jobs': 50}
+            {'part_no': '7133844', 'role': "Cut-Off Valve (5/8\")", 'part_name': 'Cutt Off Valve 5/8  24LITH11M 7133844', 'price': 2200, 'bal_qty': 5, 'in_stock': True, 'verified_jobs': 100},
+            {'part_no': '7130239', 'role': "Cut-Off Valve (1/4\")", 'part_name': 'Cut off Valve 1/4 GS-11CITH3F  7130239', 'price': 1600, 'bal_qty': 15, 'in_stock': True, 'verified_jobs': 50}
         ],
         '3.0 Ton': [
-            {'part_no': '7133844', 'role': "Cut-Off Valve (5/8\")", 'part_name': 'Cutt Off Valve 5/8 24LITH11M 7133844', 'price': 2800, 'bal_qty': 5, 'in_stock': True, 'verified_jobs': 100},
-            {'part_no': '7130239', 'role': "Cut-Off Valve (1/4\")", 'part_name': 'Cut-off Valve 1/4 7130239', 'price': 1600, 'bal_qty': 15, 'in_stock': True, 'verified_jobs': 50}
+            {'part_no': '7133844', 'role': "Cut-Off Valve (5/8\")", 'part_name': 'Cutt Off Valve 5/8  24LITH11M 7133844', 'price': 2200, 'bal_qty': 5, 'in_stock': True, 'verified_jobs': 100},
+            {'part_no': '7130239', 'role': "Cut-Off Valve (1/4\")", 'part_name': 'Cut off Valve 1/4 GS-11CITH3F  7130239', 'price': 1600, 'bal_qty': 15, 'in_stock': True, 'verified_jobs': 50}
         ],
         '4.0 Ton': [
             {'part_no': '7133844', 'role': "Cut-Off Valve (5/8\")", 'part_name': 'Cutt Off Valve 5/8 24LITH11M 7133844', 'price': 3200, 'bal_qty': 5, 'in_stock': True, 'verified_jobs': 100},

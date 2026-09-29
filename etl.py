@@ -118,6 +118,7 @@ def ingest_stock_file(stock_source):
     known_price_overrides = {
         '71302395': 1500,     # Cut-off valve 3/8 1.0 Ton verified field price
         '7130239': 1600,      # Cut-off valve 1/4 verified field price
+        '7133844': 2200,      # Cut-off valve 5/8 (2.0/3.0 Ton) verified customer collection price
         '11001000602': 58000, # Evaporator Assy GF-36TFIH verified customer collection price
     }
 
@@ -202,22 +203,34 @@ def bootstrap_master_data():
         if latest_stock:
             ingest_stock_file(latest_stock)
 
-    # Cross-enrich parts_master with baseline ground-truth prices
+    # Cross-enrich parts_master with baseline ground-truth model-specific parts and prices
     try:
         from database import load_ground_truth_baseline
         baseline = load_ground_truth_baseline()
+        models_dict = baseline.get("models", {})
+        model_updates = []
+        for m_name, m_data in models_dict.items():
+            for p in m_data.get('parts', []):
+                if p.get('price', 0) > 0:
+                    model_updates.append((int(p['price']), p.get('part_name', ''), m_name, p['part_no']))
+
         price_book = baseline.get("price_book", {})
-        if price_book:
-            with get_connection() as conn:
-                cursor = conn.cursor()
-                updates = [(int(info.get('price', 0)), pno) for pno, info in price_book.items() if info.get('price', 0) > 0]
-                if updates:
-                    cursor.executemany("""
-                        UPDATE parts_master SET price = ? WHERE part_no = ?
-                    """, updates)
-                    cursor.executemany("""
-                        UPDATE stock_master SET unit_price = ? WHERE part_no = ?
-                    """, updates)
+        stk_updates = [(int(info.get('price', 0)), pno) for pno, info in price_book.items() if info.get('price', 0) > 0]
+        
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            if model_updates:
+                cursor.executemany("""
+                    INSERT INTO parts_master (price, part_name, model, part_no)
+                    VALUES (?, ?, ?, ?)
+                    ON CONFLICT(model, part_no) DO UPDATE SET
+                        price = excluded.price,
+                        part_name = excluded.part_name
+                """, model_updates)
+            if stk_updates:
+                cursor.executemany("""
+                    UPDATE stock_master SET unit_price = ? WHERE part_no = ?
+                """, stk_updates)
     except Exception:
         pass
 

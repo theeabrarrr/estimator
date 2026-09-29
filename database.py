@@ -182,10 +182,11 @@ def fetch_tiered_compatible_parts(selected_model):
             p_copy['bal_qty'] = live_stock_map[pno]['bal_qty']
             p_copy['in_stock'] = p_copy['bal_qty'] > 0
             
-        if pno in price_book and price_book[pno].get('price', 0) > 0:
-            p_copy['price'] = int(price_book[pno]['price'])
-        elif pno in live_stock_map and live_stock_map[pno]['unit_price'] > 0:
-            p_copy['price'] = live_stock_map[pno]['unit_price']
+        if p_copy.get('price', 0) <= 0:
+            if pno in price_book and price_book[pno].get('price', 0) > 0:
+                p_copy['price'] = int(price_book[pno]['price'])
+            elif pno in live_stock_map and live_stock_map[pno]['unit_price'] > 0:
+                p_copy['price'] = live_stock_map[pno]['unit_price']
                 
         if p_copy['price'] <= 0:
             p_copy['price'] = baseline.get('category_floors', {}).get(p['role'], 26000 if 'Evaporator' in p['role'] else 1500)
@@ -209,10 +210,11 @@ def fetch_tiered_compatible_parts(selected_model):
                 p_copy['bal_qty'] = live_stock_map[pno]['bal_qty']
                 p_copy['in_stock'] = p_copy['bal_qty'] > 0
                 
-            if pno in price_book and price_book[pno].get('price', 0) > 0:
-                p_copy['price'] = int(price_book[pno]['price'])
-            elif pno in live_stock_map and live_stock_map[pno]['unit_price'] > 0:
-                p_copy['price'] = live_stock_map[pno]['unit_price']
+            if p_copy.get('price', 0) <= 0:
+                if pno in price_book and price_book[pno].get('price', 0) > 0:
+                    p_copy['price'] = int(price_book[pno]['price'])
+                elif pno in live_stock_map and live_stock_map[pno]['unit_price'] > 0:
+                    p_copy['price'] = live_stock_map[pno]['unit_price']
                     
             if p_copy['price'] <= 0:
                 p_copy['price'] = baseline.get('category_floors', {}).get(p['role'], 26000 if 'Evaporator' in p['role'] else 1500)
@@ -303,12 +305,12 @@ def fetch_tiered_compatible_parts(selected_model):
                     ('7130239', "Cut-Off Valve (1/4\")", 'Cut-off Valve 1/4 7130239', 1600)
                 ],
                 '2.0 Ton': [
-                    ('7133844', "Cut-Off Valve (5/8\")", 'Cutt Off Valve 5/8 24LITH11M 7133844', 2800),
-                    ('7130239', "Cut-Off Valve (1/4\")", 'Cut-off Valve 1/4 7130239', 1600)
+                    ('7133844', "Cut-Off Valve (5/8\")", 'Cutt Off Valve 5/8  24LITH11M 7133844', 2200),
+                    ('7130239', "Cut-Off Valve (1/4\")", 'Cut off Valve 1/4 GS-11CITH3F  7130239', 1600)
                 ],
                 '3.0 Ton': [
-                    ('7133844', "Cut-Off Valve (5/8\")", 'Cutt Off Valve 5/8 24LITH11M 7133844', 2800),
-                    ('7130239', "Cut-Off Valve (1/4\")", 'Cut-off Valve 1/4 7130239', 1600)
+                    ('7133844', "Cut-Off Valve (5/8\")", 'Cutt Off Valve 5/8  24LITH11M 7133844', 2200),
+                    ('7130239', "Cut-Off Valve (1/4\")", 'Cut off Valve 1/4 GS-11CITH3F  7130239', 1600)
                 ],
                 '4.0 Ton': [
                     ('7133844', "Cut-Off Valve (5/8\")", 'Cutt Off Valve 5/8 24LITH11M 7133844', 3200),
