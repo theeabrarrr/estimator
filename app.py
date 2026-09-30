@@ -62,6 +62,11 @@ st.markdown("""
     .stock-badge-low { background-color: #FEF3C7; color: #B45309; font-weight: 700; padding: 2px 8px; border-radius: 12px; font-size: 0.73rem; border: 1px solid #FDE68A; display: inline-block; }
     .stock-badge-out { background-color: #FEE2E2; color: #B91C1C; font-weight: 700; padding: 2px 8px; border-radius: 12px; font-size: 0.73rem; border: 1px solid #FECACA; display: inline-block; }
     .item-card { background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 10px; margin-bottom: 8px; }
+
+    /* Multi-Tier Resolution Badges */
+    .badge-tier-1 { background-color: #FEF3C7; color: #92400E; padding: 2px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 700; border: 1px solid #FCD34D; display: inline-block; margin-left: 4px; }
+    .badge-tier-2 { background-color: #EFF6FF; color: #1D4ED8; padding: 2px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 600; border: 1px solid #BFDBFE; display: inline-block; margin-left: 4px; }
+    .badge-tier-3 { background-color: #F0FDF4; color: #166534; padding: 2px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 600; border: 1px solid #BBF7D0; display: inline-block; margin-left: 4px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -174,6 +179,34 @@ with tab_estimator:
             series_badge = f" &nbsp;|&nbsp; **Series:** `{series_name}`" if series_name else ""
             st.info(f"**Appliance:** `{selected_model}` &nbsp;|&nbsp; **Category:** `{detected_category}` &nbsp;|&nbsp; **Spec:** `{ton_label}`{series_badge} &nbsp;|&nbsp; 🏅 **{total_v_jobs:,} Field Jobs Verified**")
 
+            # Multi-Tier Resolution Summary Banner
+            t1_count = len(tiered_data.get('tier1', []))
+            t2_count = len(tiered_data.get('tier2', []))
+            t3_count = len(tiered_data.get('tier3', []))
+
+            col_t1, col_t2, col_t3 = st.columns(3)
+            with col_t1:
+                st.markdown(f"""
+                <div style="background:#FFFBEB; border:1px solid #FCD34D; border-radius:6px; padding:6px 10px; text-align:center;">
+                    <span style="color:#92400E; font-weight:700; font-size:0.78rem;">⭐ Tier 1: Exact Model</span><br>
+                    <span style="font-size:1.15rem; font-weight:800; color:#B45309;">{t1_count} parts</span>
+                </div>
+                """, unsafe_allow_html=True)
+            with col_t2:
+                st.markdown(f"""
+                <div style="background:#EFF6FF; border:1px solid #BFDBFE; border-radius:6px; padding:6px 10px; text-align:center;">
+                    <span style="color:#1D4ED8; font-weight:700; font-size:0.78rem;">🔄 Tier 2: Series Platform</span><br>
+                    <span style="font-size:1.15rem; font-weight:800; color:#2563EB;">{t2_count} parts</span>
+                </div>
+                """, unsafe_allow_html=True)
+            with col_t3:
+                st.markdown(f"""
+                <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-radius:6px; padding:6px 10px; text-align:center;">
+                    <span style="color:#166534; font-weight:700; font-size:0.78rem;">📦 Tier 3: Store Fallback</span><br>
+                    <span style="font-size:1.15rem; font-weight:800; color:#15803D;">{t3_count} parts</span>
+                </div>
+                """, unsafe_allow_html=True)
+
             if not role_groups:
                 st.warning("Is model ke verified parts direct baseline mein nahi milay. Aap neeche 'Direct Part Search' se part dhoond kar add kar saktay hain.")
             else:
@@ -186,6 +219,7 @@ with tab_estimator:
                     p_price = int(part.get('price', 0))
                     p_qty = int(part.get('bal_qty', 0))
                     v_jobs = int(part.get('verified_jobs', 0))
+                    t_code = part.get('tier_code', 1)
                     tier_str = part.get('tier', '')
 
                     if p_qty > 2:
@@ -196,7 +230,14 @@ with tab_estimator:
                         badge_html = '<span class="stock-badge-out">🔴 Out of Stock / NIL</span>'
 
                     v_badge = f'<span style="background-color:#E0E7FF; color:#3730A3; padding:2px 7px; border-radius:10px; font-size:0.72rem; font-weight:600; margin-left:4px;">🏅 {v_jobs} Jobs</span>' if v_jobs > 0 else ''
-                    tier_badge = f'<span style="background-color:#F1F5F9; color:#475569; padding:2px 6px; border-radius:10px; font-size:0.70rem; margin-left:4px;">{tier_str}</span>' if tier_str else ''
+                    
+                    if t_code == 1:
+                        tier_badge = f'<span class="badge-tier-1">⭐ {tier_str}</span>' if tier_str else ''
+                    elif t_code == 2:
+                        tier_badge = f'<span class="badge-tier-2">🔄 {tier_str}</span>' if tier_str else ''
+                    else:
+                        tier_badge = f'<span class="badge-tier-3">📦 {tier_str}</span>' if tier_str else ''
+                        
                     star = "⭐ " if is_primary else ""
 
                     col_p1, col_p2, col_p3 = st.columns([6, 2, 2])

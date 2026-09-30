@@ -13,6 +13,7 @@ from config import (
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FB_FILE = DEFAULT_FB_FILE
 COLL_FILE = DEFAULT_COLL_FILE
+OFFICIAL_CATALOG_FILE = os.path.join(BASE_DIR, "data", "pdf_extracted_stock_report.csv")
 STOCK_FILE = os.path.join(BASE_DIR, "data", "stock_inventory_latest.csv")
 OUTPUT_FILE = os.path.join(BASE_DIR, "data", "ground_truth_baseline.json")
 
@@ -32,26 +33,97 @@ def tokenize_model(m_str):
 
 def main():
     print("Starting Ground-Truth Baseline Indexer...")
-    print("Reading Stock File:", STOCK_FILE)
-    stock_df = pd.read_csv(STOCK_FILE)
+    print("Reading Official Master Catalog File (Authority 1):", OFFICIAL_CATALOG_FILE)
+    cat_df = pd.read_csv(OFFICIAL_CATALOG_FILE)
+    catalog_parts_master = {}
+    catalog_model_parts = {}
     raw_stock_dict = {}
-    for _, r in stock_df.iterrows():
-        pno = clean_str(r.get('PART_NO')).upper()
+
+    def normalize_desc(s):
+        val = clean_str(s)
+        val = re.sub(r'\b(GS|GF|ES|EF|EW|GR|GW|WD|CX|EM)-\s+([0-9A-Za-z])', r'\1-\2', val)
+        return re.sub(r'\s+', ' ', val).strip()
+
+    sec_stocks = {}
+    if os.path.exists(STOCK_FILE):
+        try:
+            s_df = pd.read_csv(STOCK_FILE)
+            for _, r in s_df.iterrows():
+                p = clean_str(r.get('PART_NO')).upper()
+                b = int(pd.to_numeric(r.get('BAL_QTY', 0), errors='coerce') or 0)
+                if p and b > 0:
+                    sec_stocks[p] = b
+        except Exception:
+            pass
+
+    for _, r in cat_df.iterrows():
+        pno = clean_str(r.get('part_no')).upper()
         if not pno:
             continue
-        bal = int(pd.to_numeric(r.get('BAL_QTY', 0), errors='coerce') or 0)
-        amt = float(pd.to_numeric(r.get('AMOUNT', 0), errors='coerce') or 0.0)
-        unit_calc = int(round(amt / bal)) if (bal > 0 and amt > 0) else 0
+        p_price = int(round(float(pd.to_numeric(r.get('pdf_price', 0), errors='coerce') or 0)))
+        t_stock = int(pd.to_numeric(r.get('total_stock', 0), errors='coerce') or 0)
+        if t_stock <= 0 and pno in sec_stocks:
+            t_stock = sec_stocks[pno]
+        p_desc = normalize_desc(r.get('item_desc'))
+        p_model = clean_str(r.get('model')).upper()
+        page_no = int(pd.to_numeric(r.get('page', 1), errors='coerce') or 1)
+
+        # Consolidate duplicate entries across bin locations
+        if pno in catalog_parts_master:
+            existing = catalog_parts_master[pno]
+            existing['price'] = max(existing['price'], p_price)
+            existing['bal_qty'] = existing['bal_qty'] + max(0, t_stock)
+            if existing['bal_qty'] <= 0 and pno in sec_stocks:
+                existing['bal_qty'] = sec_stocks[pno]
+            if len(p_desc) > len(existing['item_desc']):
+                existing['item_desc'] = p_desc
+            if p_model and len(p_model) > 1 and not p_model.startswith('GASR-'):
+                catalog_model_parts.setdefault(p_model, []).append(pno)
+        else:
+            tok = tokenize_appliance_model(p_model if p_model else p_desc)
+            catalog_parts_master[pno] = {
+                'part_no': pno,
+                'item_desc': p_desc,
+                'model': p_model,
+                'brand': tok['brand'],
+                'category': tok['category'],
+                'capacity': tok['tonnage'],
+                'bal_qty': t_stock,
+                'price': p_price,
+                'page': page_no
+            }
+            if p_model and len(p_model) > 1 and not p_model.startswith('GASR-'):
+                catalog_model_parts.setdefault(p_model, []).append(pno)
+
         raw_stock_dict[pno] = {
             'part_no': pno,
-            'item_desc': clean_str(r.get('ITEM_DESC')),
-            'brand': clean_str(r.get('BRAND')),
-            'category': clean_str(r.get('CATEGORY')),
-            'capacity': clean_str(r.get('CAPACITY')),
-            'bal_qty': bal,
-            'stock_cost': unit_calc
+            'item_desc': catalog_parts_master[pno]['item_desc'],
+            'brand': catalog_parts_master[pno]['brand'],
+            'category': catalog_parts_master[pno]['category'],
+            'capacity': catalog_parts_master[pno]['capacity'],
+            'bal_qty': catalog_parts_master[pno]['bal_qty'],
+            'stock_cost': catalog_parts_master[pno]['price']
         }
-    print(f"Loaded {len(raw_stock_dict)} items from Stock Inventory.")
+    print(f"Loaded {len(catalog_parts_master)} unique parts from Master Price Authority (vp786.pdf).")
+
+    # Ingest secondary items from stock_inventory_latest.csv (e.g. LED TVs, Microwave Ovens)
+    if os.path.exists(STOCK_FILE):
+        sec_df = pd.read_csv(STOCK_FILE)
+        for _, r in sec_df.iterrows():
+            pno = clean_str(r.get('PART_NO')).upper()
+            if not pno or pno in raw_stock_dict:
+                continue
+            bal = int(pd.to_numeric(r.get('BAL_QTY', 0), errors='coerce') or 0)
+            raw_stock_dict[pno] = {
+                'part_no': pno,
+                'item_desc': clean_str(r.get('ITEM_DESC')),
+                'brand': clean_str(r.get('BRAND')),
+                'category': clean_str(r.get('CATEGORY')),
+                'capacity': clean_str(r.get('CAPACITY')),
+                'bal_qty': bal,
+                'stock_cost': 0  # Permanently discard AMOUNT / BAL_QTY ledger calculation
+            }
+        print(f"Total unified stock parts (Catalog + Secondary): {len(raw_stock_dict)}")
 
     print("Reading Collection File:", COLL_FILE)
     coll_df = pd.read_excel(COLL_FILE)
@@ -117,6 +189,18 @@ def main():
             if len(pname) > len(model_replacements[m_raw][pno]['name']):
                 model_replacements[m_raw][pno]['name'] = pname
 
+    # Seed all designated models from Master Price Catalog into model_replacements
+    for c_model, pno_list in catalog_model_parts.items():
+        if c_model not in model_replacements:
+            model_replacements[c_model] = {}
+        for pno in pno_list:
+            if pno not in model_replacements[c_model]:
+                p_desc = catalog_parts_master.get(pno, {}).get('item_desc', 'Component Hardware')
+                model_replacements[c_model][pno] = {
+                    'count': 0,
+                    'name': p_desc
+                }
+
     part_verified_prices = {}
     for pno, pr_list in exact_part_price_map.items():
         s = pd.Series(pr_list)
@@ -127,14 +211,9 @@ def main():
         s = pd.Series(pr_list)
         model_part_verified_prices[(m_key, pno)] = int(s.mode()[0]) if not s.mode().empty else int(s.median())
 
-    known_price_overrides = {
-        '71302395': 1500,     # Cut-off valve 3/8 1.0 Ton verified field price
-        '7130239': 1600,      # Cut-off valve 1/4 verified field price
-        '7133844': 2200,      # Cut-off valve 5/8 (2.0/3.0 Ton) verified customer collection price
-        '11001000602': 58000, # Evaporator Assy GF-36TFIH verified customer collection price
-    }
-    for pno, ov_pr in known_price_overrides.items():
-        part_verified_prices[pno] = ov_pr
+    # Authority 1: Master Price Authority establishes official retail prices for all 518 parts
+    for pno, c_item in catalog_parts_master.items():
+        part_verified_prices[pno] = c_item['price']
 
     # Multi-Part Deduction Pass (e.g. Evap + Valves combined jobs like GF-36TFIH 282629821)
     for _ in range(3):
@@ -166,7 +245,8 @@ def main():
                     model_part_verified_prices[m_key] = int(s_m.mode()[0]) if not s_m.mode().empty else int(s_m.median())
                     
                     s_g = pd.Series(exact_part_price_map[target_pno])
-                    part_verified_prices[target_pno] = int(s_g.mode()[0]) if not s_g.mode().empty else int(s_g.median())
+                    if target_pno not in catalog_parts_master:
+                        part_verified_prices[target_pno] = int(s_g.mode()[0]) if not s_g.mode().empty else int(s_g.median())
 
     print(f"Verified {len(part_verified_prices)} parts globally, and {len(model_part_verified_prices)} exact (model, part) rates.")
 
@@ -185,7 +265,9 @@ def main():
         floor = get_role_price_floor(role, item_ton, s_item.get('category', 'Split AC'))
         raw_cost = s_item['stock_cost']
 
-        if pno in part_verified_prices and part_verified_prices[pno] > 0:
+        if pno in catalog_parts_master and catalog_parts_master[pno]['price'] > 0:
+            unit_pr = catalog_parts_master[pno]['price']
+        elif pno in part_verified_prices and part_verified_prices[pno] > 0:
             unit_pr = part_verified_prices[pno]
         elif raw_cost > 0:
             if raw_cost < floor:
@@ -260,7 +342,9 @@ def main():
 
             floor_price = get_role_price_floor(role, tok['tonnage'], tok['category'])
             m_key = (m_raw, pno)
-            if m_key in model_part_verified_prices and model_part_verified_prices[m_key] > 0:
+            if pno in catalog_parts_master and catalog_parts_master[pno]['price'] > 0:
+                final_price = catalog_parts_master[pno]['price']
+            elif m_key in model_part_verified_prices and model_part_verified_prices[m_key] > 0:
                 final_price = model_part_verified_prices[m_key]
             elif pno in part_verified_prices and part_verified_prices[pno] > 0:
                 final_price = part_verified_prices[pno]
@@ -383,42 +467,80 @@ def main():
                     }
 
     # Universal In-Stock Warehouse Valve Attachment for AC models
-    warehouse_stock_valves = {
+    standard_valve_pairings = {
         '1.0 Ton': [
-            {'part_no': '71302395', 'role': "Cut-Off Valve (3/8\")", 'part_name': 'Cut-off valve 3/8 71302395 GS-12PITH1W/O', 'price': 1500, 'bal_qty': 15, 'in_stock': True, 'verified_jobs': 100},
-            {'part_no': '7130239', 'role': "Cut-Off Valve (1/4\")", 'part_name': 'Cut-off Valve 1/4 7130239', 'price': 1600, 'bal_qty': 15, 'in_stock': True, 'verified_jobs': 50}
+            ('71302395', "Cut-Off Valve (3/8\")", 'Cut-off valve 3/8 71302395 GS-12PITH1W/O'),
+            ('7130239', "Cut-Off Valve (1/4\")", 'Cut-off Valve 1/4 7130239')
         ],
         '1.5 Ton': [
-            {'part_no': '7133774', 'role': "Cut-Off Valve (1/2\")", 'part_name': 'Cut Off Valve Assy 1/2 7133774 GS-18VITH1', 'price': 2100, 'bal_qty': 20, 'in_stock': True, 'verified_jobs': 100},
-            {'part_no': '7130239', 'role': "Cut-Off Valve (1/4\")", 'part_name': 'Cut-off Valve 1/4 7130239', 'price': 1600, 'bal_qty': 15, 'in_stock': True, 'verified_jobs': 50}
+            ('7133774', "Cut-Off Valve (1/2\")", 'Cut Off Valve Assy 1/2 7133774 GS-18VITH1'),
+            ('7130239', "Cut-Off Valve (1/4\")", 'Cut-off Valve 1/4 7130239')
         ],
         '2.0 Ton': [
-            {'part_no': '7133844', 'role': "Cut-Off Valve (5/8\")", 'part_name': 'Cutt Off Valve 5/8  24LITH11M 7133844', 'price': 2200, 'bal_qty': 5, 'in_stock': True, 'verified_jobs': 100},
-            {'part_no': '7130239', 'role': "Cut-Off Valve (1/4\")", 'part_name': 'Cut off Valve 1/4 GS-11CITH3F  7130239', 'price': 1600, 'bal_qty': 15, 'in_stock': True, 'verified_jobs': 50}
+            ('7133844', "Cut-Off Valve (5/8\")", 'Cutt Off Valve 5/8  24LITH11M 7133844'),
+            ('7130239', "Cut-Off Valve (1/4\")", 'Cut off Valve 1/4 GS-11CITH3F  7130239')
         ],
         '3.0 Ton': [
-            {'part_no': '7133844', 'role': "Cut-Off Valve (5/8\")", 'part_name': 'Cutt Off Valve 5/8  24LITH11M 7133844', 'price': 2200, 'bal_qty': 5, 'in_stock': True, 'verified_jobs': 100},
-            {'part_no': '7130239', 'role': "Cut-Off Valve (1/4\")", 'part_name': 'Cut off Valve 1/4 GS-11CITH3F  7130239', 'price': 1600, 'bal_qty': 15, 'in_stock': True, 'verified_jobs': 50}
+            ('7133844', "Cut-Off Valve (5/8\")", 'Cutt Off Valve 5/8  24LITH11M 7133844'),
+            ('7130239', "Cut-Off Valve (1/4\")", 'Cut off Valve 1/4 GS-11CITH3F  7130239')
         ],
         '4.0 Ton': [
-            {'part_no': '7133844', 'role': "Cut-Off Valve (5/8\")", 'part_name': 'Cutt Off Valve 5/8 24LITH11M 7133844', 'price': 3200, 'bal_qty': 5, 'in_stock': True, 'verified_jobs': 100},
-            {'part_no': '71302395', 'role': "Cut-Off Valve (3/8\")", 'part_name': 'Cut-off valve 3/8 71302395 GS-12PITH1W/O', 'price': 2400, 'bal_qty': 15, 'in_stock': True, 'verified_jobs': 50}
+            ('7133844', "Cut-Off Valve (5/8\")", 'Cutt Off Valve 5/8 24LITH11M 7133844'),
+            ('71302395', "Cut-Off Valve (3/8\")", 'Cut-off valve 3/8 71302395 GS-12PITH1W/O')
+        ],
+        '5.0 Ton': [
+            ('7133844', "Cut-Off Valve (5/8\")", 'Cutt Off Valve 5/8 24LITH11M 7133844'),
+            ('71302395', "Cut-Off Valve (3/8\")", 'Cut-off valve 3/8 71302395 GS-12PITH1W/O')
         ]
     }
 
     for m_name, m_data in ground_truth_catalog.items():
         m_cat = m_data['meta'].get('category')
         m_ton = m_data['meta'].get('tonnage')
-        if m_cat in ['Split AC', 'Floor Standing AC'] and m_ton in warehouse_stock_valves:
+        if m_cat in ['Split AC', 'Floor Standing AC'] and m_ton in standard_valve_pairings:
             # Purge any incompatible valves
             m_data['parts'] = [
                 p for p in m_data['parts']
                 if is_valve_tonnage_compatible(p['role'], p['part_name'], m_ton, m_cat)
             ]
             existing_pnos = {p['part_no'] for p in m_data['parts']}
-            for v_item in warehouse_stock_valves[m_ton]:
-                if v_item['part_no'] not in existing_pnos:
-                    m_data['parts'].append(v_item.copy())
+            for v_pno, v_role, v_name in standard_valve_pairings[m_ton]:
+                dyn_price = catalog_parts_master.get(v_pno, {}).get('price', 0)
+                if dyn_price <= 0:
+                    dyn_price = part_verified_prices.get(v_pno, 0)
+                if dyn_price <= 0:
+                    dyn_price = stock_dict.get(v_pno, {}).get('unit_price', 0)
+                if dyn_price <= 0:
+                    dyn_price = get_role_price_floor(v_role, m_ton, m_cat)
+
+                stk_info = stock_dict.get(v_pno, {})
+                b_qty = stk_info.get('bal_qty', 15)
+
+                if v_pno not in existing_pnos:
+                    m_data['parts'].append({
+                        'part_no': v_pno,
+                        'part_name': v_name,
+                        'role': v_role,
+                        'price': dyn_price,
+                        'bal_qty': b_qty,
+                        'in_stock': b_qty > 0,
+                        'verified_jobs': 50
+                    })
+                else:
+                    for p in m_data['parts']:
+                        if p['part_no'] == v_pno:
+                            p['price'] = dyn_price
+
+    for m_name, m_data in ground_truth_catalog.items():
+        m_data['parts'].sort(
+            key=lambda x: (
+                x['in_stock'],
+                x['verified_jobs'],
+                0 if 'SUB ASSY' in str(x.get('part_name', '')).upper() else 1,
+                x.get('bal_qty', 0)
+            ),
+            reverse=True
+        )
 
     final_series_catalog = {}
     for s_key, parts_map in series_catalog.items():
@@ -428,13 +550,20 @@ def main():
 
     # Price Book of all known parts
     price_book = {}
+    for pno, c_item in catalog_parts_master.items():
+        price_book[pno] = {
+            'price': c_item['price'],
+            'part_name': c_item['item_desc'],
+            'role': classify_role(c_item['item_desc'], pno)
+        }
     for pno, pr in part_verified_prices.items():
         pname = part_canonical_names.get(pno, stock_dict.get(pno, {}).get('item_desc', "Component"))
-        price_book[pno] = {
-            'price': pr,
-            'part_name': pname,
-            'role': classify_role(pname, pno)
-        }
+        if pno not in price_book:
+            price_book[pno] = {
+                'price': pr,
+                'part_name': pname,
+                'role': classify_role(pname, pno)
+            }
     for pno, s_item in stock_dict.items():
         if pno not in price_book:
             price_book[pno] = {
@@ -465,7 +594,7 @@ def main():
             "Cut-Off Valve (1/4\")": 1600,
             "Cut-Off Valve (1/2\")": 2100,
             "Cut-Off Valve (3/8\")": 1500,
-            "Cut-Off Valve (5/8\")": 2600,
+            "Cut-Off Valve (5/8\")": 2200,
             "Cut-Off Valve (3/8\" - 5/8\")": 1500,
             "4-Way Valve Assembly": 3500,
             "Temperature Sensor": 1500,

@@ -46,10 +46,11 @@ def run_tests():
         for a in g['alternatives']:
             pith_pnos.append(a['part_no'])
 
-    # GS-18PITH11W primary evaporator must be 11001060868
+    # GS-18PITH11W primary evaporator must be 11001060868 (Rs. 26,000)
     evap_grp = next((g for g in res_pith['role_groups'] if "Evaporator" in g['group_title']), None)
     assert evap_grp is not None, "GS-18PITH11W must have an Evaporator group"
     assert evap_grp['primary']['part_no'] == "11001060868", f"Expected 11001060868 as primary, got {evap_grp['primary']['part_no']}"
+    assert evap_grp['primary']['price'] == 26000, f"Expected Rs. 26,000 for 11001060868, got {evap_grp['primary']['price']}"
     assert "1002937LC" not in pith_pnos, "CRITICAL ERROR: CITH part 1002937LC leaked into GS-18PITH11W!"
     print(f"GS-18PITH11W Primary Evaporator: {evap_grp['primary']['part_no']} (Score: {evap_grp['primary']['score']}, Jobs: {evap_grp['primary']['verified_jobs']}, Price: Rs. {evap_grp['primary']['price']:,})")
     print(f"GS-18PITH11W Alternatives: {[a['part_no'] for a in evap_grp['alternatives']]}")
@@ -66,6 +67,7 @@ def run_tests():
     cith_evap = next((g for g in res_cith['role_groups'] if "Evaporator" in g['group_title']), None)
     assert cith_evap is not None, "GS-18CITH12G must have an Evaporator group"
     assert cith_evap['primary']['part_no'] == "1002937LC", f"Expected 1002937LC, got {cith_evap['primary']['part_no']}"
+    assert cith_evap['primary']['price'] == 26000, f"Expected Rs. 26,000 for 1002937LC, got {cith_evap['primary']['price']}"
     print(f"GS-18CITH12G Primary Evaporator: {cith_evap['primary']['part_no']} (Price: Rs. {cith_evap['primary']['price']:,})")
     print(">>> PASS: Cross-Series Isolation strictly validated. Zero cross-contamination.")
 
@@ -164,8 +166,11 @@ def run_tests():
         assert vg is not None, f"{m} must have Cut-off & Service Valves group"
         assert vg['primary']['role'] == "Cut-Off Valve (3/8\")", f"{m} Primary valve must be 3/8\" suction, got {vg['primary']['role']}"
         assert vg['primary']['part_no'] == "71302395", f"{m} Primary valve part_no must be 71302395, got {vg['primary']['part_no']}"
+        assert vg['primary']['price'] == 1500, f"{m} Primary valve price must be 1500, got {vg['primary']['price']}"
         assert len(vg['alternatives']) == 1, f"{m} must have exactly 1 alternative valve, got {len(vg['alternatives'])}"
         assert vg['alternatives'][0]['role'] == "Cut-Off Valve (1/4\")", f"{m} Alt valve must be 1/4\" liquid, got {vg['alternatives'][0]['role']}"
+        assert vg['alternatives'][0]['part_no'] == "7130239", f"{m} Alt valve part_no must be 7130239, got {vg['alternatives'][0]['part_no']}"
+        assert vg['alternatives'][0]['price'] == 1600, f"{m} Alt valve price must be 1600, got {vg['alternatives'][0]['price']}"
         all_roles = [vg['primary']['role']] + [a['role'] for a in vg['alternatives']]
         assert "Cut-Off Valve (1/2\")" not in all_roles, f"{m} must NOT contain 1/2\" valve!"
         assert "Cut-Off Valve (5/8\")" not in all_roles, f"{m} must NOT contain 5/8\" valve!"
@@ -178,9 +183,11 @@ def run_tests():
         assert vg is not None, f"{m} must have Cut-off & Service Valves group"
         assert vg['primary']['role'] == "Cut-Off Valve (1/2\")", f"{m} Primary valve must be 1/2\" suction, got {vg['primary']['role']}"
         assert vg['primary']['part_no'] == "7133774", f"{m} Primary valve part_no must be 7133774, got {vg['primary']['part_no']}"
+        assert vg['primary']['price'] == 2100, f"{m} Primary valve price must be 2100, got {vg['primary']['price']}"
         assert len(vg['alternatives']) == 1, f"{m} must have exactly 1 alternative valve, got {len(vg['alternatives'])}"
         assert vg['alternatives'][0]['role'] == "Cut-Off Valve (1/4\")", f"{m} Alt valve must be 1/4\" liquid, got {vg['alternatives'][0]['role']}"
         assert vg['alternatives'][0]['part_no'] == "7130239", f"{m} Alt valve part_no must be 7130239, got {vg['alternatives'][0]['part_no']}"
+        assert vg['alternatives'][0]['price'] == 1600, f"{m} Alt valve price must be 1600, got {vg['alternatives'][0]['price']}"
         all_roles = [vg['primary']['role']] + [a['role'] for a in vg['alternatives']]
         assert "Cut-Off Valve (3/8\")" not in all_roles, f"{m} must NOT contain 3/8\" valve!"
         assert "Cut-Off Valve (5/8\")" not in all_roles, f"{m} must NOT contain 5/8\" valve!"
@@ -198,8 +205,11 @@ def run_tests():
         assert vg is not None, f"{m} must have Cut-off & Service Valves group"
         assert vg['primary']['role'] == "Cut-Off Valve (5/8\")", f"{m} Primary valve must be 5/8\" suction, got {vg['primary']['role']}"
         assert vg['primary']['part_no'] == "7133844", f"{m} Primary valve part_no must be 7133844, got {vg['primary']['part_no']}"
+        assert vg['primary']['price'] == 2200, f"{m} Primary valve price must be 2200, got {vg['primary']['price']}"
         assert len(vg['alternatives']) == 1, f"{m} must have exactly 1 alternative valve, got {len(vg['alternatives'])}"
         assert vg['alternatives'][0]['role'] == "Cut-Off Valve (1/4\")", f"{m} Alt valve must be 1/4\" liquid, got {vg['alternatives'][0]['role']}"
+        assert vg['alternatives'][0]['part_no'] == "7130239", f"{m} Alt valve part_no must be 7130239, got {vg['alternatives'][0]['part_no']}"
+        assert vg['alternatives'][0]['price'] == 1600, f"{m} Alt valve price must be 1600, got {vg['alternatives'][0]['price']}"
         all_roles = [vg['primary']['role']] + [a['role'] for a in vg['alternatives']]
         assert "Cut-Off Valve (3/8\")" not in all_roles, f"{m} must NOT contain 3/8\" valve!"
         assert "Cut-Off Valve (1/2\")" not in all_roles, f"{m} must NOT contain 1/2\" valve!"
@@ -212,9 +222,11 @@ def run_tests():
         assert vg is not None, f"{m} must have Cut-off & Service Valves group"
         assert vg['primary']['role'] == "Cut-Off Valve (5/8\")", f"{m} Primary valve must be 5/8\" suction, got {vg['primary']['role']}"
         assert vg['primary']['part_no'] == "7133844", f"{m} Primary valve part_no must be 7133844, got {vg['primary']['part_no']}"
+        assert vg['primary']['price'] == 2200, f"{m} Primary valve price must be 2200, got {vg['primary']['price']}"
         assert len(vg['alternatives']) == 1, f"{m} must have exactly 1 alternative valve, got {len(vg['alternatives'])}"
         assert vg['alternatives'][0]['role'] == "Cut-Off Valve (3/8\")", f"{m} Alt valve must be 3/8\" liquid, got {vg['alternatives'][0]['role']}"
         assert vg['alternatives'][0]['part_no'] == "71302395", f"{m} Alt valve part_no must be 71302395, got {vg['alternatives'][0]['part_no']}"
+        assert vg['alternatives'][0]['price'] == 1500, f"{m} Alt valve price must be 1500, got {vg['alternatives'][0]['price']}"
         all_roles = [vg['primary']['role']] + [a['role'] for a in vg['alternatives']]
         assert "Cut-Off Valve (1/4\")" not in all_roles, f"{m} must NOT contain 1/4\" valve!"
         assert "Cut-Off Valve (1/2\")" not in all_roles, f"{m} must NOT contain 1/2\" valve!"
@@ -297,9 +309,420 @@ def run_tests():
     print(f"GF-36TFIH 1/4\" Valve: {v14['part_name']} -> Rs. {v14['price']:,} (Verified from Closed Complaint #282629821)")
     print(">>> PASS: Exact closed-complaint ground-truth rates & field descriptions verified with 100% precision.")
 
+    # 14. Milestone 1 Challenger 1 Empirical Adversarial Stress Test Suite
+    print("\n[TEST 14] Running Milestone 1 Challenger 1 Empirical Adversarial Stress Test Suite...")
+    import sqlite3
+    import json
+    import pandas as pd
+
+    # 14.1 Database Integrity & Zero-Price Immunity
+    with sqlite3.connect("dwp_service.db") as conn:
+        c = conn.cursor()
+        for tbl in ['stock_master', 'parts_master', 'history_master', 'tech_performance_master']:
+            c.execute(f"SELECT count(*) FROM {tbl}")
+            cnt = c.fetchone()[0]
+            print(f"Table {tbl}: {cnt} rows")
+            if tbl != 'tech_performance_master':
+                assert cnt > 0, f"Table {tbl} must not be empty"
+
+        c.execute("SELECT count(*) FROM stock_master WHERE unit_price <= 0 OR unit_price IS NULL")
+        assert c.fetchone()[0] == 0, "Found zero or negative prices in stock_master!"
+
+        c.execute("SELECT count(*) FROM parts_master WHERE price <= 0 OR price IS NULL")
+        assert c.fetchone()[0] == 0, "Found zero or negative prices in parts_master!"
+
+        # Ledger book leakage audit: amount == unit_price * bal_qty
+        c.execute("SELECT count(*) FROM stock_master WHERE last_synced = 'DWP Official Price Catalog (vp786.pdf)' AND bal_qty > 0 AND ABS(amount - (unit_price * bal_qty)) > 0.01")
+        cat_discrepancy = c.fetchone()[0]
+        print(f"Catalog rows discrepancy count (vp786.pdf): {cat_discrepancy}")
+        assert cat_discrepancy == 0, "Catalog rows have ledger leakage!"
+
+        c.execute("SELECT count(*) FROM stock_master WHERE bal_qty > 0 AND ABS(amount - (unit_price * bal_qty)) > 0.01")
+        total_discrepancy = c.fetchone()[0]
+        print(f"Non-catalog inventory rows with old ledger amount: {total_discrepancy} of 972 rows.")
+        assert total_discrepancy == 0, f"Found {total_discrepancy} non-catalog inventory rows with old ledger amount!"
+
+        c.execute("SELECT count(*) FROM stock_master WHERE part_no IS NULL OR TRIM(part_no) = ''")
+        assert c.fetchone()[0] == 0, "Found null/empty part_no in stock_master!"
+        c.execute("SELECT count(*) FROM parts_master WHERE part_no IS NULL OR TRIM(part_no) = ''")
+        assert c.fetchone()[0] == 0, "Found null/empty part_no in parts_master!"
+
+    # 14.2 Ground Truth Baseline JSON Stress Test
+    with open("data/ground_truth_baseline.json", "r", encoding="utf-8") as f:
+        bl = json.load(f)
+
+    pb = bl.get('price_book', {})
+    assert len(pb) > 0, "Baseline price_book is empty!"
+    for pno, d in pb.items():
+        assert isinstance(d.get('price'), (int, float)) and d['price'] > 0, f"Baseline price_book part {pno} has invalid price {d.get('price')}"
+
+    gs = bl.get('global_stock', {})
+    assert len(gs) > 0, "Baseline global_stock is empty!"
+    for pno, d in gs.items():
+        assert d.get('unit_price', 0) > 0, f"Baseline global_stock part {pno} has invalid unit_price {d.get('unit_price')}"
+
+    for m, m_data in bl.get('models', {}).items():
+        for p in m_data.get('parts', []):
+            assert p.get('price', 0) > 0, f"Baseline model {m} part {p.get('part_no')} has invalid price {p.get('price')}"
+
+    for s_key, s_parts in bl.get('series', {}).items():
+        for p in s_parts:
+            assert p.get('price', 0) > 0, f"Baseline series {s_key} part {p.get('part_no')} has invalid price {p.get('price')}"
+
+    print(">>> PASS 14.1 & 14.2: dwp_service.db and data/ground_truth_baseline.json 100% zero-price immune and free of ledger corruption.")
+
+    # 14.3 Official Catalog 518 Parts Ingestion & Price Fidelity
+    df_cat = pd.read_csv("data/pdf_extracted_stock_report.csv")
+    df_cat['clean_pno'] = df_cat['part_no'].astype(str).str.strip().str.upper()
+    df_cat['clean_pr'] = pd.to_numeric(df_cat['pdf_price'], errors='coerce').fillna(0).round().astype(int)
+    cat_agg = df_cat.groupby('clean_pno')['clean_pr'].max().to_dict()
+    assert len(cat_agg) == 518, f"Expected 518 unique parts in catalog, got {len(cat_agg)}"
+
+    with sqlite3.connect("dwp_service.db") as conn:
+        c = conn.cursor()
+        c.execute("SELECT part_no, unit_price FROM stock_master")
+        db_stk = dict(c.fetchall())
+        c.execute("SELECT DISTINCT part_no FROM parts_master")
+        db_pm = set(r[0] for r in c.fetchall())
+
+    for pno, exp_pr in cat_agg.items():
+        assert pno in db_stk, f"Catalog part {pno} missing from stock_master!"
+        assert db_stk[pno] == exp_pr, f"Catalog part {pno} price mismatch in stock_master: got {db_stk[pno]}, expected {exp_pr}"
+        assert pno in db_pm, f"Catalog part {pno} missing from parts_master!"
+        assert pno in pb, f"Catalog part {pno} missing from baseline price_book!"
+        assert pb[pno]['price'] == exp_pr, f"Catalog part {pno} price mismatch in price_book: got {pb[pno]['price']}, expected {exp_pr}"
+
+    print(f">>> PASS 14.3: All {len(cat_agg)} catalog parts verified across stock_master, parts_master, and price_book.")
+
+    # 14.4 Target Components Reconciliation Across DB, Baseline, and Global Search
+    target_components = {
+        '71302395': ('Cut-Off Valve (3/8")', 1500),
+        '7130239':  ('Cut-Off Valve (1/4")', 1600),
+        '7133774':  ('Cut-Off Valve (1/2")', 2100),
+        '7133844':  ('Cut-Off Valve (5/8")', 2200),
+        '11001000602': ('Evaporator Assembly', 58000),
+        '11001060868': ('Evaporator Assembly', 26000),
+        '11001062414': ('Evaporator Assembly', 30000),
+        '1004169':     ('Evaporator Assembly', 70000),
+        '11001060092': ('Evaporator Assembly', 72000),
+        '11001060521': ('Evaporator Assembly', 75000),
+        '100404401':   ('Evaporator Assembly', 66000),
+    }
+    for pno, (role, exp_pr) in target_components.items():
+        assert db_stk.get(pno) == exp_pr, f"Target part {pno} DB price mismatch: got {db_stk.get(pno)}, expected {exp_pr}"
+        assert pb.get(pno, {}).get('price') == exp_pr, f"Target part {pno} price_book mismatch: got {pb.get(pno, {}).get('price')}, expected {exp_pr}"
+        sr = search_stock_global(pno)
+        assert not sr.empty, f"Target part {pno} direct search returned empty"
+        assert int(sr.iloc[0]['price']) == exp_pr, f"Target part {pno} direct search price mismatch: got {int(sr.iloc[0]['price'])}, expected {exp_pr}"
+
+    print(f">>> PASS 14.4: All {len(target_components)} target components match official prices across DB, Baseline, and Direct Search.")
+
+    # 14.5 Adversarial Edge Case Lookups & Robustness
+    hostile_queries = [
+        " 71302395 ", "   7130239   ", "\t7133774\n", "  evaporator  ",
+        "valve", "VALVE", "VaLvE", "pcb", "Pcb", "EVAPORATOR",
+        '3/8"', '1/4"', '1/2"', '5/8"', "Cut-Off", "Assy",
+        "713023", "1100100", "PITH", "CITH",
+        "%", "_", "'", "''", ";", "--", "\\", "   ", "",
+        "NON_EXISTENT_PART_XYZ_99999", "1234567890987654321"
+    ]
+    for q in hostile_queries:
+        res_sr = search_stock_global(q, limit=20)
+        assert isinstance(res_sr, pd.DataFrame), f"Search query '{q}' did not return DataFrame"
+        if not res_sr.empty:
+            assert 'price' in res_sr.columns, "Search missing price column"
+            assert (res_sr['price'] > 0).all(), f"Search query '{q}' returned parts with price <= 0!"
+
+    hostile_models = [
+        "  GS-18ZITH1W-T3  ", "gs-18zith1w-t3", "  gf-36tfih  ", "=GF-36TFIH=",
+        "UNKNOWN-MODEL-999", "GS-99UNKNOWN-T1", "RANDOM_STRING_MODEL", "", "   "
+    ]
+    for hm in hostile_models:
+        res_m = fetch_tiered_compatible_parts(hm)
+        assert isinstance(res_m, dict), f"Model lookup for '{hm}' did not return dict"
+        for grp in res_m.get('role_groups', []):
+            pri = grp.get('primary')
+            if pri:
+                assert pri.get('price', 0) > 0, f"Model '{hm}' primary part {pri.get('part_no')} price <= 0!"
+            for alt in grp.get('alternatives', []):
+                assert alt.get('price', 0) > 0, f"Model '{hm}' alt part {alt.get('part_no')} price <= 0!"
+
+    print(">>> PASS 14.5: Adversarial queries, SQL characters, whitespace variations, and unknown models handled gracefully with zero price violations.")
+
+    # 15. Interface Contract & Multi-Tier Structure Validation (Requirement R3 & Milestone 2)
+    print("\n[TEST 15] Testing Interface Contract & Multi-Tier Structure Validation...")
+    models_to_test = ["GS-18PITH11W", "GS-12PITH11W", "GF-36TFIH", "GR-E8768G-CP1", "EW-F1202DC"]
+    for m in models_to_test:
+        res = fetch_tiered_compatible_parts(m)
+        assert isinstance(res, dict), f"Result for {m} must be a dict"
+        # Verify required contract keys
+        for key in ['tier1', 'tier2', 'tier3', 'metadata', 'meta', 'role_groups', 'compatible_parts']:
+            assert key in res, f"Result for {m} missing contract key '{key}'"
+
+        assert isinstance(res['tier1'], list), f"{m} tier1 must be a list"
+        assert isinstance(res['tier2'], list), f"{m} tier2 must be a list"
+        assert isinstance(res['tier3'], list), f"{m} tier3 must be a list"
+        assert isinstance(res['metadata'], dict), f"{m} metadata must be a dict"
+
+        # Verify metadata contract
+        meta_d = res['metadata']
+        assert 'tier1_count' in meta_d and meta_d['tier1_count'] == len(res['tier1'])
+        assert 'tier2_count' in meta_d and meta_d['tier2_count'] == len(res['tier2'])
+        assert 'tier3_count' in meta_d and meta_d['tier3_count'] == len(res['tier3'])
+
+        # Verify tier codes and integrity
+        for p in res['tier1']:
+            assert p.get('tier_code') == 1, f"{m} tier1 part {p.get('part_no')} has invalid tier_code: {p.get('tier_code')}"
+            assert p.get('price', 0) > 0, f"{m} tier1 part {p.get('part_no')} price <= 0"
+
+        for p in res['tier2']:
+            assert p.get('tier_code') == 2, f"{m} tier2 part {p.get('part_no')} has invalid tier_code: {p.get('tier_code')}"
+            assert p.get('price', 0) > 0, f"{m} tier2 part {p.get('part_no')} price <= 0"
+
+        for p in res['tier3']:
+            assert p.get('tier_code') == 3, f"{m} tier3 part {p.get('part_no')} has invalid tier_code: {p.get('tier_code')}"
+            assert p.get('bal_qty', 0) > 0, f"{m} tier3 part {p.get('part_no')} bal_qty must be > 0"
+            assert p.get('in_stock') is True, f"{m} tier3 part {p.get('part_no')} in_stock must be True"
+            assert p.get('price', 0) > 0, f"{m} tier3 part {p.get('part_no')} price <= 0"
+
+        print(f"{m} ({meta_d.get('category')}, {meta_d.get('tonnage')}): Tier 1={len(res['tier1'])}, Tier 2={len(res['tier2'])}, Tier 3={len(res['tier3'])}, Groups={len(res['role_groups'])}")
+    print(">>> PASS: Interface contract and 3-tier structure integrity validated across Split AC, Floor Standing, Refrigerator, and Washing Machine.")
+
+    # 16. Tier 3 Strict Physical Pairing & Zero Ledger Discrepancy (Requirement R3 & Milestone 2)
+    print("\n[TEST 16] Testing Tier 3 Strict Physical Pairing & Zero Ledger Discrepancy...")
+    with sqlite3.connect("dwp_service.db") as conn:
+        c = conn.cursor()
+        c.execute("SELECT count(*) FROM stock_master WHERE bal_qty > 0 AND ABS(amount - (unit_price * bal_qty)) > 0.01")
+        discrepancy_cnt = c.fetchone()[0]
+        assert discrepancy_cnt == 0, f"Expected 0 ledger discrepancies in stock_master, found {discrepancy_cnt}"
+        print(f"Zero ledger discrepancy verified: {discrepancy_cnt} rows with obsolete ledger valuation.")
+
+    # AC Physical Valve Pairing Strictness in Tier 3
+    ac_tonnage_tests = [
+        ("GS-12PITH11W", "1.0 Ton", ["Cut-Off Valve (1/2\")", "Cut-Off Valve (5/8\")"], ["7133774", "7133844"]),
+        ("GS-18PITH11W", "1.5 Ton", ["Cut-Off Valve (3/8\")", "Cut-Off Valve (5/8\")"], ["71302395", "7133844"]),
+        ("GS-24PITH11W", "2.0 Ton", ["Cut-Off Valve (3/8\")", "Cut-Off Valve (1/2\")"], ["71302395", "7133774"]),
+        ("GF-36TFIH",    "3.0 Ton", ["Cut-Off Valve (3/8\")", "Cut-Off Valve (1/2\")"], ["71302395", "7133774"]),
+        ("GF-48TF",      "4.0 Ton", ["Cut-Off Valve (1/4\")", "Cut-Off Valve (1/2\")"], ["7130239", "7133774"])
+    ]
+    for model_code, ton, prohibited_roles, prohibited_pnos in ac_tonnage_tests:
+        res = fetch_tiered_compatible_parts(model_code)
+        for p in res['tier3']:
+            for pr in prohibited_roles:
+                assert p.get('role') != pr, f"{model_code} ({ton}) leaked prohibited valve role {pr} in Tier 3: {p.get('part_no')}"
+            for pp in prohibited_pnos:
+                assert p.get('part_no') != pp, f"{model_code} ({ton}) leaked prohibited valve part_no {pp} in Tier 3: {p.get('part_name')}"
+
+    # Non-AC Category Isolation in ALL Tiers
+    non_ac_models = ["GR-E8768G-CP1", "EW-F1202DC", "WD-E500"]
+    ac_valves = {'7130239', '71302395', '7133774', '7133844'}
+    ac_evaps = {'11001000602', '11001060868', '11001062414', '1004169', '11001060092', '11001060521', '100404401', '1002937LC', '11001061842LC'}
+    for m in non_ac_models:
+        res = fetch_tiered_compatible_parts(m)
+        all_parts = res['tier1'] + res['tier2'] + res['tier3']
+        for p in all_parts:
+            r = p.get('role', '')
+            pno = p.get('part_no', '')
+            assert "Cut-Off Valve" not in r, f"Non-AC model {m} leaked AC Cut-off Valve: {pno} ({r})"
+            assert pno not in ac_valves, f"Non-AC model {m} leaked AC Valve part {pno}!"
+            if "EW-" in m or "WM-" in m:
+                assert "Evaporator" not in r, f"Washing Machine model {m} leaked Evaporator: {pno}"
+            if "Evaporator" in r:
+                assert pno not in ac_evaps, f"Non-AC model {m} leaked AC Evaporator {pno}!"
+    print(">>> PASS: Strict physical line pairing, zero ledger discrepancies, and 0% cross-category contamination verified.")
+
+    # 17. Milestone 3: Official Master Catalog & Valve Selling Prices Across Models & Direct Searches (R4 Acceptance Criteria)
+    print("\n[TEST 17] Testing Official Valve Prices Across All Categories & Direct Searches...")
+
+    # (a) 3/8" Valve (71302395) displays Rs. 1,500 across 1.0 Ton AC models and direct searches
+    models_10 = ["GS-12PITH11W", "GS-12CITH11W", "GS-12PITH1W", "GS-12ZITH1W"]
+    for m in models_10:
+        res = fetch_tiered_compatible_parts(m)
+        vg = next((g for g in res['role_groups'] if "Cut-off & Service Valves" in g['group_title']), None)
+        assert vg is not None, f"{m} must have Cut-off & Service Valves group"
+        assert vg['primary']['part_no'] == "71302395", f"{m} 3/8\" suction valve expected 71302395, got {vg['primary']['part_no']}"
+        assert vg['primary']['price'] == 1500, f"{m} 3/8\" valve price expected 1,500, got {vg['primary']['price']}"
+    
+    stk_38 = search_stock_global("71302395")
+    assert not stk_38.empty, "Direct search for 71302395 must return item"
+    assert int(stk_38.iloc[0]['price']) == 1500, f"Direct search for 71302395 expected 1,500, got {int(stk_38.iloc[0]['price'])}"
+    print(">>> PASS 17.a: 3/8\" Valve (71302395) displays Rs. 1,500 across all 1.0 Ton AC models and direct searches.")
+
+    # (b) 1/4" Valve (7130239) displays Rs. 1,600 across all models and direct searches
+    models_14 = [
+        "GS-12PITH11W", "GS-12CITH11W", "GS-12PITH1W", "GS-12ZITH1W",
+        "GS-18PITH11W", "GS-18CITH12G", "GS-18ZITH1W-T3", "GS-18AITH23W-T3",
+        "GS-24PITH11W", "GS-24CITH1", "GS-24ISH", "GF-24CB", "GF-36TFIH"
+    ]
+    for m in models_14:
+        res = fetch_tiered_compatible_parts(m)
+        vg = next((g for g in res['role_groups'] if "Cut-off & Service Valves" in g['group_title']), None)
+        assert vg is not None, f"{m} must have Cut-off & Service Valves group"
+        all_valves = [vg['primary']] + vg['alternatives']
+        v14 = next((v for v in all_valves if v['part_no'] == "7130239"), None)
+        assert v14 is not None, f"{m} must contain 1/4\" liquid valve 7130239"
+        assert v14['price'] == 1600, f"{m} 1/4\" valve 7130239 expected price 1,600, got {v14['price']}"
+
+    stk_14 = search_stock_global("7130239")
+    assert not stk_14.empty, "Direct search for 7130239 must return item"
+    row_14 = stk_14[stk_14['part_no'] == '7130239']
+    assert not row_14.empty, "Direct search for 7130239 must contain 7130239 record"
+    assert int(row_14.iloc[0]['price']) == 1600, f"Direct search for 7130239 expected 1,600, got {int(row_14.iloc[0]['price'])}"
+    print(">>> PASS 17.b: 1/4\" Valve (7130239) displays Rs. 1,600 across all models and direct searches.")
+
+    # (c) 1/2" Valve (7133774) displays Rs. 2,100 across all 1.5 Ton models and direct searches
+    models_15 = ["GS-18PITH11W", "GS-18CITH12G", "GS-18ZITH1W-T3", "GS-18AITH23W-T3"]
+    for m in models_15:
+        res = fetch_tiered_compatible_parts(m)
+        vg = next((g for g in res['role_groups'] if "Cut-off & Service Valves" in g['group_title']), None)
+        assert vg is not None, f"{m} must have Cut-off & Service Valves group"
+        assert vg['primary']['part_no'] == "7133774", f"{m} 1/2\" suction valve expected 7133774, got {vg['primary']['part_no']}"
+        assert vg['primary']['price'] == 2100, f"{m} 1/2\" valve price expected 2,100, got {vg['primary']['price']}"
+
+    stk_12 = search_stock_global("7133774")
+    assert not stk_12.empty, "Direct search for 7133774 must return item"
+    assert int(stk_12.iloc[0]['price']) == 2100, f"Direct search for 7133774 expected 2,100, got {int(stk_12.iloc[0]['price'])}"
+    print(">>> PASS 17.c: 1/2\" Valve (7133774) displays Rs. 2,100 across all 1.5 Ton models and direct searches.")
+
+    # (d) 5/8" Valve (7133844) displays Rs. 2,200 across all 2.0 Ton and 3.0 Ton models (including GF-36TFIH) and direct searches
+    models_20_30 = ["GS-24PITH11W", "GS-24CITH1", "GS-24ISH", "GF-24CB", "GF-36TFIH"]
+    for m in models_20_30:
+        res = fetch_tiered_compatible_parts(m)
+        vg = next((g for g in res['role_groups'] if "Cut-off & Service Valves" in g['group_title']), None)
+        assert vg is not None, f"{m} must have Cut-off & Service Valves group"
+        assert vg['primary']['part_no'] == "7133844", f"{m} 5/8\" suction valve expected 7133844, got {vg['primary']['part_no']}"
+        assert vg['primary']['price'] == 2200, f"{m} 5/8\" valve price expected 2,200, got {vg['primary']['price']}"
+
+    stk_58 = search_stock_global("7133844")
+    assert not stk_58.empty, "Direct search for 7133844 must return item"
+    assert int(stk_58.iloc[0]['price']) == 2200, f"Direct search for 7133844 expected 2,200, got {int(stk_58.iloc[0]['price'])}"
+    print(">>> PASS 17.d: 5/8\" Valve (7133844) displays Rs. 2,200 across all 2.0 Ton and 3.0 Ton models (including GF-36TFIH) and direct searches.")
+
+    # 18. Milestone 3: Official Evaporator Pricing for All 7 Specified Reference Models (R4 Acceptance Criteria)
+    print("\n[TEST 18] Testing Official Evaporator Pricing for All 7 Specified Reference Models...")
+    official_evaps = [
+        ("GF-36TFIH",       "11001000602", 58000, "3.0 Ton Floor Standing"),
+        ("GS-18PITH1W",     "11001060868", 26000, "1.5 Ton Split AC PITH"),
+        ("GS-18AITH23W-T3", "11001062414", 30000, "1.5 Ton Split AC AITH-T3"),
+        ("GF-48FW",         "1004169",     70000, "4.0 Ton Floor Standing"),
+        ("GF-24ISH",        "11001060092", 72000, "2.0 Ton Floor Standing ISH"),
+        ("GF-48TF",         "11001060521", 75000, "4.0 Ton Floor Standing TF"),
+        ("GF-24CB",         "100404401",   66000, "2.0 Ton Floor Standing CB")
+    ]
+    for model_code, exp_pno, exp_price, desc in official_evaps:
+        # Check model resolution
+        res = fetch_tiered_compatible_parts(model_code)
+        evap_grp = next((g for g in res['role_groups'] if "Evaporator" in g['group_title']), None)
+        assert evap_grp is not None, f"Model {model_code} must have an Evaporator group"
+        assert evap_grp['primary']['part_no'] == exp_pno, f"Model {model_code} primary evaporator expected {exp_pno}, got {evap_grp['primary']['part_no']}"
+        assert evap_grp['primary']['price'] == exp_price, f"Model {model_code} evaporator price expected Rs. {exp_price:,}, got Rs. {evap_grp['primary']['price']:,}"
+        
+        # Check direct stock search
+        stk_df = search_stock_global(exp_pno)
+        assert not stk_df.empty, f"Direct stock search for {exp_pno} ({model_code}) returned empty"
+        direct_pr = int(stk_df.iloc[0]['price'])
+        assert direct_pr == exp_price, f"Direct search for {exp_pno} expected Rs. {exp_price:,}, got Rs. {direct_pr:,}"
+        print(f"  * {model_code:16} ({desc}): Evaporator {exp_pno} = Rs. {exp_price:,} (Model & Direct Match)")
+
+    print(">>> PASS: All 7 official evaporator reference prices verified with 100% precision across model lookups and direct searches.")
+
+    # 19. Milestone 3: GF-36TFIH Floor Standing Complete Physical Isolation & Zero Contamination (R4 Acceptance Criteria)
+    print("\n[TEST 19] Testing GF-36TFIH Floor Standing Complete Physical Isolation & Zero Contamination...")
+    res_36 = fetch_tiered_compatible_parts("GF-36TFIH")
+    
+    # Evaporator Isolation
+    evap_grp_36 = next((g for g in res_36['role_groups'] if "Evaporator" in g['group_title']), None)
+    assert evap_grp_36 is not None, "GF-36TFIH must have an Evaporator group"
+    assert evap_grp_36['primary']['part_no'] == "11001000602", f"GF-36TFIH evaporator must be 11001000602, got {evap_grp_36['primary']['part_no']}"
+    assert evap_grp_36['primary']['price'] == 58000, f"GF-36TFIH evaporator price must be 58,000, got {evap_grp_36['primary']['price']}"
+    assert len(evap_grp_36['alternatives']) == 0, f"GF-36TFIH must have 0 alternative evaporators, got {len(evap_grp_36['alternatives'])}"
+
+    # Valve Isolation & Exact Dual Pairing
+    valve_grp_36 = next((g for g in res_36['role_groups'] if "Cut-off & Service Valves" in g['group_title']), None)
+    assert valve_grp_36 is not None, "GF-36TFIH must have Cut-off & Service Valves group"
+    assert valve_grp_36['primary']['part_no'] == "7133844", f"GF-36TFIH suction valve must be 7133844, got {valve_grp_36['primary']['part_no']}"
+    assert valve_grp_36['primary']['price'] == 2200, f"GF-36TFIH suction valve price must be 2,200, got {valve_grp_36['primary']['price']}"
+    assert valve_grp_36['primary']['role'] == "Cut-Off Valve (5/8\")", f"GF-36TFIH suction valve role must be 5/8\", got {valve_grp_36['primary']['role']}"
+    
+    assert len(valve_grp_36['alternatives']) == 1, f"GF-36TFIH must have exactly 1 alternative valve, got {len(valve_grp_36['alternatives'])}"
+    assert valve_grp_36['alternatives'][0]['part_no'] == "7130239", f"GF-36TFIH liquid valve must be 7130239, got {valve_grp_36['alternatives'][0]['part_no']}"
+    assert valve_grp_36['alternatives'][0]['price'] == 1600, f"GF-36TFIH liquid valve price must be 1,600, got {valve_grp_36['alternatives'][0]['price']}"
+    assert valve_grp_36['alternatives'][0]['role'] == "Cut-Off Valve (1/4\")", f"GF-36TFIH liquid valve role must be 1/4\", got {valve_grp_36['alternatives'][0]['role']}"
+
+    # Zero Contamination Across Entire Response (role_groups, tier1, tier2, tier3)
+    all_36_parts = (
+        [g['primary']['part_no'] for g in res_36['role_groups']] +
+        [a['part_no'] for g in res_36['role_groups'] for a in g['alternatives']] +
+        [p['part_no'] for p in res_36['tier1']] +
+        [p['part_no'] for p in res_36['tier2']] +
+        [p['part_no'] for p in res_36['tier3']]
+    )
+    prohibited_contaminants = [
+        ("11001060092", "2.0 Ton 24ISH Evaporator"),
+        ("1004169",     "4.0 Ton 48FW Evaporator"),
+        ("11001060246", "4.0 Ton 48FWITH Evaporator"),
+        ("100404401",   "2.0 Ton 24CB Evaporator"),
+        ("11001060521", "4.0 Ton 48TF Evaporator"),
+        ("71302395",    "1.0 Ton 3/8\" Valve"),
+        ("7133774",     "1.5 Ton 1/2\" Valve")
+    ]
+    for pno_bad, label in prohibited_contaminants:
+        assert pno_bad not in all_36_parts, f"CRITICAL LEAKAGE: {label} ({pno_bad}) leaked into GF-36TFIH!"
+
+    print(">>> PASS: GF-36TFIH returns ONLY genuine Evaporator 11001000602 (Rs. 58,000), 5/8\" Suction Valve 7133844 (Rs. 2,200), and 1/4\" Liquid Valve 7130239 (Rs. 1,600) with 0% contamination.")
+
+    # 20. Milestone 3: Universal AC Dual Physical Valve Pairing & Zero Clutter Across All Categories (R4 Acceptance Criteria)
+    print("\n[TEST 20] Testing Universal AC Dual Physical Valve Pairing & Zero Clutter Across All Categories...")
+    universal_valve_matrix = [
+        # (model, category, tonnage, expected_suction_pno, expected_suction_role, suction_price, expected_liquid_pno, expected_liquid_role, liquid_price)
+        ("GS-12PITH11W",    "Split AC",          "1.0 Ton", "71302395", "Cut-Off Valve (3/8\")", 1500, "7130239",  "Cut-Off Valve (1/4\")", 1600),
+        ("GS-12CITH11W",    "Split AC",          "1.0 Ton", "71302395", "Cut-Off Valve (3/8\")", 1500, "7130239",  "Cut-Off Valve (1/4\")", 1600),
+        ("GS-12PITH1W",     "Split AC",          "1.0 Ton", "71302395", "Cut-Off Valve (3/8\")", 1500, "7130239",  "Cut-Off Valve (1/4\")", 1600),
+        ("GS-12ZITH1W",     "Split AC",          "1.0 Ton", "71302395", "Cut-Off Valve (3/8\")", 1500, "7130239",  "Cut-Off Valve (1/4\")", 1600),
+        ("GS-18PITH11W",    "Split AC",          "1.5 Ton", "7133774",  "Cut-Off Valve (1/2\")", 2100, "7130239",  "Cut-Off Valve (1/4\")", 1600),
+        ("GS-18CITH12G",    "Split AC",          "1.5 Ton", "7133774",  "Cut-Off Valve (1/2\")", 2100, "7130239",  "Cut-Off Valve (1/4\")", 1600),
+        ("GS-18ZITH1W-T3",  "Split AC",          "1.5 Ton", "7133774",  "Cut-Off Valve (1/2\")", 2100, "7130239",  "Cut-Off Valve (1/4\")", 1600),
+        ("GS-18AITH23W-T3", "Split AC",          "1.5 Ton", "7133774",  "Cut-Off Valve (1/2\")", 2100, "7130239",  "Cut-Off Valve (1/4\")", 1600),
+        ("GS-24PITH11W",    "Split AC",          "2.0 Ton", "7133844",  "Cut-Off Valve (5/8\")", 2200, "7130239",  "Cut-Off Valve (1/4\")", 1600),
+        ("GS-24CITH1",      "Split AC",          "2.0 Ton", "7133844",  "Cut-Off Valve (5/8\")", 2200, "7130239",  "Cut-Off Valve (1/4\")", 1600),
+        ("GS-24ISH",        "Split AC",          "2.0 Ton", "7133844",  "Cut-Off Valve (5/8\")", 2200, "7130239",  "Cut-Off Valve (1/4\")", 1600),
+        ("GF-24CB",         "Floor Standing AC", "2.0 Ton", "7133844",  "Cut-Off Valve (5/8\")", 2200, "7130239",  "Cut-Off Valve (1/4\")", 1600),
+        ("GF-36TFIH",       "Floor Standing AC", "3.0 Ton", "7133844",  "Cut-Off Valve (5/8\")", 2200, "7130239",  "Cut-Off Valve (1/4\")", 1600),
+        ("GF-48TF",         "Floor Standing AC", "4.0 Ton", "7133844",  "Cut-Off Valve (5/8\")", 2200, "71302395", "Cut-Off Valve (3/8\")", 1500),
+        ("GF-48FW",         "Floor Standing AC", "4.0 Ton", "7133844",  "Cut-Off Valve (5/8\")", 2200, "71302395", "Cut-Off Valve (3/8\")", 1500),
+    ]
+
+    for model, cat, ton, exp_suc_pno, exp_suc_role, suc_pr, exp_liq_pno, exp_liq_role, liq_pr in universal_valve_matrix:
+        res = fetch_tiered_compatible_parts(model)
+        vg_list = [g for g in res['role_groups'] if "Cut-off & Service Valves" in g['group_title']]
+        assert len(vg_list) == 1, f"Model {model} must have exactly 1 Cut-off & Service Valves group, got {len(vg_list)}"
+        vg = vg_list[0]
+        
+        # Verify Suction valve (primary)
+        pri = vg['primary']
+        assert pri['part_no'] == exp_suc_pno, f"{model} ({ton}) Suction valve expected {exp_suc_pno}, got {pri['part_no']}"
+        assert pri['role'] == exp_suc_role, f"{model} ({ton}) Suction role expected {exp_suc_role}, got {pri['role']}"
+        assert pri['price'] == suc_pr, f"{model} ({ton}) Suction price expected Rs. {suc_pr:,}, got Rs. {pri['price']:,}"
+        
+        # Verify Liquid valve (alternative) - exactly 1 alternative
+        assert len(vg['alternatives']) == 1, f"{model} ({ton}) must have exactly 1 alternative valve, got {len(vg['alternatives'])}"
+        alt = vg['alternatives'][0]
+        assert alt['part_no'] == exp_liq_pno, f"{model} ({ton}) Liquid valve expected {exp_liq_pno}, got {alt['part_no']}"
+        assert alt['role'] == exp_liq_role, f"{model} ({ton}) Liquid role expected {exp_liq_role}, got {alt['role']}"
+        assert alt['price'] == liq_pr, f"{model} ({ton}) Liquid price expected Rs. {liq_pr:,}, got Rs. {alt['price']:,}"
+        
+        # Zero clutter check: only these 2 valve sizes allowed in the group
+        all_group_roles = [pri['role'], alt['role']]
+        allowed_roles = {exp_suc_role, exp_liq_role}
+        assert set(all_group_roles) == allowed_roles, f"{model} ({ton}) contains cluttered roles: {all_group_roles}"
+        print(f"  * {model:16} ({cat}, {ton:7}): {exp_suc_role} ({exp_suc_pno}) Rs. {suc_pr:,} + {exp_liq_role} ({exp_liq_pno}) Rs. {liq_pr:,} [ZERO CLUTTER]")
+
+    print(">>> PASS: Universal AC Dual Physical Valve Pairing verified across all 15 test models with zero clutter and exact pricing.")
+
     print("\n" + "=" * 60)
-    print("ALL 13 SYSTEM TESTS PASSED SUCCESSFULLY!")
+    print("ALL 20 SYSTEM & ADVERSARIAL TESTS PASSED SUCCESSFULLY!")
     print("=" * 60)
 
 if __name__ == "__main__":
     run_tests()
+
