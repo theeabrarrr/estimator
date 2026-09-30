@@ -1,153 +1,28 @@
-# ❄️ DWP Service Field Assistant & Estimator Platform
+# DWP Field Assistant Engine
 
-Enterprise field logistics, parts diagnostic, live inventory tracking, cost estimation, unit historical audits, and technician KPI evaluation platform for **Gree & EcoStar** home appliances.
-
-Deployed & Live on Streamlit Cloud.
+The **DWP Field Assistant Engine** is a streamlined diagnostic and field operations tool built for Service Center tracking, Customer Complaint History search, and Technician Performance KPI calculations.
 
 ---
 
-## 🏛️ System Architecture & File Roles
+## 📚 Documentation
 
-The system is decoupled into single-responsibility modules designed for zero data collisions, high throughput, and 100% price consistency across cloud restarts:
+The documentation has been divided into two separate guides:
 
-```text
-estimator/
-├── config.py                 # Core business rules, overheads, tokenizer, series tokens, and role price floors
-├── build_baseline.py         # Ground-truth matrix builder: processes ERP reports into high-speed baseline JSON
-├── database.py               # Tiered compatibility matching (T1, T2, T3), stock queries, SQLite WAL connection pooling
-├── etl.py                    # Real-time ERP ingestion (Stock, Quality Feedback, Collection), bootstrap on cold start
-├── app.py                    # Streamlit frontend (Estimator UI, live stock badges, WhatsApp quote generator)
-├── test_system_verification.py # Automated test suite (9 tests verifying pricing, series isolation, floors, overheads)
-├── data/
-│   ├── ground_truth_baseline.json # Pre-computed 354+ models, 186+ series platforms, and complete verified price book
-│   └── stock_inventory_latest.csv # Authoritative in-repo ERP stock inventory balance
-├── requirements.txt          # Python dependencies (streamlit, pandas, openpyxl)
-└── dwp_service.db            # High-performance local SQLite database (Auto-generated on cold start)
-```
+### 1. 🧑‍💻 [Technical Guide for Developers](docs/TECHNICAL_GUIDE.md)
+Contains full documentation regarding the codebase architecture, database schema (`dwp_service.db`), ETL pipelines, and functions. If you need to modify the code or understand the logic, read this file.
+
+### 2. 📖 [User Manual (How to Use)](docs/USER_MANUAL.md)
+Contains a step-by-step guide for end-users on how to run the application, upload system files, sync data, search for unit history, and track technician efficiency scores.
 
 ---
 
-## ⚙️ Core Technical Workflows
+## 🚀 Quick Start
 
-### 1. Ground-Truth Baseline Matrix (`build_baseline.py`)
-- Reads 12,000+ historical complaint jobs from `quality_feedback_report_*.csv` and 2,400+ warranty/cash collection transactions from `Detail_Collection_*.xlsx`.
-- Verifies exact customer/warranty replacement costs for 250+ distinct hardware parts (`part_verified_prices`).
-- Enforces strict chassis-sensitive component isolation (Evaporators, Inverter PCBs, Indoor Main PCBs) so that unrelated series (e.g., PITH vs CITH vs ZITH) or incompatible tonnages (1.0 Ton vs 1.5 Ton) never cross-contaminate.
-- Outputs `data/ground_truth_baseline.json`, ensuring the app operates with instant latency and **zero Nil/Rs. 0 pricing** even on fresh Streamlit Cloud deployments.
-
-### 2. Tiered Compatibility Engine (`database.py`)
-When a user selects a model (e.g., `GS-18ZITH1W-T3`):
-- **Tier 1 (Exact Model Ground-Truth)**: Parts with field-verified job history on this exact model, scored by replacement frequency (`verified_jobs * 2 + in_stock bonus`).
-- **Tier 2 (Series Platform Compatible)**: Parts matching the exact platform series key (`Brand|Category|Tonnage|Series`), e.g., `Gree|Split AC|1.5 Ton|ZITH`.
-- **Tier 3 (Direct Stock Family Reference)**: Live warehouse stock items explicitly referencing the model or series family in their item description.
-
-### 3. Authoritative Pricing Resolution
-To ensure **100% price consistency** between **Model Search** and **Direct Part Search**:
-1. **Verified ERP Collection Price** (`Detail_Collection` warranty claim amount, e.g., Evaporator `11001062414` = Rs. 30,000).
-2. **Live Stock Master Unit Price** (`stock_master.unit_price`).
-3. **Role Price Floor Protection** (`get_role_price_floor` in `config.py`): Prevents fractional FOB accounting costs (e.g. `1000106068502` at ledger fraction 12,036) from reaching the customer; floors 1.5 Ton evaporators at realistic market price (Rs. 26,000).
-4. **Zero-Price Immunity**: All parts without verified job history receive category/role floor defaults.
-
-### 4. Component Classification & Packaging Filter (`config.py`)
-- Non-functional packaging (`carton`, `packing`, `tray`, `support`, `foam`, `bracket`, `box`) is filtered **before** cooling/electrical classification.
-- Packing cartons for evaporators (e.g., `03010102510004`) are classified under `📦 Hardware & Components` and never pollute `❄️ Evaporator Assemblies`.
-
-### 5. Refrigerant Service & Cut-off Valve Dual Pairing Engine (`config.py`, `build_baseline.py`, `database.py`)
-Refrigerant service valves follow strict physical line specifications across all Gree & EcoStar air conditioner tonnages:
-- **1.0 Ton (10, 11, 12)**: Strictly **1/4"** (Liquid Line) + **3/8"** (Suction Gas Line). Reject all 1/2" & 5/8" valves.
-- **1.5 Ton (16, 18)**: Strictly **1/4"** (Liquid Line) + **1/2"** (Suction Gas Line). Reject all 3/8" & 5/8" valves.
-- **2.0 Ton (24, 26)**: Strictly **1/4"** (Liquid Line) + **5/8"** (Suction Gas Line). Reject all 3/8" & 1/2" valves.
-- **3.0 Ton (36)**: Strictly **1/4"** (Liquid Line) + **5/8"** (Suction Gas Line). Reject all 3/8" & 1/2" valves.
-- **4.0 Ton (48, 60, Floor Standing)**: Strictly **3/8"** (Liquid Line) + **5/8"** (Suction Gas Line). Reject all 1/4" & 1/2" valves.
-
-#### Canonical Empirical Ground Truth Authority:
-When part descriptions are generic (e.g., `Cut-off Valve GS-24ECH10 7130239`), historical closed complaints (`quality_feedback_report_*.csv`) serve as canonical truth. Over 680 closed jobs empirically prove that part `7130239` is a **1/4" Liquid Line Valve**. The classifier maps:
-- `7130239`, `71302392`, `71302393`, `71302391`, `30057000074` → **1/4" Valve** (`Cut-Off Valve (1/4")`)
-- `71302395`, `7133474` → **3/8" Valve** (`Cut-Off Valve (3/8")`)
-- `7133774`, `11225517000085` → **1/2" Valve** (`Cut-Off Valve (1/2")`)
-- `7133844`, `7135142` → **5/8" Valve** (`Cut-Off Valve (5/8")`)
-
-#### Clean Single Group Display & Dual Pairing:
-In `database.py`, group `"🔩 Cut-off & Service Valves"` automatically orders:
-1. **Primary (#1)**: Suction Gas Line Valve (the larger valve for that tonnage)
-2. **Alternative (#2)**: Liquid Line Valve (the smaller valve for that tonnage)
-All other incompatible valve sizes are 100% eliminated (0% clutter/contamination).
-Standard active warehouse stock valves (`7133774`, `7130239`, `71302395`, `7133844`) are attached across all Split AC models, guaranteeing that models without prior repair history (such as `GS-18ZITH1W-T3`) always display verified in-stock service valves.
-
----
-
-## 🛠️ Developer & AI Agent Reference Manual
-
-### 🚨 Strict Engineering Rules for AI Agents Working on This Codebase:
-1. **Canonical Ground Truth Authority**: NEVER guess or invent part numbers, compatibility mappings, or prices. Closed complaints (`quality_feedback_report_*.csv`) and customer collections (`Detail_Collection_*.xlsx`) are canonical truth.
-2. **Floor Standing AC Separation**: Floor Standing models have distinct physical capacities and chassis platforms:
-   - `GF-24...` / `EF-24...` $\rightarrow$ **2.0 Ton** (TFIH, ISH, TF, FW, CD, CB)
-   - `GF-36...` $\rightarrow$ **3.0 Ton** (TFIH, e.g. `GF-36TFIH` with genuine Evaporator `11001000602` @ Rs. 58,000)
-   - `GF-48...` $\rightarrow$ **4.0 Ton** (TF, FW, FWITH, CB, e.g. Evaporator `1004169` / `11001060246`)
-   - `GF-60...` $\rightarrow$ **5.0 Ton**
-   - NEVER lump floor models into a generic `"FLOOR"` series or blanket `4.0 Ton`. Always preserve their genuine series tokens.
-3. **Refrigerant Valve Pairing Standards**:
-   - 1.0 Ton: 1/4" Liquid (`7130239` @ Rs. 1,600) + 3/8" Suction (`71302395` @ Rs. 1,500).
-   - 1.5 Ton: 1/4" Liquid (`7130239` @ Rs. 1,600) + 1/2" Suction (`7133774` @ Rs. 2,100).
-   - 2.0 Ton: 1/4" Liquid (`7130239` @ Rs. 1,600) + 5/8" Suction (`7133844` @ Rs. 2,800).
-   - 3.0 Ton: 1/4" Liquid (`7130239` @ Rs. 1,600) + 5/8" Suction (`7133844` @ Rs. 2,200).
-   - 4.0 Ton / 5.0 Ton: 3/8" Liquid (`71302395` @ Rs. 2,400) + 5/8" Suction (`7133844` @ Rs. 3,200).
-4. **Authoritative Field Billing over Ledger Ratios**:
-   - Raw stock inventory CSV amounts reflect accounting warehouse balance ratios, not customer billing rates.
-   - For example, part `71302395` has ledger ratio Rs. 2,516 (Rs. 2,968 with tax), but customer receipts prove Rs. 1,500. Field collection receipts ALWAYS take precedence over accounting balances.
-5. **No Direct Commits to `main`**:
-   - Always branch to `feature/...`, run `python test_system_verification.py`, verify all 12 tests pass, and obtain user confirmation before merging.
-
-### Reference Modification Guide:
-
-| Goal / Modification | Target File | What to Edit / Functions Involved |
-| :--- | :--- | :--- |
-| **Change Service Overheads** (Visit, Mobility) | `config.py` | Update `CATEGORY_OVERHEADS` dictionary (`visit`, `mobility`). Current standard: Mobility=Rs. 2,000, Visit=Rs. 600. |
-| **Change Gas Charges** (R-410a, R-32, R-600, R-134a) | `config.py` | Update `get_tonnage_specs()` and `CATEGORY_OVERHEADS` (Ref=Rs. 4,000, Dispenser=Rs. 3,500, ACs=by tonnage). |
-| **Modify Valve Sizing / Pairing Rules** | `config.py` | Update `is_valve_tonnage_compatible()` and `get_tonnage_valve_pairing()`. |
-| **Add / Reclassify Valve Part Numbers** | `config.py` | Update `classify_component_role()` with canonical closed complaint part numbers. |
-| **Add a New Platform Series Token** (e.g. `XITH`, `NITH`) | `config.py` & `build_baseline.py` | Add the series token to `tokenize_appliance_model` in `config.py` and `series_token_list` in `build_baseline.py`. |
-| **Adjust Component Price Floors** | `config.py` | Update `get_role_price_floor(role, ton, cat)`. Floor protects major assemblies against fractional ledger ratios. |
-| **Add a New Component Role Group** | `config.py` | Add to `COMPONENT_ROLE_GROUPS` list and update regex/keyword matching in `classify_component_role()`. |
-| **Update Live Stock Inventory** | `data/stock_inventory_latest.csv` | Drop new CSV into `data/` or upload via Module 4 in the UI. Then run `python build_baseline.py` to regenerate baseline. |
-| **Modify Matching Logic or Ranking Scores** | `database.py` | Edit `fetch_tiered_compatible_parts()`, `is_series_compatible()`, or `search_stock_global()`. |
-| **Modify UI Cards / WhatsApp Quotation** | `app.py` | Look for `render_primary_card()`, `render_alternative_card()`, or `generate_whatsapp_quotation()`. |
-
----
-
-## 🧪 Verification & Testing Suite
-
-Always run the automated verification suite after making any modifications:
+To run the application locally, ensure you have Python installed, then run:
 
 ```bash
-python test_system_verification.py
-```
-
-### Automated Checks Performed (12 Tests):
-1. **Bootstrap & Stock Metadata**: Ensures stock master loads and counts are > 0.
-2. **Strict Model Tokenizer**: Tests parsing of series, tonnages, and appliance categories.
-3. **Cross-Series Isolation**: Asserts zero cross-contamination (e.g., PITH vs CITH evaporators).
-4. **Zero-Price Immunity**: Validates 460+ parts across 7 appliance models are all > Rs. 0.
-5. **Global Stock Search**: Tests full-text search across warehouse inventory.
-6. **ZITH Evaporator Verification**: Tests `GS-18ZITH1W-T3` for primary and alternate evaporators.
-7. **Overheads & Gas Pricing**: Asserts Mobility=2000, Visit=600, Ref Gas=4000, Dispenser Gas=3500.
-8. **100% Price Consistency**: Asserts exact price equality between Model Search and Direct Part Search.
-9. **Packaging & Floor Protection**: Asserts cartons are excluded from cooling roles and floors are enforced.
-10. **Strict Valve Tonnage Isolation & Dual Pairing**: Asserts exact physical pairing across 1.0T (3/8" + 1/4"), 1.5T (1/2" + 1/4" on ZITH & PITH), 2.0T (5/8" + 1/4"), and 4.0T (5/8" + 3/8") with 0% contamination of incompatible valve sizes.
-11. **Floor Standing AC Isolation & Genuine Evaporator Protection**: Asserts `GF-36TFIH` strictly matches genuine Evaporator `11001000602` at verified customer price Rs. 58,000 with 0% leakage of 2.0T `24ISH` or 4.0T `48FW`. Also validates 3.0T physical valve pairing (5/8" suction + 1/4" liquid).
-12. **1.0 Ton 3/8" Valve Customer Verified Pricing (Rs. 1,500)**: Asserts 1.0 Ton 3/8" valve (`71302395`) reflects actual customer collection billing rate Rs. 1,500 rather than raw ledger accounting cost (Rs. 2,968) with 100% price consistency between model search and direct stock search.
-
----
-
-## 🚀 Running Locally
-
-```bash
-# 1. Install dependencies
 pip install -r requirements.txt
-
-# 2. Run automated test suite
-python test_system_verification.py
-
-# 3. Launch Streamlit application
 streamlit run app.py
 ```
+
+The application will launch on your default web browser (usually `http://localhost:8501`).
