@@ -29,10 +29,53 @@ def find_latest_collection_file():
 
 DEFAULT_FB_FILE = find_latest_feedback_file()
 DEFAULT_COLL_FILE = find_latest_collection_file()
+DEFAULT_STOCK_PDF = os.path.join(BASE_DIR, "vp786 (1 year stock movement report).pdf")
 STOCK_SEARCH_DIRS = [os.path.join(BASE_DIR, "data"), BASE_DIR, ".", r"C:\temp", "/tmp"]
 
 VISIT_CHARGES = 600
 MOBILITY_CHARGES = 2000
+BASE_FIXED_TOTAL = VISIT_CHARGES + MOBILITY_CHARGES
+
+# Capacity-Aware Gas Charging Engine Rates (PKR)
+GAS_CHARGES_MAP = {
+    '12K': 5500,   # AC 12000 BTU (1.0 Ton)
+    '18K': 7000,   # AC 18000 BTU (1.5 Ton)
+    '24K': 8500,   # AC 24000 BTU (2.0 Ton)
+    '36K': 13000,  # AC 36000 BTU (3.0 Ton)
+    '48K': 13000,  # AC 48000 BTU (4.0 Ton)
+    'REF': 4000,   # Refrigerator (Model starts with 'GR-')
+    'WD': 3500,    # Water Dispenser (Model starts with 'WD-')
+    'DEFAULT': 5500
+}
+
+def calculate_gas_charge(model_name: str) -> tuple[int, str]:
+    """
+    Auto-determine gas refill charge (PKR) and capacity description based on model name.
+    """
+    if not model_name:
+        return GAS_CHARGES_MAP['DEFAULT'], "Standard AC Gas (1.0 Ton)"
+    
+    m = str(model_name).upper().strip()
+    if m.startswith('GR-'):
+        return GAS_CHARGES_MAP['REF'], "Refrigerator Gas Refill (R-600a)"
+    if m.startswith('WD-') or m.startswith('GW-'):
+        return GAS_CHARGES_MAP['WD'], "Water Dispenser Gas Refill (R-134a)"
+    
+    if any(k in m for k in ['48', '48000', '4.0 TON', '4 TON']):
+        return GAS_CHARGES_MAP['48K'], "Commercial AC Gas Refill (4.0 Ton / 48000 BTU)"
+    if any(k in m for k in ['36', '36000', '3.0 TON', '3 TON']):
+        return GAS_CHARGES_MAP['36K'], "Commercial AC Gas Refill (3.0 Ton / 36000 BTU)"
+    if any(k in m for k in ['24', '24000', '2.0 TON', '2 TON']):
+        return GAS_CHARGES_MAP['24K'], "Split AC Gas Refill (2.0 Ton / 24000 BTU)"
+    if any(k in m for k in ['18', '18000', '1.5 TON']):
+        return GAS_CHARGES_MAP['18K'], "Split AC Gas Refill (1.5 Ton / 18000 BTU)"
+    if any(k in m for k in ['12', '12000', '1.0 TON', '1 TON']):
+        return GAS_CHARGES_MAP['12K'], "Split AC Gas Refill (1.0 Ton / 12000 BTU)"
+        
+    return GAS_CHARGES_MAP['DEFAULT'], "Split AC Gas Refill (Standard 1.0 Ton)"
+
+def calculate_gas_charge_amount(model_name: str) -> int:
+    return calculate_gas_charge(model_name)[0]
 
 COLUMN_ALIASES = {
     'COMPLAINT NO': 'complaint_no',

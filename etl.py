@@ -108,3 +108,255 @@ def ingest_performance_pipeline(fb_source, cancel_source):
         cursor = conn.cursor()
         cursor.execute("DELETE FROM tech_performance_master")
         cursor.executemany("INSERT OR REPLACE INTO tech_performance_master (complaint_no, technician_name, status, closed_date) VALUES (?, ?, ?, ?)", perf_records)
+
+# ============================================================================
+# ESTIMATOR PIPELINES: STORE STOCK PDF & QUALITY FEEDBACK CATALOG
+# ============================================================================
+import json
+import pdfplumber
+import config
+from database import upsert_master_parts, upsert_model_catalog, append_model_catalog
+
+def clean_excel_str(val):
+    if pd.isna(val) or val is None:
+        return ""
+    s = str(val).strip()
+    if s.startswith('="') and s.endswith('"'):
+        s = s[2:-1]
+    return s.strip()
+
+def parse_store_stock_pdf(pdf_source=None) -> int:
+    """
+    Parses Karachi-2 HA Store stock report PDF (vp786), extracts prices, store stock,
+    technician hand allocations, and enterprise totals. Normalizes negative balances.
+    Filters out complete B-grade finished units.
+    """
+    if pdf_source is None:
+        pdf_source = getattr(config, 'DEFAULT_STOCK_PDF', 'vp786 (1 year stock movement report).pdf')
+    
+    # Technician names in PDF headers
+    tech_p1_names = ["Ameer Hamza", "Arslan Kh2HA", "Asghar Ali", "Faizan", "Haroon", 
+                     "Irfan Malik", "Jafar Raza", "Jibran Ahmed", "Kaleem Uddin", "Mohsin"]
+    tech_p1_indices = [5, 6, 7, 8, 9, 10, 11, 12, 13, 16]
+    
+    tech_p2_names = ["Muhammad Faraz", "Naveed Khan", "Sheharyar Khan", "Syed Jahanzaib",
+                     "Ubaid Raza", "Umer Hayat Khi2", "Waseem Raja", "amin karachi 2ha", "muhammad naeem Kh"]
+    tech_p2_indices = [5, 6, 7, 8, 9, 10, 11, 12, 13]
+    
+    parsed_records = []
+    seen_parts = set()
+    
+    with pdfplumber.open(pdf_source) as pdf:
+        num_pages = len(pdf.pages)
+        for pair_idx in range(0, num_pages, 2):
+            p1 = pdf.pages[pair_idx]
+            p2 = pdf.pages[pair_idx + 1] if pair_idx + 1 < num_pages else None
+            
+            t1 = p1.extract_tables()
+            t2 = p2.extract_tables() if p2 else []
+            if not t1 or not t2:
+                continue
+                
+            table1 = t1[0]
+            table2 = t2[0]
+            min_rows = min(len(table1), len(table2))
+            
+            for r_idx in range(1, min_rows):
+                r1 = table1[r_idx]
+                r2 = table2[r_idx]
+                
+                p_no = str(r1[1] if r1[1] is not None else (r2[1] if r2[1] is not None else '')).replace('\n', '').strip()
+                desc = str(r1[2] if r1[2] is not None else (r2[2] if r2[2] is not None else '')).replace('\n', ' ').strip()
+                model = str(r1[3] if r1[3] is not None else (r2[3] if r2[3] is not None else '')).replace('\n', ' ').strip()
+                price_str = str(r1[4] if r1[4] is not None else (r2[4] if r2[4] is not None else '')).replace('\n', '').replace(',', '').strip()
+                
+                if not p_no and not desc:
+                    continue
+                
+                # Rule 7: Filter out complete B-Grade finished units
+                if re.search(r'b[- ]?grade\s+set', p_no + ' ' + desc, re.IGNORECASE):
+                    continue
+                
+                if p_no in seen_parts:
+                    continue
+                seen_parts.add(p_no)
+                
+                try:
+                    price = int(round(float(price_str))) if price_str else 0
+                except Exception:
+                    price = 0
+                
+                def parse_qty(v):
+                    if v is None:
+                        return 0
+                    s = str(v).replace('\n', '').replace(',', '').strip()
+                    try:
+                        return int(float(s))
+                    except Exception:
+                        return 0
+                
+                sales_store = parse_qty(r1[14] if len(r1) > 14 else 0)
+                branch_store = parse_qty(r1[15] if len(r1) > 15 else 0)
+                total_stock = parse_qty(r2[14] if len(r2) > 14 else 0)
+                
+                tech_dict = {}
+                for t_name, idx in zip(tech_p1_names, tech_p1_indices):
+                    val = parse_qty(r1[idx] if len(r1) > idx else 0)
+                    if val != 0:
+                        tech_dict[t_name] = val
+                        
+                for t_name, idx in zip(tech_p2_names, tech_p2_indices):
+                    val = parse_qty(r2[idx] if len(r2) > idx else 0)
+                    if val != 0:
+                        tech_dict[t_name] = val
+                
+                tech_total = sum(tech_dict.values())
+                avail_branch = max(0, branch_store)
+                avail_total = max(0, total_stock)
+                stock_status = 'In Stock' if avail_branch > 0 else 'Out of Stock'
+                
+                source_doc = getattr(pdf_source, 'name', str(pdf_source))
+                
+                parsed_records.append((
+                    p_no,
+                    desc,
+                    model,
+                    price,
+                    branch_store,
+                    sales_store,
+                    tech_total,
+                    total_stock,
+                    avail_branch,
+                    avail_total,
+                    stock_status,
+                    json.dumps(tech_dict),
+                    0,  # is_pricing_pending = 0 since present in stock report
+                    source_doc
+                ))
+    
+    if parsed_records:
+        upsert_master_parts(parsed_records)
+    return len(parsed_records)
+
+def sync_model_part_catalog_from_feedback(fb_source=None, is_incremental: bool = False) -> tuple[int, int, int]:
+    """
+    Ingests Quality Feedback Report, extracts ground-truth model-to-part compatibility,
+    explodes comma-separated parts, resolves Excel scientific notation artifacts,
+    and populates model_part_catalog and pending entries in master_parts_lookup.
+    If is_incremental is True, appends onto existing catalog without overwriting baseline.
+    Returns (unique_models, unique_parts, total_installation_events).
+    """
+    if fb_source is None:
+        fb_source = getattr(config, 'DEFAULT_FB_FILE', 'quality_feedback_report_28SEP2026_142900.csv')
+    
+    if isinstance(fb_source, str):
+        df = pd.read_csv(fb_source, dtype=str)
+    else:
+        df = safe_read(fb_source)
+    
+    # Standardize column lookup
+    col_map = {c.strip(): c for c in df.columns}
+    def get_c(key):
+        return col_map.get(key, '')
+        
+    c_status = get_c('COMPLETED_STATUS')
+    if c_status and c_status in df.columns:
+        df = df[df[c_status].astype(str).str.upper().str.strip() == 'COMPLETED'].copy()
+        
+    c_parts = get_c('HARDWARE_PART_NOS')
+    if not c_parts or c_parts not in df.columns:
+        return 0, 0, 0
+        
+    c_model = get_c('MODEL_NAME')
+    c_prods = get_c('HARDWARE_PRODUCTS')
+    c_boards = get_c('HARDWARE_BOARD_TYPES')
+    c_qtys = get_c('HARDWARE_QTYS')
+    c_closed = get_c('CLOSED_DATE')
+    
+    events = []
+    
+    for idx, row in df.iterrows():
+        p_raw = clean_excel_str(row.get(c_parts, ''))
+        if not p_raw or p_raw.lower() == 'nan':
+            continue
+            
+        model = clean_excel_str(row.get(c_model, '')).upper()
+        if not model:
+            continue
+            
+        prods_raw = clean_excel_str(row.get(c_prods, ''))
+        boards_raw = clean_excel_str(row.get(c_boards, ''))
+        qtys_raw = clean_excel_str(row.get(c_qtys, ''))
+        closed_date = clean_excel_str(row.get(c_closed, ''))
+        
+        p_nos = [p.strip() for p in p_raw.split(',') if p.strip()]
+        p_prods = [p.strip() for p in prods_raw.split(',') if p.strip()]
+        p_boards = [p.strip() for p in boards_raw.split(',') if p.strip()]
+        
+        for i, raw_part in enumerate(p_nos):
+            prod_desc = p_prods[i] if i < len(p_prods) else (prods_raw if len(p_nos) == 1 else "")
+            board = p_boards[i] if i < len(p_boards) else (boards_raw if len(p_nos) == 1 else "Component")
+            
+            clean_part = raw_part
+            # Excel Scientific Notation Recovery (e.g. 3.00002E+11)
+            if 'E+' in raw_part:
+                digit_candidates = re.findall(r'[0-9A-Z\-]{7,15}', prod_desc)
+                if digit_candidates:
+                    clean_part = digit_candidates[-1]
+            
+            events.append({
+                'model': model,
+                'part_no': clean_part,
+                'part_description': prod_desc,
+                'board_type': board,
+                'closed_date': closed_date
+            })
+            
+    if not events:
+        return 0, 0, 0
+        
+    ev_df = pd.DataFrame(events)
+    
+    # Aggregate by (model, part_no)
+    catalog_records = []
+    unique_parts_set = set()
+    
+    for (m, p_no), grp in ev_df.groupby(['model', 'part_no']):
+        freq = len(grp)
+        descs = grp['part_description'].replace('', pd.NA).dropna()
+        best_desc = descs.mode().iloc[0] if len(descs) > 0 else ""
+        boards = grp['board_type'].replace('', pd.NA).dropna()
+        best_board = boards.mode().iloc[0] if len(boards) > 0 else "Spare Part"
+        dates = grp['closed_date'].replace('', pd.NA).dropna()
+        last_date = dates.iloc[-1] if len(dates) > 0 else ""
+        
+        catalog_records.append((
+            m,
+            p_no,
+            best_desc,
+            best_board,
+            freq,
+            last_date
+        ))
+        unique_parts_set.add((p_no, best_desc, best_board))
+        
+    if is_incremental:
+        append_model_catalog(catalog_records)
+    else:
+        upsert_model_catalog(catalog_records)
+    
+    # Ensure all parts exist in master_parts_lookup (flag unpriced parts as is_pricing_pending = 1)
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        for p_no, p_desc, p_board in unique_parts_set:
+            cursor.execute("SELECT part_no FROM master_parts_lookup WHERE part_no = ?", (p_no,))
+            if cursor.fetchone() is None:
+                cursor.execute("""
+                    INSERT INTO master_parts_lookup 
+                    (part_no, erp_description, retail_price, is_pricing_pending, stock_status, last_synced)
+                    VALUES (?, ?, 0, 1, 'Out of Stock', CURRENT_TIMESTAMP)
+                """, (p_no, p_desc))
+        conn.commit()
+        
+    return ev_df['model'].nunique(), len(unique_parts_set), len(ev_df)
+

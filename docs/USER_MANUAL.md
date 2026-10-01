@@ -1,76 +1,71 @@
 # User Manual: DWP Field Assistant Engine
 
-Assalam o Alaikum! Welcome to the **DWP Field Assistant Engine**. This application is designed to help you quickly search for historical customer complaints and track technician performance (KPIs) in real-time.
-
-Here is a step-by-step guide on how to use the application.
+Assalam o Alaikum! Welcome to the **DWP Field Assistant Engine**. This application is an all-in-one diagnostic and field operations platform built for DWP service technicians, supervisors, and branch managers.
 
 ---
 
 ## 🚀 How to Start the App
 
-If the app is not already running, open your terminal (or command prompt) and run:
+Open your terminal or command prompt inside the project folder and run:
 ```bash
 streamlit run app.py
 ```
-This will automatically open the application in your web browser.
+This will automatically launch the application in your default web browser (usually at `http://localhost:8501`).
 
 ---
 
-## 🔄 Module 1: Updating System Data (Sidebar)
+## 🧮 Tab 1: Spare Parts & Cost Estimator (Primary Feature)
 
-Before you can search for history or check performance, you must feed the system the latest data reports from the ERP.
-Open the **Sidebar** on the left side of the screen by clicking the `>` arrow.
+This module allows technicians and supervisors to create instant, official service and spare parts quotations for customers.
 
-### A. Updating Technician Performance
-To get the latest KPI scores:
-1. Under **Module 3: Performance Sync**, you will see two upload boxes.
-2. **Quality Feedback Report**: Upload the latest CSV/Excel file of quality feedback.
-3. **Cancel / Nil / Transfer Report**: Upload the latest Excel file of canceled/nil jobs.
-4. Click the **"📊 Update Technician Performance"** button. The system will process everything in a few seconds and update the database.
-
-### B. Appending New Customer History (Optional)
-To add new customer records to the history:
-1. Under **Module 1 & 2: Archive Append**, upload the Feedback file and the Collection Pricing file.
-2. Click **"➕ Append to Master History"**. The system will safely add new complaints without deleting old ones.
-
----
-
-## 🔍 Module 2: Unit & Customer History (Tab 1)
-
-This module allows you to view the service history of any AC unit or customer.
-
-**How to Use:**
-1. Click on the **"🔍 Unit & Customer History"** tab at the top.
-2. In the Search Box, type one of the following:
-   - **Serial Number** (e.g., `4234091238`)
-   - **Customer Phone Number** (e.g., `0322...`)
-   - **Complaint Number** (e.g., `2826...`)
-3. Press **Enter**.
-4. The system will instantly show you all matching historical records, displaying:
-   - Model and Serial Number
-   - Technician Name and Customer Name
-   - Complaint and Closed Dates
-   - Final Collection Amount (e.g. "Rs. 2,500" or "Free Under Warranty")
-   - Closing Remarks left by the technician.
+### How to Create a Customer Estimate:
+1. **Select Equipment Model**:
+   Choose the customer's model from the dropdown (e.g. `GS-18PITH11W`, `GS-18FITH2W`, `WD-300`, `GR-E8890G-CB1`).
+   - The app automatically detects appliance capacity and calculates the exact refrigerant gas refill charge.
+2. **Review Overhead Charges & Warranty Status**:
+   - Check or uncheck **Visit Charges (Rs. 600)** and **Mobility / Labour (Rs. 2,000)**.
+   - Check **Gas Refill Required** if the unit requires gas charging.
+   - Select Warranty Status:
+     - *Cash / Out of Warranty*: Standard commercial billing.
+     - *Under Warranty*: Free replacement (Customer payable: Rs. 0).
+     - *Partial Warranty*: Customer pays for parts/gas; labour & visit are free.
+3. **Select Spare Parts**:
+   - **All Verified Parts Visible by Default**: Every compatible component is listed with its official ERP retail price.
+   - **Live Stock Badges**:
+     - `🟢 Karachi-2 Store: X In Stock` (available immediately)
+     - `🔴 Karachi-2 Store: 0 Available` (available via procurement/indent)
+     - `🤝 In Hand: Name (Qty)` (indicates if a co-technician has the part in hand)
+   - **Filter Options**:
+     - *Search Box*: Type any part name, SKU, or keyword (e.g. `evaporator`, `valve`, `1002`). Multi-word and dash-normalized search is supported.
+     - *Sub-Assembly Category*: Filter by category (e.g. `Evaporator Assy`, `Cut Off Valve`, `Electronic PCB`, `WD Compressor`).
+     - *Inventory Filter*: Toggle between "All Verified Parts" and "🟢 In-Stock Only".
+   - Simply check the checkbox next to the required parts to add them to the quotation.
+4. **Real-Time Quotation Summary**:
+   - View the live itemized bill breakdown.
+   - Fill in Customer Name, Phone, and optional Unit Serial Number.
+5. **Send Official Quotation via WhatsApp**:
+   - The app formats a professional DWP quotation with one click.
+   - Click the copy button on the top-right of the quotation code block, or click the **"Open WhatsApp Chat"** button to open WhatsApp Web/App directly with the customer.
 
 ---
 
-## 📊 Module 3: Technician Performance (Tab 2)
+## 🔍 Tab 2: Unit & Customer History
 
-This module allows you to track branch-wide or individual technician KPIs and Completion Rates.
-
-**How to Use:**
-1. Click on the **"📊 Technician Performance"** tab at the top.
-2. **Select Date Range**: Use the "From Date" and "To Date" calendars to choose the period you want to evaluate.
-3. The system will automatically calculate the **Zone Efficiency** based on Assigned vs. Completed complaints. *(Note: Transferred calls are excluded).*
-4. **View Individual Technician Score**: 
-   - Scroll down to the dropdown menu labeled "👤 Select Technician (Personal Score)".
-   - Select a specific technician's name from the list.
-   - The table will update to show only that technician's stats (Completed, Canceled, Rejected, Nil, Total Assigned, and Completion Rate %).
+Search the complete 1-year archive of service records:
+1. Type a **Serial Number**, **Customer Phone Number**, or **Complaint Number**.
+2. Press Enter to view past jobs, assigned technicians, closing remarks, and collection amounts.
 
 ---
 
-## 📞 Support
-Agar application mein koi ghalti, masla, ya error aa raha ho, toh screen ka Screenshot le kar rabta karein:
-- **WhatsApp / Call:** `03228344755`
-- **Email:** `muhammad.abrar@ecostar.com.pk`
+## 📊 Tab 3: Technician Performance
+
+Track branch-wide and technician-specific KPIs:
+1. Filter by specific technician or date range.
+2. View total jobs, completed complaints, cancel/nil counts, and overall completion percentage.
+
+---
+
+## 🔄 Updating Data via Sidebar
+
+- **Daily Closed Complaints**: Upload newly closed complaint CSV/Excel files to incrementally append new jobs and update part usage.
+- **Daily Stock & Prices**: Upload the latest Store Wise Stock Movement PDF to update Karachi-2 Store stock levels and retail prices in real time.
