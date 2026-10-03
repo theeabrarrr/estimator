@@ -1,3 +1,4 @@
+import os
 import sqlite3
 import pandas as pd
 import json
@@ -5,7 +6,7 @@ import re
 
 from contextlib import contextmanager
 
-DB_FILE = "dwp_service.db"
+DB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dwp_service.db")
 
 @contextmanager
 def get_connection():
@@ -16,6 +17,7 @@ def get_connection():
         conn.close()
 
 def search_history_records(query_str, clean_phone_str):
+    init_estimator_schema()
     with get_connection() as conn:
         sql = """
             SELECT complaint_no, model, serial, customer_name, phone, technician_name,
@@ -34,6 +36,7 @@ def search_history_records(query_str, clean_phone_str):
     return match_df
 
 def fetch_performance_data():
+    init_estimator_schema()
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='tech_performance_master'")
@@ -47,12 +50,44 @@ def fetch_performance_data():
 
 def init_estimator_schema():
     """
-    Ensures model_part_catalog, master_parts_lookup, and v_model_compatible_parts exist.
+    Ensures history_master, tech_performance_master, model_part_catalog, master_parts_lookup, and v_model_compatible_parts exist.
     """
     with get_connection() as conn:
         cursor = conn.cursor()
         
-        # 1. Model-to-Part Compatibility Table
+        # 1. History Master Table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS history_master (
+                complaint_no TEXT PRIMARY KEY,
+                serial TEXT,
+                phone TEXT,
+                model TEXT,
+                customer_name TEXT,
+                technician_name TEXT,
+                complaint_type TEXT,
+                purchase_date TEXT,
+                complaint_date TEXT,
+                closed_date TEXT,
+                remarks TEXT,
+                closed_amount INTEGER DEFAULT 0
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_history_complaint_no ON history_master (complaint_no)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_history_phone ON history_master (phone)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_history_serial ON history_master (serial)")
+
+        # 2. Tech Performance Master Table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS tech_performance_master (
+                complaint_no TEXT PRIMARY KEY,
+                technician_name TEXT,
+                status TEXT,
+                closed_date TEXT
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_tech_perf_tech ON tech_performance_master (technician_name)")
+        
+        # 3. Model-to-Part Compatibility Table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS model_part_catalog (
                 model TEXT NOT NULL,
@@ -69,7 +104,7 @@ def init_estimator_schema():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_catalog_part_no ON model_part_catalog (part_no)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_catalog_model_freq ON model_part_catalog (model, historical_frequency DESC)")
 
-        # 2. Master Pricing & Inventory Table
+        # 4. Master Pricing & Inventory Table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS master_parts_lookup (
                 part_no TEXT PRIMARY KEY,
@@ -92,7 +127,7 @@ def init_estimator_schema():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_parts_lookup_status ON master_parts_lookup (stock_status)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_parts_lookup_pricing_pending ON master_parts_lookup (is_pricing_pending)")
 
-        # 3. Real-Time Estimator View
+        # 5. Real-Time Estimator View
         cursor.execute("""
             CREATE VIEW IF NOT EXISTS v_model_compatible_parts AS
             SELECT 
@@ -113,6 +148,16 @@ def init_estimator_schema():
             LEFT JOIN master_parts_lookup p ON c.part_no = p.part_no
         """)
         conn.commit()
+
+        cursor.execute("SELECT COUNT(*) FROM model_part_catalog")
+        cat_count = cursor.fetchone()[0]
+
+    if cat_count == 0:
+        try:
+            import etl
+            etl.sync_model_part_catalog_from_feedback()
+        except Exception:
+            pass
 
     # Automatically merge verified parts from baseline parts_master if not already merged
     merge_parts_master_into_catalog()

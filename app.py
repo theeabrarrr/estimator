@@ -43,6 +43,9 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# Initialize database schema and auto-seed if required
+init_estimator_schema()
+
 # Custom Styling
 st.markdown("""
 <style>

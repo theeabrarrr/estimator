@@ -1,6 +1,6 @@
 import pandas as pd
 import re
-from database import get_connection
+from database import get_connection, init_estimator_schema
 
 def safe_read(file_obj):
     if file_obj.name.endswith('.csv'):
@@ -31,6 +31,7 @@ def normalize_phone(ph):
     return p[:11]
 
 def ingest_feedback_and_pricing(fb_source, coll_source=None):
+    init_estimator_schema()
     fb = standardize_columns(safe_read(fb_source))
     fb['complaint_no'] = fb['complaint_no'].apply(clean_val)
     fb['serial'] = fb['serial'].apply(clean_val).str.upper() if 'serial' in fb.columns else ""
@@ -65,6 +66,7 @@ def ingest_feedback_and_pricing(fb_source, coll_source=None):
         """, hist_records)
 
 def ingest_performance_pipeline(fb_source, cancel_source):
+    init_estimator_schema()
     fb = standardize_columns(safe_read(fb_source))
     cancel = standardize_columns(safe_read(cancel_source))
 
@@ -73,9 +75,9 @@ def ingest_performance_pipeline(fb_source, cancel_source):
 
     fb_sub = pd.DataFrame({
         'complaint_no': fb['complaint_no'],
-        'technician_name': fb['technician_name'].apply(clean_val),
+        'technician_name': fb['technician_name'].apply(clean_val) if 'technician_name' in fb.columns else '',
         'status': fb['status'].astype(str).str.upper().str.strip() if 'status' in fb.columns else 'COMPLETED',
-        'closed_date': fb['closed_date'].apply(clean_val),
+        'closed_date': fb['closed_date'].apply(clean_val) if 'closed_date' in fb.columns else '',
         '_priority': 2
     })
 
@@ -255,9 +257,9 @@ def sync_model_part_catalog_from_feedback(fb_source=None, is_incremental: bool =
         df = safe_read(fb_source)
     
     # Standardize column lookup
-    col_map = {c.strip(): c for c in df.columns}
+    col_map = {str(c).strip().upper(): c for c in df.columns}
     def get_c(key):
-        return col_map.get(key, '')
+        return col_map.get(str(key).strip().upper(), '')
         
     c_status = get_c('COMPLETED_STATUS')
     if c_status and c_status in df.columns:
@@ -275,7 +277,7 @@ def sync_model_part_catalog_from_feedback(fb_source=None, is_incremental: bool =
     
     events = []
     
-    for idx, row in df.iterrows():
+    for row in df.to_dict('records'):
         p_raw = clean_excel_str(row.get(c_parts, ''))
         if not p_raw or p_raw.lower() == 'nan':
             continue
@@ -286,7 +288,6 @@ def sync_model_part_catalog_from_feedback(fb_source=None, is_incremental: bool =
             
         prods_raw = clean_excel_str(row.get(c_prods, ''))
         boards_raw = clean_excel_str(row.get(c_boards, ''))
-        qtys_raw = clean_excel_str(row.get(c_qtys, ''))
         closed_date = clean_excel_str(row.get(c_closed, ''))
         
         p_nos = [p.strip() for p in p_raw.split(',') if p.strip()]
@@ -312,33 +313,32 @@ def sync_model_part_catalog_from_feedback(fb_source=None, is_incremental: bool =
                 'closed_date': closed_date
             })
             
-    if not events:
-        return 0, 0, 0
-        
-    ev_df = pd.DataFrame(events)
-    
-    # Aggregate by (model, part_no)
+    # Aggregate by (model, part_no) in pure Python dict
+    grp_dict = {}
+    for ev in events:
+        key = (ev['model'], ev['part_no'])
+        if key not in grp_dict:
+            grp_dict[key] = {'freq': 0, 'descs': [], 'boards': [], 'dates': []}
+        grp_dict[key]['freq'] += 1
+        if ev['part_description']:
+            grp_dict[key]['descs'].append(ev['part_description'])
+        if ev['board_type']:
+            grp_dict[key]['boards'].append(ev['board_type'])
+        if ev['closed_date']:
+            grp_dict[key]['dates'].append(ev['closed_date'])
+
     catalog_records = []
     unique_parts_set = set()
-    
-    for (m, p_no), grp in ev_df.groupby(['model', 'part_no']):
-        freq = len(grp)
-        descs = grp['part_description'].replace('', pd.NA).dropna()
-        best_desc = descs.mode().iloc[0] if len(descs) > 0 else ""
-        boards = grp['board_type'].replace('', pd.NA).dropna()
-        best_board = boards.mode().iloc[0] if len(boards) > 0 else "Spare Part"
-        dates = grp['closed_date'].replace('', pd.NA).dropna()
-        last_date = dates.iloc[-1] if len(dates) > 0 else ""
+    models_set = set()
+
+    for (m, p_no), data in grp_dict.items():
+        best_desc = data['descs'][0] if data['descs'] else ""
+        best_board = data['boards'][0] if data['boards'] else "Spare Part"
+        last_date = data['dates'][-1] if data['dates'] else ""
         
-        catalog_records.append((
-            m,
-            p_no,
-            best_desc,
-            best_board,
-            freq,
-            last_date
-        ))
+        catalog_records.append((m, p_no, best_desc, best_board, data['freq'], last_date))
         unique_parts_set.add((p_no, best_desc, best_board))
+        models_set.add(m)
         
     if is_incremental:
         append_model_catalog(catalog_records)
@@ -348,15 +348,13 @@ def sync_model_part_catalog_from_feedback(fb_source=None, is_incremental: bool =
     # Ensure all parts exist in master_parts_lookup (flag unpriced parts as is_pricing_pending = 1)
     with get_connection() as conn:
         cursor = conn.cursor()
-        for p_no, p_desc, p_board in unique_parts_set:
-            cursor.execute("SELECT part_no FROM master_parts_lookup WHERE part_no = ?", (p_no,))
-            if cursor.fetchone() is None:
-                cursor.execute("""
-                    INSERT INTO master_parts_lookup 
-                    (part_no, erp_description, retail_price, is_pricing_pending, stock_status, last_synced)
-                    VALUES (?, ?, 0, 1, 'Out of Stock', CURRENT_TIMESTAMP)
-                """, (p_no, p_desc))
+        pending_records = [(p_no, p_desc) for p_no, p_desc, _ in unique_parts_set]
+        cursor.executemany("""
+            INSERT OR IGNORE INTO master_parts_lookup 
+            (part_no, erp_description, retail_price, is_pricing_pending, stock_status, last_synced)
+            VALUES (?, ?, 0, 1, 'Out of Stock', CURRENT_TIMESTAMP)
+        """, pending_records)
         conn.commit()
         
-    return ev_df['model'].nunique(), len(unique_parts_set), len(ev_df)
+    return len(models_set), len(unique_parts_set), len(events)
 
