@@ -3,9 +3,21 @@ import re
 from database import get_connection, init_estimator_schema
 
 def safe_read(file_obj):
-    if file_obj.name.endswith('.csv'):
+    if isinstance(file_obj, str):
+        if file_obj.lower().endswith('.csv'):
+            return pd.read_csv(file_obj, dtype=str)
+        return pd.read_excel(file_obj, dtype=str)
+    
+    fname = getattr(file_obj, 'name', '').lower()
+    if fname.endswith('.csv'):
         return pd.read_csv(file_obj, dtype=str)
-    return pd.read_excel(file_obj, dtype=str)
+    else:
+        try:
+            return pd.read_excel(file_obj, dtype=str)
+        except Exception:
+            if hasattr(file_obj, 'seek'):
+                file_obj.seek(0)
+            return pd.read_csv(file_obj, dtype=str)
 
 def standardize_columns(df):
     df.columns = (
@@ -14,10 +26,30 @@ def standardize_columns(df):
         .str.replace(r'[^a-z0-9]+', '_', regex=True)
         .str.strip('_')
     )
-    if 'complain_no' in df.columns:
-        df.rename(columns={'complain_no': 'complaint_no'}, inplace=True)
-    if 'item_desc' in df.columns:
+    
+    # Complaint Number Aliases
+    for col in ['complain_no', 'complaintno', 'complain_number', 'complaint_number', 'job_no', 'ticket_no']:
+        if col in df.columns and 'complaint_no' not in df.columns:
+            df.rename(columns={col: 'complaint_no'}, inplace=True)
+            
+    # Status Aliases (e.g. COMPLETED_STATUS -> status)
+    for col in ['completed_status', 'job_status', 'call_status', 'complaint_status', 'current_status', 'job_type']:
+        if col in df.columns and 'status' not in df.columns:
+            df.rename(columns={col: 'status'}, inplace=True)
+
+    # Technician Name Aliases
+    for col in ['tech_name', 'technician', 'tech', 'emp_name', 'engineer_name', 'allocated_tech']:
+        if col in df.columns and 'technician_name' not in df.columns:
+            df.rename(columns={col: 'technician_name'}, inplace=True)
+
+    # Closed Date Aliases
+    for col in ['complete_date', 'completion_date', 'close_date', 'resolved_date', 'action_date']:
+        if col in df.columns and 'closed_date' not in df.columns:
+            df.rename(columns={col: 'closed_date'}, inplace=True)
+
+    if 'item_desc' in df.columns and 'part_name' not in df.columns:
         df.rename(columns={'item_desc': 'part_name'}, inplace=True)
+
     return df
 
 def clean_val(val):
@@ -64,17 +96,20 @@ def ingest_feedback_and_pricing(fb_source, coll_source=None):
             (complaint_no, serial, phone, model, customer_name, technician_name, complaint_type, purchase_date, complaint_date, closed_date, remarks, closed_amount) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, hist_records)
+        conn.commit()
 
 def ingest_performance_pipeline(fb_source, cancel_source):
     init_estimator_schema()
     fb = standardize_columns(safe_read(fb_source))
     cancel = standardize_columns(safe_read(cancel_source))
 
-    fb['complaint_no'] = fb['complaint_no'].apply(clean_val)
-    cancel['complaint_no'] = cancel['complaint_no'].apply(clean_val)
+    if 'complaint_no' in fb.columns:
+        fb['complaint_no'] = fb['complaint_no'].apply(clean_val)
+    if 'complaint_no' in cancel.columns:
+        cancel['complaint_no'] = cancel['complaint_no'].apply(clean_val)
 
     fb_sub = pd.DataFrame({
-        'complaint_no': fb['complaint_no'],
+        'complaint_no': fb['complaint_no'] if 'complaint_no' in fb.columns else pd.Series(dtype=str),
         'technician_name': fb['technician_name'].apply(clean_val) if 'technician_name' in fb.columns else '',
         'status': fb['status'].astype(str).str.upper().str.strip() if 'status' in fb.columns else 'COMPLETED',
         'closed_date': fb['closed_date'].apply(clean_val) if 'closed_date' in fb.columns else '',
@@ -82,7 +117,7 @@ def ingest_performance_pipeline(fb_source, cancel_source):
     })
 
     can_sub = pd.DataFrame({
-        'complaint_no': cancel['complaint_no'],
+        'complaint_no': cancel['complaint_no'] if 'complaint_no' in cancel.columns else pd.Series(dtype=str),
         'technician_name': cancel['technician_name'].apply(clean_val) if 'technician_name' in cancel.columns else '',
         'status': cancel['status'].astype(str).str.upper().str.strip() if 'status' in cancel.columns else 'CANCELED',
         'closed_date': cancel['closed_date'].apply(clean_val) if 'closed_date' in cancel.columns else '',
@@ -90,6 +125,9 @@ def ingest_performance_pipeline(fb_source, cancel_source):
     })
 
     comb = pd.concat([fb_sub, can_sub], ignore_index=True)
+    if comb.empty or 'complaint_no' not in comb.columns:
+        return 0
+
     comb.sort_values(by=['complaint_no', '_priority'], ascending=[True, True], inplace=True)
     master_perf = comb.drop_duplicates(subset=['complaint_no'], keep='last').copy()
     
@@ -97,7 +135,9 @@ def ingest_performance_pipeline(fb_source, cancel_source):
     master_perf = master_perf[master_perf['status'] != 'TRANSFERED'].copy()
 
     clean_dates = master_perf['closed_date'].astype(str).str.replace('Sept', 'Sep', regex=False)
-    parsed_dates = pd.to_datetime(clean_dates, format='mixed', errors='coerce').dt.strftime('%Y-%m-%d').fillna('')
+    parsed = pd.to_datetime(clean_dates, format='mixed', errors='coerce').dt.strftime('%Y-%m-%d')
+    today_str = pd.Timestamp.now().strftime('%Y-%m-%d')
+    parsed_dates = parsed.fillna(clean_dates).replace('', today_str).replace('nan', today_str)
 
     perf_records = pd.DataFrame({
         'complaint_no': master_perf['complaint_no'],
@@ -110,6 +150,8 @@ def ingest_performance_pipeline(fb_source, cancel_source):
         cursor = conn.cursor()
         cursor.execute("DELETE FROM tech_performance_master")
         cursor.executemany("INSERT OR REPLACE INTO tech_performance_master (complaint_no, technician_name, status, closed_date) VALUES (?, ?, ?, ?)", perf_records)
+        conn.commit()
+    return len(perf_records)
 
 # ============================================================================
 # ESTIMATOR PIPELINES: STORE STOCK PDF & QUALITY FEEDBACK CATALOG

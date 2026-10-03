@@ -93,9 +93,13 @@ with st.sidebar:
     if st.button("📊 Update Technician Performance", use_container_width=True):
         if p_fb and p_can:
             with st.spinner("Processing Performance KPI..."):
-                ingest_performance_pipeline(p_fb, p_can)
-                st.success("Performance successfully updated!")
-                st.rerun()
+                cnt = ingest_performance_pipeline(p_fb, p_can)
+                st.cache_data.clear()
+                if cnt > 0:
+                    st.success(f"Performance successfully updated! ({cnt:,} records processed)")
+                    st.rerun()
+                else:
+                    st.error("No valid performance records found in uploaded files. Please check file columns.")
         else:
             st.error("Dono files lazmi upload karein!")
 
