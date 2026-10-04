@@ -48,119 +48,234 @@ def fetch_performance_data():
 # SPARE PARTS ESTIMATOR ENGINE SCHEMA & DATA ACCESS LAYER
 # ============================================================================
 
+_IS_INITIALIZING_SCHEMA = False
+
 def init_estimator_schema():
     """
     Ensures history_master, tech_performance_master, model_part_catalog, master_parts_lookup, and v_model_compatible_parts exist.
     """
+    global _IS_INITIALIZING_SCHEMA
+    if _IS_INITIALIZING_SCHEMA:
+        return
+    _IS_INITIALIZING_SCHEMA = True
+    try:
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            
+            # 1. History Master Table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS history_master (
+                    complaint_no TEXT PRIMARY KEY,
+                    serial TEXT,
+                    phone TEXT,
+                    model TEXT,
+                    customer_name TEXT,
+                    technician_name TEXT,
+                    complaint_type TEXT,
+                    purchase_date TEXT,
+                    complaint_date TEXT,
+                    closed_date TEXT,
+                    remarks TEXT,
+                    closed_amount INTEGER DEFAULT 0
+                )
+            """)
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_history_complaint_no ON history_master (complaint_no)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_history_phone ON history_master (phone)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_history_serial ON history_master (serial)")
+
+            # 2. Tech Performance Master Table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS tech_performance_master (
+                    complaint_no TEXT PRIMARY KEY,
+                    technician_name TEXT,
+                    status TEXT,
+                    closed_date TEXT
+                )
+            """)
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_tech_perf_tech ON tech_performance_master (technician_name)")
+            
+            # 3. Model-to-Part Compatibility Table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS model_part_catalog (
+                    model TEXT NOT NULL,
+                    part_no TEXT NOT NULL,
+                    part_description TEXT,
+                    board_type TEXT,
+                    historical_frequency INTEGER DEFAULT 1,
+                    last_installed_date TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (model, part_no)
+                )
+            """)
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_catalog_model ON model_part_catalog (model)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_catalog_part_no ON model_part_catalog (part_no)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_catalog_model_freq ON model_part_catalog (model, historical_frequency DESC)")
+
+            # 4. Master Pricing & Inventory Table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS master_parts_lookup (
+                    part_no TEXT PRIMARY KEY,
+                    erp_description TEXT,
+                    erp_default_model TEXT,
+                    retail_price INTEGER DEFAULT 0,
+                    branch_store_qty INTEGER DEFAULT 0,
+                    branch_sales_qty INTEGER DEFAULT 0,
+                    tech_stock_qty INTEGER DEFAULT 0,
+                    total_stock_qty INTEGER DEFAULT 0,
+                    available_branch_stock INTEGER DEFAULT 0,
+                    available_total_stock INTEGER DEFAULT 0,
+                    stock_status TEXT DEFAULT 'Out of Stock',
+                    tech_allocations_json TEXT,
+                    is_pricing_pending INTEGER DEFAULT 0,
+                    source_document TEXT,
+                    last_synced TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_parts_lookup_status ON master_parts_lookup (stock_status)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_parts_lookup_pricing_pending ON master_parts_lookup (is_pricing_pending)")
+
+            # 5. Real-Time Estimator View
+            cursor.execute("""
+                CREATE VIEW IF NOT EXISTS v_model_compatible_parts AS
+                SELECT 
+                    c.model,
+                    c.part_no,
+                    COALESCE(p.erp_description, c.part_description) AS part_description,
+                    c.board_type,
+                    c.historical_frequency,
+                    COALESCE(p.retail_price, 0) AS retail_price,
+                    COALESCE(p.available_branch_stock, 0) AS branch_stock,
+                    COALESCE(p.tech_stock_qty, 0) AS tech_stock,
+                    COALESCE(p.available_total_stock, 0) AS total_stock,
+                    COALESCE(p.stock_status, 'Out of Stock') AS stock_status,
+                    COALESCE(p.tech_allocations_json, '{}') AS tech_allocations_json,
+                    COALESCE(p.is_pricing_pending, 1) AS is_pricing_pending,
+                    (SELECT COUNT(DISTINCT m2.model) FROM model_part_catalog m2 WHERE m2.part_no = c.part_no) AS cross_model_count
+                FROM model_part_catalog c
+                LEFT JOIN master_parts_lookup p ON c.part_no = p.part_no
+            """)
+            conn.commit()
+
+            cursor.execute("SELECT COUNT(*) FROM model_part_catalog")
+            cat_count = cursor.fetchone()[0]
+
+            cursor.execute("SELECT COUNT(*) FROM history_master")
+            hist_count = cursor.fetchone()[0]
+
+            cursor.execute("SELECT COUNT(*) FROM tech_performance_master")
+            perf_count = cursor.fetchone()[0]
+
+        if cat_count == 0:
+            try:
+                import etl
+                etl.sync_model_part_catalog_from_feedback()
+                etl.parse_store_stock_pdf()
+            except Exception as e:
+                print(f"Catalog init error: {e}")
+
+        if hist_count == 0:
+            try:
+                import etl
+                import config
+                fb_file = getattr(config, 'DEFAULT_FB_FILE', None)
+                coll_file = getattr(config, 'DEFAULT_COLL_FILE', None)
+                if fb_file and os.path.exists(fb_file):
+                    etl.ingest_feedback_and_pricing(fb_file, coll_file)
+            except Exception as e:
+                print(f"History master init error: {e}")
+
+        if perf_count == 0:
+            try:
+                import etl
+                import config
+                fb_file = getattr(config, 'DEFAULT_FB_FILE', None)
+                if fb_file and os.path.exists(fb_file):
+                    etl.ingest_performance_pipeline(fb_file)
+            except Exception as e:
+                print(f"Tech performance master init error: {e}")
+
+        # Automatically merge verified parts from baseline parts_master if present and run cross-series enrichment
+        merge_parts_master_into_catalog()
+        enrich_cross_series_compatibilities()
+    finally:
+        _IS_INITIALIZING_SCHEMA = False
+
+def enrich_cross_series_compatibilities() -> None:
+    """
+    Enriches model_part_catalog with cross-series evaporators, compressors, and coils.
+    """
     with get_connection() as conn:
         cursor = conn.cursor()
         
-        # 1. History Master Table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS history_master (
-                complaint_no TEXT PRIMARY KEY,
-                serial TEXT,
-                phone TEXT,
-                model TEXT,
-                customer_name TEXT,
-                technician_name TEXT,
-                complaint_type TEXT,
-                purchase_date TEXT,
-                complaint_date TEXT,
-                closed_date TEXT,
-                remarks TEXT,
-                closed_amount INTEGER DEFAULT 0
-            )
-        """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_history_complaint_no ON history_master (complaint_no)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_history_phone ON history_master (phone)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_history_serial ON history_master (serial)")
+        # 1. 18-Series Inverter Evaporators (Interchangeable 1.5 Ton coils)
+        evap_18 = [
+            ('11001060868', 'Evaporator Assy GS-18PITH1W 11001060868', 'Evaporator Assy'),
+            ('1002937LC', 'Evaporator assy GS-18CITH1 1002937LC / 1002686', 'Evaporator Assy'),
+            ('1002686LC', 'Evaporater Assy 18LM4 18LITH 1002686LC / 1002937', 'Evaporator Assy'),
+            ('11001000207LC', 'Evaporaters Assy 18AITH11 18FITH1 11001000207LC', 'Evaporator Assy')
+        ]
+        m18_rows = cursor.execute("""
+            SELECT DISTINCT model FROM model_part_catalog 
+            WHERE model LIKE 'GS-18FITH%' OR model LIKE 'GS-18CITH%' OR model LIKE 'GS-18PITH%' OR model LIKE 'GS-18AITH%' OR model LIKE 'GS-18LITH%'
+        """).fetchall()
+        for (m_name,) in m18_rows:
+            for p_no, desc, board in evap_18:
+                cursor.execute("""
+                    INSERT OR IGNORE INTO model_part_catalog (model, part_no, part_description, board_type, historical_frequency, last_installed_date)
+                    VALUES (?, ?, ?, ?, 1, '')
+                """, (m_name, p_no, desc, board))
 
-        # 2. Tech Performance Master Table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS tech_performance_master (
-                complaint_no TEXT PRIMARY KEY,
-                technician_name TEXT,
-                status TEXT,
-                closed_date TEXT
-            )
-        """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_tech_perf_tech ON tech_performance_master (technician_name)")
-        
-        # 3. Model-to-Part Compatibility Table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS model_part_catalog (
-                model TEXT NOT NULL,
-                part_no TEXT NOT NULL,
-                part_description TEXT,
-                board_type TEXT,
-                historical_frequency INTEGER DEFAULT 1,
-                last_installed_date TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (model, part_no)
-            )
-        """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_catalog_model ON model_part_catalog (model)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_catalog_part_no ON model_part_catalog (part_no)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_catalog_model_freq ON model_part_catalog (model, historical_frequency DESC)")
+        # 2. 12-Series Inverter Evaporators (Interchangeable 1.0 Ton coils)
+        evap_12 = [
+            ('1002976', 'Evaporater Assy 12LM4 / 12LM5L 1002976', 'Evaporator Assy'),
+            ('1002422LC', 'Evaporator Assy 12CITH1 1002422LC', 'Evaporator Assy'),
+            ('1002000030', 'Evaporator Assy 1002000030 GS-12FITH6C', 'Evaporator Assy')
+        ]
+        m12_rows = cursor.execute("""
+            SELECT DISTINCT model FROM model_part_catalog 
+            WHERE model LIKE 'GS-12FITH%' OR model LIKE 'GS-12CITH%' OR model LIKE 'GS-12PITH%' OR model LIKE 'GS-12LITH%'
+        """).fetchall()
+        for (m_name,) in m12_rows:
+            for p_no, desc, board in evap_12:
+                cursor.execute("""
+                    INSERT OR IGNORE INTO model_part_catalog (model, part_no, part_description, board_type, historical_frequency, last_installed_date)
+                    VALUES (?, ?, ?, ?, 1, '')
+                """, (m_name, p_no, desc, board))
 
-        # 4. Master Pricing & Inventory Table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS master_parts_lookup (
-                part_no TEXT PRIMARY KEY,
-                erp_description TEXT,
-                erp_default_model TEXT,
-                retail_price INTEGER DEFAULT 0,
-                branch_store_qty INTEGER DEFAULT 0,
-                branch_sales_qty INTEGER DEFAULT 0,
-                tech_stock_qty INTEGER DEFAULT 0,
-                total_stock_qty INTEGER DEFAULT 0,
-                available_branch_stock INTEGER DEFAULT 0,
-                available_total_stock INTEGER DEFAULT 0,
-                stock_status TEXT DEFAULT 'Out of Stock',
-                tech_allocations_json TEXT,
-                is_pricing_pending INTEGER DEFAULT 0,
-                source_document TEXT,
-                last_synced TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_parts_lookup_status ON master_parts_lookup (stock_status)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_parts_lookup_pricing_pending ON master_parts_lookup (is_pricing_pending)")
+        # 3. Water Dispenser Compressors
+        wd_comps = [
+            ('QD36LWL', 'WD Compressor WD-300F / WD-350F /WD-450F QD36LWL', 'WD Compressor'),
+            ('QD36LW', 'Compressor For WD-300F/WD- 350F/WD-450F (66625) QD36LW', 'WD Compressor')
+        ]
+        m_wd_rows = cursor.execute("""
+            SELECT DISTINCT model FROM model_part_catalog WHERE model LIKE 'WD-%' OR model LIKE 'GW-%'
+        """).fetchall()
+        wd_models_set = set([r[0] for r in m_wd_rows] + ['WD-300', 'WD-300F', 'WD-350F', 'WD-450F', 'GW-JL500FC', 'GW-JL500FS'])
+        for m_name in wd_models_set:
+            for p_no, desc, board in wd_comps:
+                cursor.execute("""
+                    INSERT OR IGNORE INTO model_part_catalog (model, part_no, part_description, board_type, historical_frequency, last_installed_date)
+                    VALUES (?, ?, ?, ?, 1, '')
+                """, (m_name, p_no, desc, board))
 
-        # 5. Real-Time Estimator View
-        cursor.execute("""
-            CREATE VIEW IF NOT EXISTS v_model_compatible_parts AS
-            SELECT 
-                c.model,
-                c.part_no,
-                COALESCE(p.erp_description, c.part_description) AS part_description,
-                c.board_type,
-                c.historical_frequency,
-                COALESCE(p.retail_price, 0) AS retail_price,
-                COALESCE(p.available_branch_stock, 0) AS branch_stock,
-                COALESCE(p.tech_stock_qty, 0) AS tech_stock,
-                COALESCE(p.available_total_stock, 0) AS total_stock,
-                COALESCE(p.stock_status, 'Out of Stock') AS stock_status,
-                COALESCE(p.tech_allocations_json, '{}') AS tech_allocations_json,
-                COALESCE(p.is_pricing_pending, 1) AS is_pricing_pending,
-                (SELECT COUNT(DISTINCT m2.model) FROM model_part_catalog m2 WHERE m2.part_no = c.part_no) AS cross_model_count
-            FROM model_part_catalog c
-            LEFT JOIN master_parts_lookup p ON c.part_no = p.part_no
-        """)
+        # 4. Refrigerator Compressors (Interchangeable across Everest series)
+        ref_comps = [
+            ('GR18-E51519002', 'Compressors ENK150KL GR-E9978G-CW1 GR18-E51519002', 'REF Compressor'),
+            ('GR18-E51519001', 'Compressors ETK 130KL GR-E8768G-CW1 GR18-E51519001', 'REF Compressor'),
+            ('GR18-73710005', 'COMPRESSOR - 95AT 310 GR18-73710005', 'REF Compressor'),
+            ('GR18-73710006', 'COMPRESSOR - 12AT 360 GR18-73710006', 'REF Compressor')
+        ]
+        m_ref_rows = cursor.execute("""
+            SELECT DISTINCT model FROM model_part_catalog WHERE model LIKE 'GR-%'
+        """).fetchall()
+        for (m_name,) in m_ref_rows:
+            for p_no, desc, board in ref_comps:
+                cursor.execute("""
+                    INSERT OR IGNORE INTO model_part_catalog (model, part_no, part_description, board_type, historical_frequency, last_installed_date)
+                    VALUES (?, ?, ?, ?, 1, '')
+                """, (m_name, p_no, desc, board))
+
         conn.commit()
-
-        cursor.execute("SELECT COUNT(*) FROM model_part_catalog")
-        cat_count = cursor.fetchone()[0]
-
-    if cat_count == 0:
-        try:
-            import etl
-            etl.sync_model_part_catalog_from_feedback()
-        except Exception:
-            pass
-
-    # Automatically merge verified parts from baseline parts_master if not already merged
-    merge_parts_master_into_catalog()
 
 def merge_parts_master_into_catalog() -> int:
     """
@@ -301,9 +416,10 @@ def merge_parts_master_into_catalog() -> int:
             ('QD36LW', 'Compressor For WD-300F/WD- 350F/WD-450F (66625) QD36LW', 'WD Compressor')
         ]
         m_wd_rows = cursor.execute("""
-            SELECT DISTINCT model FROM model_part_catalog WHERE model LIKE 'WD-%'
+            SELECT DISTINCT model FROM model_part_catalog WHERE model LIKE 'WD-%' OR model LIKE 'GW-%'
         """).fetchall()
-        for (m_name,) in m_wd_rows:
+        wd_models_set = set([r[0] for r in m_wd_rows] + ['WD-300', 'WD-300F', 'WD-350F', 'WD-450F', 'GW-JL500FC', 'GW-JL500FS'])
+        for m_name in wd_models_set:
             for p_no, desc, board in wd_comps:
                 cursor.execute("""
                     INSERT OR IGNORE INTO model_part_catalog (model, part_no, part_description, board_type, historical_frequency, last_installed_date)

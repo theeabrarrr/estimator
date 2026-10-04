@@ -98,15 +98,12 @@ def ingest_feedback_and_pricing(fb_source, coll_source=None):
         """, hist_records)
         conn.commit()
 
-def ingest_performance_pipeline(fb_source, cancel_source):
+def ingest_performance_pipeline(fb_source, cancel_source=None):
     init_estimator_schema()
     fb = standardize_columns(safe_read(fb_source))
-    cancel = standardize_columns(safe_read(cancel_source))
 
     if 'complaint_no' in fb.columns:
         fb['complaint_no'] = fb['complaint_no'].apply(clean_val)
-    if 'complaint_no' in cancel.columns:
-        cancel['complaint_no'] = cancel['complaint_no'].apply(clean_val)
 
     fb_sub = pd.DataFrame({
         'complaint_no': fb['complaint_no'] if 'complaint_no' in fb.columns else pd.Series(dtype=str),
@@ -116,13 +113,20 @@ def ingest_performance_pipeline(fb_source, cancel_source):
         '_priority': 2
     })
 
-    can_sub = pd.DataFrame({
-        'complaint_no': cancel['complaint_no'] if 'complaint_no' in cancel.columns else pd.Series(dtype=str),
-        'technician_name': cancel['technician_name'].apply(clean_val) if 'technician_name' in cancel.columns else '',
-        'status': cancel['status'].astype(str).str.upper().str.strip() if 'status' in cancel.columns else 'CANCELED',
-        'closed_date': cancel['closed_date'].apply(clean_val) if 'closed_date' in cancel.columns else '',
-        '_priority': 1
-    })
+    if cancel_source is not None:
+        cancel = standardize_columns(safe_read(cancel_source))
+        if 'complaint_no' in cancel.columns:
+            cancel['complaint_no'] = cancel['complaint_no'].apply(clean_val)
+
+        can_sub = pd.DataFrame({
+            'complaint_no': cancel['complaint_no'] if 'complaint_no' in cancel.columns else pd.Series(dtype=str),
+            'technician_name': cancel['technician_name'].apply(clean_val) if 'technician_name' in cancel.columns else '',
+            'status': cancel['status'].astype(str).str.upper().str.strip() if 'status' in cancel.columns else 'CANCELED',
+            'closed_date': cancel['closed_date'].apply(clean_val) if 'closed_date' in cancel.columns else '',
+            '_priority': 1
+        })
+    else:
+        can_sub = pd.DataFrame(columns=['complaint_no', 'technician_name', 'status', 'closed_date', '_priority'])
 
     comb = pd.concat([fb_sub, can_sub], ignore_index=True)
     if comb.empty or 'complaint_no' not in comb.columns:
