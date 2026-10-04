@@ -19,19 +19,27 @@ def get_connection():
 def search_history_records(query_str, clean_phone_str):
     init_estimator_schema()
     with get_connection() as conn:
+        clean_q = query_str.strip().replace('-', '').replace(' ', '').replace('=', '').replace('"', '')
+        phone_param = clean_phone_str if clean_phone_str else clean_q
+        phone_no_zero = phone_param.lstrip('0') if phone_param else clean_q
+        
         sql = """
             SELECT complaint_no, model, serial, customer_name, phone, technician_name,
                    complaint_type, purchase_date, complaint_date, closed_date, remarks, closed_amount
             FROM history_master
             WHERE serial LIKE ? 
                OR complaint_no LIKE ? 
-               OR (phone != '' AND phone LIKE ?)
+               OR (phone != '' AND (phone LIKE ? OR phone LIKE ? OR phone LIKE ?))
+               OR customer_name LIKE ?
             ORDER BY closed_date DESC LIMIT 30
         """
         match_df = pd.read_sql_query(sql, conn, params=(
-            f"%{query_str}%", 
-            f"%{query_str}%", 
-            f"%{clean_phone_str if clean_phone_str else query_str}%"
+            f"%{clean_q}%", 
+            f"%{clean_q}%", 
+            f"%{query_str}%",
+            f"%{phone_param}%",
+            f"%{phone_no_zero}%",
+            f"%{query_str}%"
         ))
     return match_df
 
@@ -162,6 +170,9 @@ def init_estimator_schema():
             cursor.execute("SELECT COUNT(*) FROM history_master")
             hist_count = cursor.fetchone()[0]
 
+            cursor.execute("SELECT COUNT(*) FROM history_master WHERE phone IS NOT NULL AND phone != ''")
+            valid_phone_count = cursor.fetchone()[0]
+
             cursor.execute("SELECT COUNT(*) FROM tech_performance_master")
             perf_count = cursor.fetchone()[0]
 
@@ -173,12 +184,12 @@ def init_estimator_schema():
             except Exception as e:
                 print(f"Catalog init error: {e}")
 
-        if hist_count == 0:
+        if hist_count == 0 or valid_phone_count == 0:
             try:
                 import etl
                 import config
-                fb_file = getattr(config, 'DEFAULT_FB_FILE', None)
-                coll_file = getattr(config, 'DEFAULT_COLL_FILE', None)
+                fb_file = getattr(config, 'DEFAULT_FB_FILE', 'quality_feedback_report_28SEP2026_142900.csv')
+                coll_file = getattr(config, 'DEFAULT_COLL_FILE', 'Detail_Collection_28SEP26_023634PM.xlsx')
                 if fb_file and os.path.exists(fb_file):
                     etl.ingest_feedback_and_pricing(fb_file, coll_file)
             except Exception as e:

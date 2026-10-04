@@ -27,6 +27,16 @@ def standardize_columns(df):
         .str.strip('_')
     )
     
+    # Phone Aliases
+    for col in ['phone_no', 'phoneno', 'customer_phone', 'phone_number', 'contact_no', 'cell_no', 'mobile_no', 'mobile', 'contact']:
+        if col in df.columns and 'phone' not in df.columns:
+            df.rename(columns={col: 'phone'}, inplace=True)
+
+    # Model Aliases
+    for col in ['model_name', 'model_no', 'modelno', 'item_model', 'product_model', 'appliance_model']:
+        if col in df.columns and 'model' not in df.columns:
+            df.rename(columns={col: 'model'}, inplace=True)
+
     # Complaint Number Aliases
     for col in ['complain_no', 'complaintno', 'complain_number', 'complaint_number', 'job_no', 'ticket_no']:
         if col in df.columns and 'complaint_no' not in df.columns:
@@ -47,13 +57,30 @@ def standardize_columns(df):
         if col in df.columns and 'closed_date' not in df.columns:
             df.rename(columns={col: 'closed_date'}, inplace=True)
 
+    # Serial Aliases
+    for col in ['serial_no', 'serialno', 'unit_serial', 'chassis_no']:
+        if col in df.columns and 'serial' not in df.columns:
+            df.rename(columns={col: 'serial'}, inplace=True)
+
+    # Customer Name Aliases
+    for col in ['cust_name', 'customer', 'client_name']:
+        if col in df.columns and 'customer_name' not in df.columns:
+            df.rename(columns={col: 'customer_name'}, inplace=True)
+
     if 'item_desc' in df.columns and 'part_name' not in df.columns:
         df.rename(columns={'item_desc': 'part_name'}, inplace=True)
 
     return df
 
 def clean_val(val):
-    return str(val).strip() if pd.notna(val) else ""
+    if pd.isna(val) or val is None:
+        return ""
+    s = str(val).strip()
+    if s.startswith('="') and s.endswith('"'):
+        s = s[2:-1]
+    elif s.startswith("='") and s.endswith("'"):
+        s = s[2:-1]
+    return s.strip()
 
 def normalize_phone(ph):
     p = clean_val(ph).replace('-', '').replace(' ', '')

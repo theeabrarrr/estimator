@@ -186,14 +186,12 @@ with tab_estimator:
         parse_store_stock_pdf()
         all_models = get_all_models_for_estimator()
 
-    col_m1, col_m2 = st.columns([3, 1])
-    with col_m1:
-        selected_model = st.selectbox(
-            "🏷️ Select Equipment Model:",
-            options=all_models,
-            index=0 if all_models else None,
-            help="Search across 500+ Gree and EcoStar models (e.g. GS-18PITH11W, GR-E8890G, WD-300F)"
-        )
+    selected_model = st.selectbox(
+        "🏷️ Select Equipment Model:",
+        options=all_models,
+        index=0 if all_models else None,
+        help="Search across 500+ Gree and EcoStar models (e.g. GS-18PITH11W, GR-E8890G, WD-300F)"
+    )
     
     # Reset parts selection and filters if model changes
     if selected_model:
@@ -205,14 +203,7 @@ with tab_estimator:
             if "p_search" in st.session_state:
                 st.session_state["p_search"] = ""
 
-        gas_amount, gas_label = calculate_gas_charge(selected_model)
-        with col_m2:
-            st.metric("Auto Gas Rate", f"Rs. {gas_amount:,}")
-        st.markdown(f"""
-        <div style="background-color: #F0FDF4; border: 1px solid #BBF7D0; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; color: #166534; margin-bottom: 12px;">
-            ❄️ <b>Detected Category:</b> {gas_label} &nbsp;|&nbsp; <b>Base Gas Refill:</b> Rs. {gas_amount:,}
-        </div>
-        """, unsafe_allow_html=True)
+        gas_amount, _ = calculate_gas_charge(selected_model)
 
         st.markdown("##### 💵 Base Overheads & Billing Status")
         col_b1, col_b2, col_b3 = st.columns(3)
