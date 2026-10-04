@@ -203,7 +203,7 @@ with tab_estimator:
             if "p_search" in st.session_state:
                 st.session_state["p_search"] = ""
 
-        gas_amount, _ = calculate_gas_charge(selected_model)
+        gas_amount, gas_label = calculate_gas_charge(selected_model)
 
         st.markdown("##### 💵 Base Overheads & Billing Status")
         col_b1, col_b2, col_b3 = st.columns(3)
