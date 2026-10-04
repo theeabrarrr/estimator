@@ -205,42 +205,23 @@ with tab_estimator:
             if "p_search" in st.session_state:
                 st.session_state["p_search"] = ""
 
-        appliance_cat = config.detect_appliance_category(selected_model)
-        cat_overhead = config.CATEGORY_OVERHEADS.get(appliance_cat, config.CATEGORY_OVERHEADS['General'])
-        has_gas = cat_overhead.get('has_gas', False)
         gas_amount, gas_label = calculate_gas_charge(selected_model)
-
-        if has_gas:
-            with col_m2:
-                st.metric("Auto Gas Rate", f"Rs. {gas_amount:,}")
-            st.markdown(f"""
-            <div style="background-color: #F0FDF4; border: 1px solid #BBF7D0; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; color: #166534; margin-bottom: 12px;">
-                ❄️ <b>Detected Category:</b> {appliance_cat} ({gas_label}) &nbsp;|&nbsp; <b>Base Gas Refill:</b> Rs. {gas_amount:,}
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown(f"""
-            <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; color: #475569; margin-bottom: 12px;">
-                📦 <b>Detected Category:</b> {appliance_cat} &nbsp;|&nbsp; <b>Standard Service Inspection & Labour Rates Apply</b>
-            </div>
-            """, unsafe_allow_html=True)
+        with col_m2:
+            st.metric("Auto Gas Rate", f"Rs. {gas_amount:,}")
+        st.markdown(f"""
+        <div style="background-color: #F0FDF4; border: 1px solid #BBF7D0; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; color: #166534; margin-bottom: 12px;">
+            ❄️ <b>Detected Category:</b> {gas_label} &nbsp;|&nbsp; <b>Base Gas Refill:</b> Rs. {gas_amount:,}
+        </div>
+        """, unsafe_allow_html=True)
 
         st.markdown("##### 💵 Base Overheads & Billing Status")
-        if has_gas:
-            col_b1, col_b2, col_b3 = st.columns(3)
-            with col_b1:
-                chk_visit = st.checkbox(f"🚗 Visit Charges (Rs. {VISIT_CHARGES:,})", value=True, key="chk_visit")
-            with col_b2:
-                chk_mobility = st.checkbox(f"🔧 Mobility / Labour (Rs. {MOBILITY_CHARGES:,})", value=True, key="chk_mobility")
-            with col_b3:
-                chk_gas = st.checkbox(f"⚡ Gas Refill Required (+Rs. {gas_amount:,})", value=False, key="chk_gas")
-        else:
-            col_b1, col_b2 = st.columns(2)
-            with col_b1:
-                chk_visit = st.checkbox(f"🚗 Visit Charges (Rs. {VISIT_CHARGES:,})", value=True, key="chk_visit")
-            with col_b2:
-                chk_mobility = st.checkbox(f"🔧 Mobility / Labour (Rs. {MOBILITY_CHARGES:,})", value=True, key="chk_mobility")
-            chk_gas = False
+        col_b1, col_b2, col_b3 = st.columns(3)
+        with col_b1:
+            chk_visit = st.checkbox(f"🚗 Visit Charges (Rs. {VISIT_CHARGES:,})", value=True, key="chk_visit")
+        with col_b2:
+            chk_mobility = st.checkbox(f"🔧 Mobility / Labour (Rs. {MOBILITY_CHARGES:,})", value=True, key="chk_mobility")
+        with col_b3:
+            chk_gas = st.checkbox(f"⚡ Gas Refill Required (+Rs. {gas_amount:,})", value=False, key="chk_gas")
 
         billing_type = st.radio(
             "📋 Customer Warranty Status:",
@@ -474,8 +455,6 @@ with tab_estimator:
                     "</tr>"
                 )
 
-            gas_row_html = f"<tr><td style='padding: 2px 0;'>Refrigerant Gas ({gas_label}):</td><td style='text-align: right;'>Rs. {gas_total:,}</td></tr>" if (has_gas and chk_gas) else ""
-
             bill_card_html = (
                 f"<div class='bill-card'>"
                 f"<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'>"
@@ -501,7 +480,10 @@ with tab_estimator:
                 f"<td style='padding: 2px 0;'>Mobility / Labour Charges:</td>"
                 f"<td style='text-align: right;'>Rs. {mobility_total:,}</td>"
                 f"</tr>"
-                f"{gas_row_html}"
+                f"<tr>"
+                f"<td style='padding: 2px 0;'>Refrigerant Gas ({gas_label}):</td>"
+                f"<td style='text-align: right;'>Rs. {gas_total:,}</td>"
+                f"</tr>"
                 f"<tr style='border-top: 2px solid #CBD5E1; font-weight: 800; font-size: 1.15rem; color: #0F172A;'>"
                 f"<td style='padding-top: 8px;'>Total Customer Payable:</td>"
                 f"<td style='text-align: right; padding-top: 8px; color: #0284C7;'>Rs. {customer_payable:,}</td>"
@@ -528,8 +510,6 @@ with tab_estimator:
             display_cust_name = c_name_input if c_name_input else "Valued Customer"
             display_serial = c_serial_input if c_serial_input else "N/A"
 
-            gas_quote_row = f"• Refrigerant Gas Refill ({gas_label}): Rs. {gas_total:,}\n" if (has_gas and chk_gas) else ""
-
             quote_text = f"""❄️ *DIGITAL WORLD PAKISTAN (PVT) LTD* ❄️
 *Customer Service Official Quotation*
 ----------------------------------------
@@ -543,15 +523,15 @@ with tab_estimator:
 *LABOUR & OVERHEADS:*
 • Visit Charges: Rs. {visit_total:,}
 • Labour & Mobility: Rs. {mobility_total:,}
-{gas_quote_row}----------------------------------------
+{f'• Refrigerant Gas Refill ({gas_label}): Rs. {gas_total:,}' if chk_gas else ''}
+----------------------------------------
 💰 *NET ESTIMATE: Rs. {customer_payable:,}*
 ----------------------------------------
 *Terms & Conditions:*
-1. All genuine replacement parts carry official DWP warranty.
-2. Prices are strictly per official Karachi-2 Store ERP price schedule.
-3. Quotation valid for 7 days from issue date.
+1. All genuine replacement parts carry official DWP warranty. (45 Days)
+2. Prices are strictly per official Karachi-2 Store.
+3. Quotation valid for 3 Days from issue date.
 
-*Field Assistant Support:* 0322-8344755
 """
 
             st.markdown("##### 📋 Copy Customer WhatsApp Quotation")
@@ -569,7 +549,7 @@ with tab_estimator:
 # ==========================================
 with tab_history:
     st.markdown("##### 🔎 Smart Complaint & Unit Search")
-    st.caption("Serial No, Customer Phone, ya Complaint No likh kar historical service record check karein.")
+    st.caption("Serial No, Customer Phone, ya Complaint No likh kar purana record check karein.")
 
     query = st.text_input("Search Key Enter Karein:", placeholder="e.g. Serial No, 0322... ya 2826...").strip()
 
