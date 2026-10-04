@@ -258,19 +258,25 @@ with tab_estimator:
 
                 st.markdown("<hr style='margin: 12px 0; border: none; border-top: 1px dashed #E2E8F0;'>", unsafe_allow_html=True)
 
-            # Sub-Assembly Category Selection
+            # Sub-Assembly Category Selection (Preserving exact category names with parentheses)
             categories = sorted([b for b in parts_df['board_type'].dropna().unique() if b.strip()])
-            cat_options = ["-- All Categories --"] + [f"{c} ({len(parts_df[parts_df['board_type'] == c])})" for c in categories]
+            cat_options = ["-- All Categories --"] + categories
+            category_counts = parts_df['board_type'].value_counts().to_dict()
+            
+            def format_cat_label(cat_name):
+                if cat_name == "-- All Categories --":
+                    return f"-- All Categories ({len(parts_df)}) --"
+                return f"{cat_name} ({category_counts.get(cat_name, 0)})"
             
             col_c1, col_c2 = st.columns([1.5, 1.5])
             with col_c1:
-                sel_board_raw = st.selectbox(
+                sel_board = st.selectbox(
                     "📦 Filter by Sub-Assembly Category:",
                     options=cat_options,
+                    format_func=format_cat_label,
                     key="p_board",
                     help="Select a product category to view its compatible spare parts"
                 )
-                sel_board = sel_board_raw.split(" (")[0] if sel_board_raw != "-- All Categories --" else "-- All Categories --"
                 
             with col_c2:
                 search_part = st.text_input("🔍 Search Parts by Name / SKU:", placeholder="e.g. evaporator, valve, 1002...", key="p_search").strip().lower()
