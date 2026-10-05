@@ -18,7 +18,6 @@ import streamlit as st
 
 import json
 import database
-importlib.reload(database)
 from database import (
     search_history_records, fetch_performance_data,
     init_estimator_schema, get_all_models_for_estimator,
@@ -27,7 +26,6 @@ from database import (
 )
 
 import etl
-importlib.reload(etl)
 from etl import (
     normalize_phone, ingest_performance_pipeline, ingest_feedback_and_pricing,
     parse_store_stock_pdf, sync_model_part_catalog_from_feedback
@@ -43,8 +41,12 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Initialize database schema and auto-seed if required
-init_estimator_schema()
+# Initialize database schema and auto-seed if required (cached across sessions)
+@st.cache_resource
+def ensure_db_initialized():
+    init_estimator_schema()
+
+ensure_db_initialized()
 
 # Custom Styling (Clean High-Contrast #FFFFFF & #000000 Theme, Seamless Light & Dark Mode Inheritance)
 st.markdown("""
