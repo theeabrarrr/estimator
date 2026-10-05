@@ -295,11 +295,11 @@ with tab_estimator:
     # STEP 1: MODEL SELECTION
     # ==========================================
     st.markdown("<div class='dwp-step-box'>"
-                "<span class='dwp-step-title'>🏷️ STEP 1: Select Equipment Model</span>"
+                "<span class='dwp-step-title'>🏷️ STEP 1: Select Model</span>"
                 "</div>", unsafe_allow_html=True)
 
     selected_model = st.selectbox(
-        "Equipment Model:",
+        "Model:",
         options=all_models,
         index=0 if all_models else None,
         help="Search across 500+ Gree and EcoStar models (e.g. GS-18PITH11W, GR-E8890G, WD-300F)",
@@ -312,7 +312,7 @@ with tab_estimator:
             st.session_state["estimator_selected_parts"] = {}
             st.session_state["estimator_active_model"] = selected_model
             if "p_board" in st.session_state:
-                st.session_state["p_board"] = "-- All Categories --"
+                st.session_state["p_board"] = "All Categories"
             if "p_search" in st.session_state:
                 st.session_state["p_search"] = ""
 
