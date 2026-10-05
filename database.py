@@ -208,9 +208,10 @@ def init_estimator_schema():
             except Exception as e:
                 print(f"Tech performance master init error: {e}")
 
-        # Automatically merge verified parts from baseline parts_master if present and run cross-series enrichment
-        merge_parts_master_into_catalog()
-        enrich_cross_series_compatibilities()
+        # Automatically merge verified parts from baseline parts_master if present and run cross-series enrichment on initial seed
+        if cat_count == 0:
+            merge_parts_master_into_catalog()
+            enrich_cross_series_compatibilities()
     finally:
         _IS_INITIALIZING_SCHEMA = False
 
