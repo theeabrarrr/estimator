@@ -376,7 +376,7 @@ with tab_estimator:
             col_c1, col_c2 = st.columns([1.5, 1.5])
             with col_c1:
                 sel_board = st.selectbox(
-                    "📦 Filter by Sub-Assembly Category:",
+                    "📦 Filter by Category:",
                     options=cat_options,
                     format_func=format_cat_label,
                     key="p_board",
@@ -384,7 +384,7 @@ with tab_estimator:
                 )
                 
             with col_c2:
-                search_part = st.text_input("🔍 Search Parts by Name / SKU:", placeholder="e.g. evaporator, valve, 1002...", key="p_search").strip().lower()
+                search_part = st.text_input("🔍 Search Parts by Name / Part Code:", placeholder="e.g. evaporator, valve, 1002...", key="p_search").strip().lower()
 
             col_avail, _ = st.columns([2, 1])
             with col_avail:
@@ -518,7 +518,7 @@ with tab_estimator:
 
         billing_type = st.radio(
             "📋 Customer Warranty Status:",
-            options=["Cash / Out of Warranty", "Under Warranty (Free Replacement)", "Partial Warranty (Parts Cash, Labour Free)"],
+        options=["Cash / Out of Warranty", "Under Warranty (Free Replacement)", "Partial Warranty (Parts Free only  )"],        
             horizontal=True,
             key="billing_type"
         )
@@ -631,7 +631,7 @@ with tab_estimator:
                 p_amt = f"Rs. {p['price']:,}" if p['price'] > 0 else "Pending ERP Confirmation"
                 parts_lines += f"{i}. {p['description']} ({p['part_no']}) - {p_amt}\n"
         else:
-            parts_lines = "• No spare parts required (Standard service inspection)\n"
+            parts_lines = "• No  parts selected\n"
 
         display_cust_name = c_name_input if c_name_input else "Valued Customer"
         display_serial = c_serial_input if c_serial_input else "N/A"
@@ -644,14 +644,14 @@ with tab_estimator:
 *Customer:* {display_cust_name}
 *Warranty Status:* {billing_type}
 
-*REQUIRED SPARE PARTS:*
+*REQUIRED PARTS:*
 {parts_lines}
-*LABOUR & OVERHEADS:*
+*LABOUR & SERVICE CHARGES:*
 • Visit Charges: Rs. {visit_total:,}
 • Labour & Mobility: Rs. {mobility_total:,}
-{f'• Refrigerant Gas Refill ({gas_label}): Rs. {gas_total:,}' if chk_gas else ''}
+{f'• Gas ({gas_label}): Rs. {gas_total:,}' if chk_gas else ''}
 ----------------------------------------
-💰 *NET ESTIMATE: Rs. {customer_payable:,}*
+💰 *Total: Rs. {customer_payable:,}*
 ----------------------------------------
 *Terms & Conditions:*
 1. All genuine replacement parts carry official DWP warranty. (45 Days)
