@@ -365,12 +365,12 @@ with tab_estimator:
 
             # Sub-Assembly Category Selection (Preserving exact category names with parentheses)
             categories = sorted([b for b in parts_df['board_type'].dropna().unique() if b.strip()])
-            cat_options = ["-- All Categories --"] + categories
+            cat_options = ["All Categories"] + categories
             category_counts = parts_df['board_type'].value_counts().to_dict()
             
             def format_cat_label(cat_name):
-                if cat_name == "-- All Categories --":
-                    return f"-- All Categories ({len(parts_df)}) --"
+                if cat_name == "All Categories":
+                    return f"All Categories ({len(parts_df)})"
                 return f"{cat_name} ({category_counts.get(cat_name, 0)})"
             
             col_c1, col_c2 = st.columns([1.5, 1.5])
@@ -412,94 +412,98 @@ with tab_estimator:
                         return all(tok in text or tok in norm for tok in tokens)
                     filtered_parts = filtered_parts[filtered_parts.apply(match_part, axis=1)]
 
-            if sel_board != "-- All Categories --":
+            if sel_board != "All Categories":
                 filtered_parts = filtered_parts[filtered_parts['board_type'] == sel_board]
 
             st.caption(f"Showing **{len(filtered_parts)}** components ({avail_cnt} in stock at Karachi-2 Store, {zero_cnt} available via procurement/indent).")
 
-            # Compatible Parts List
-            for idx, r in filtered_parts.iterrows():
-                p_no = str(r['part_no'])
-                p_desc = str(r['part_description'])
-                p_board = str(r['board_type'])
-                freq = int(r['historical_frequency'])
-                p_price = int(r['retail_price']) if r['retail_price'] else 0
-                b_stock = int(r['branch_stock']) if r['branch_stock'] else 0
-                is_pending = bool(r['is_pricing_pending'])
-                cross_cnt = int(r['cross_model_count']) if r['cross_model_count'] else 1
-                
-                tech_alloc = {}
-                try:
-                    if r['tech_allocations_json']:
-                        tech_alloc = json.loads(r['tech_allocations_json'])
-                except Exception:
-                    pass
-
-                freq_badge = f'<span class="dwp-badge-highlight">🔥 High Frequency ({freq} jobs)</span>' if freq >= 20 else f'<span class="dwp-badge">Replaced {freq} times</span>'
-                
-                stock_badge = f'<span class="stock-badge-in">🟢 Karachi-2 Store: {b_stock} In Stock</span>' if b_stock > 0 else '<span class="stock-badge-out">⚪ Karachi-2 Store: 0 Available</span>'
-
-                tech_pill = f'&nbsp;<span class="dwp-badge">🤝 In Hand: {", ".join([f"{k} ({v})" for k, v in tech_alloc.items()])}</span>' if tech_alloc else ""
-
-                cross_pill = f'&nbsp;<span class="dwp-badge">🌐 Fits {cross_cnt} models</span>' if cross_cnt > 1 else ""
-
-                # Item Layout Card
-                with st.container():
-                    c_chk, c_info, c_price = st.columns([0.08, 0.64, 0.28])
-                    
-                    is_already_selected = p_no in st.session_state["estimator_selected_parts"]
-                    chk_val = c_chk.checkbox("", value=is_already_selected, key=f"chk_p_{selected_model}_{p_no}")
-
-                    if chk_val != is_already_selected:
-                        if chk_val:
-                            st.session_state["estimator_selected_parts"][p_no] = {
-                                'part_no': p_no,
-                                'description': p_desc,
-                                'price': p_price,
-                                'board_type': p_board,
-                                'is_pending': is_pending and (p_price == 0)
-                            }
-                        else:
-                            st.session_state["estimator_selected_parts"].pop(p_no, None)
-                        st.rerun()
-
-                    with c_info:
-                        st.markdown(f"""
-                        <div style="line-height: 1.4; margin-bottom: 4px;">
-                            <span class="dwp-item-desc">{p_desc}</span><br>
-                            <code class="dwp-item-sku">SKU: {p_no}</code> &nbsp;|&nbsp; 
-                            <span class="dwp-badge">[{p_board}]</span><br>
-                            <div style="margin-top: 3px;">
-                                {freq_badge} &nbsp; {stock_badge} {tech_pill} {cross_pill}
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
+            # Compatible Parts List Bounded Scroll Container (Prevents endless main page scrolling)
+            with st.container(height=450):
+                if filtered_parts.empty:
+                    st.info("No matching spare parts found for the selected category/search filter.")
+                else:
+                    for idx, r in filtered_parts.iterrows():
+                        p_no = str(r['part_no'])
+                        p_desc = str(r['part_description'])
+                        p_board = str(r['board_type'])
+                        freq = int(r['historical_frequency'])
+                        p_price = int(r['retail_price']) if r['retail_price'] else 0
+                        b_stock = int(r['branch_stock']) if r['branch_stock'] else 0
+                        is_pending = bool(r['is_pricing_pending'])
+                        cross_cnt = int(r['cross_model_count']) if r['cross_model_count'] else 1
                         
-                        if cross_cnt > 1:
-                            with st.expander(f"🔍 View {cross_cnt} Compatible Models for {p_no}"):
-                                compat_models = get_cross_model_compatibilities(p_no)
-                                m_summary = ", ".join([f"**{m}** ({f})" for m, f in compat_models[:8]])
-                                if len(compat_models) > 8:
-                                    m_summary += f", +{len(compat_models)-8} more"
-                                st.caption(f"Historically installed on: {m_summary}")
+                        tech_alloc = {}
+                        try:
+                            if r['tech_allocations_json']:
+                                tech_alloc = json.loads(r['tech_allocations_json'])
+                        except Exception:
+                            pass
 
-                    with c_price:
-                        if is_pending or p_price == 0:
-                            st.markdown('<span class="dwp-badge-highlight">⚠️ Pending ERP Pricing</span>', unsafe_allow_html=True)
-                            with st.expander("⚙️ Manual Price"):
-                                new_val = st.number_input("Price (PKR):", min_value=0, step=500, key=f"inp_{p_no}")
-                                if st.button("💾 Save", key=f"btn_{p_no}"):
-                                    if new_val > 0:
-                                        update_part_price(p_no, new_val)
-                                        if p_no in st.session_state["estimator_selected_parts"]:
-                                            st.session_state["estimator_selected_parts"][p_no]['price'] = int(new_val)
-                                            st.session_state["estimator_selected_parts"][p_no]['is_pending'] = False
-                                        st.success("Price updated in Database!")
-                                        st.rerun()
-                        else:
-                            st.markdown(f'<div class="dwp-price-tag">Rs. {p_price:,}</div>', unsafe_allow_html=True)
+                        freq_badge = f'<span class="dwp-badge-highlight">🔥 High Frequency ({freq} jobs)</span>' if freq >= 20 else f'<span class="dwp-badge">Replaced {freq} times</span>'
+                        
+                        stock_badge = f'<span class="stock-badge-in">🟢 Karachi-2 Store: {b_stock} In Stock</span>' if b_stock > 0 else '<span class="stock-badge-out">⚪ Karachi-2 Store: 0 Available</span>'
 
-                    st.markdown("<hr style='margin: 6px 0; border: none; border-top: 1px solid var(--dwp-border);'>", unsafe_allow_html=True)
+                        tech_pill = f'&nbsp;<span class="dwp-badge">🤝 In Hand: {", ".join([f"{k} ({v})" for k, v in tech_alloc.items()])}</span>' if tech_alloc else ""
+
+                        cross_pill = f'&nbsp;<span class="dwp-badge">🌐 Fits {cross_cnt} models</span>' if cross_cnt > 1 else ""
+
+                        # Item Layout Card
+                        with st.container():
+                            c_chk, c_info, c_price = st.columns([0.08, 0.64, 0.28])
+                            
+                            is_already_selected = p_no in st.session_state["estimator_selected_parts"]
+                            chk_val = c_chk.checkbox("", value=is_already_selected, key=f"chk_p_{selected_model}_{p_no}")
+
+                            if chk_val != is_already_selected:
+                                if chk_val:
+                                    st.session_state["estimator_selected_parts"][p_no] = {
+                                        'part_no': p_no,
+                                        'description': p_desc,
+                                        'price': p_price,
+                                        'board_type': p_board,
+                                        'is_pending': is_pending and (p_price == 0)
+                                    }
+                                else:
+                                    st.session_state["estimator_selected_parts"].pop(p_no, None)
+                                st.rerun()
+
+                            with c_info:
+                                st.markdown(f"""
+                                <div style="line-height: 1.4; margin-bottom: 4px;">
+                                    <span class="dwp-item-desc">{p_desc}</span><br>
+                                    <code class="dwp-item-sku">SKU: {p_no}</code> &nbsp;|&nbsp; 
+                                    <span class="dwp-badge">[{p_board}]</span><br>
+                                    <div style="margin-top: 3px;">
+                                        {freq_badge} &nbsp; {stock_badge} {tech_pill} {cross_pill}
+                                    </div>
+                                </div>
+                                """, unsafe_allow_html=True)
+                                
+                                if cross_cnt > 1:
+                                    with st.expander(f"🔍 View {cross_cnt} Compatible Models for {p_no}"):
+                                        compat_models = get_cross_model_compatibilities(p_no)
+                                        m_summary = ", ".join([f"**{m}** ({f})" for m, f in compat_models[:8]])
+                                        if len(compat_models) > 8:
+                                            m_summary += f", +{len(compat_models)-8} more"
+                                        st.caption(f"Historically installed on: {m_summary}")
+
+                            with c_price:
+                                if is_pending or p_price == 0:
+                                    st.markdown('<span class="dwp-badge-highlight">⚠️ Pending ERP Pricing</span>', unsafe_allow_html=True)
+                                    with st.expander("⚙️ Manual Price"):
+                                        new_val = st.number_input("Price (PKR):", min_value=0, step=500, key=f"inp_{p_no}")
+                                        if st.button("💾 Save", key=f"btn_{p_no}"):
+                                            if new_val > 0:
+                                                update_part_price(p_no, new_val)
+                                                if p_no in st.session_state["estimator_selected_parts"]:
+                                                    st.session_state["estimator_selected_parts"][p_no]['price'] = int(new_val)
+                                                    st.session_state["estimator_selected_parts"][p_no]['is_pending'] = False
+                                                st.success("Price updated in Database!")
+                                                st.rerun()
+                                else:
+                                    st.markdown(f'<div class="dwp-price-tag">Rs. {p_price:,}</div>', unsafe_allow_html=True)
+
+                            st.markdown("<hr style='margin: 6px 0; border: none; border-top: 1px solid var(--dwp-border);'>", unsafe_allow_html=True)
 
         # ==========================================
         # STEP 3: BASE OVERHEADS & SERVICE CHARGES

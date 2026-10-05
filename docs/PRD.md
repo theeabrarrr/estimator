@@ -313,7 +313,7 @@ To ensure that any AI coding assistant or developer working on this repository o
    - Never hardcode dark static text inside HTML containers without adaptive theme variables.
 3. **Progressive 4-Step Layout Flow:**
    - **Step 1:** Appliance Model Selection (`selected_model` dropdown).
-   - **Step 2:** Category & Sub-Assembly Explorer (selectbox with `format_func` preserving exact category keys, top floating cart).
+   - **Step 2:** Category & Sub-Assembly Explorer (selectbox with `format_func` preserving exact category keys, top floating cart, bounded scroll container `st.container(height=450)` to prevent endless page scrolling).
    - **Step 3:** Base Overhead Controls (Visit, Mobility/Labour, Refrigerant Gas) & Warranty Status.
    - **Step 4:** Real-Time Itemized Bill Card & Pre-formatted WhatsApp Quotation.
 

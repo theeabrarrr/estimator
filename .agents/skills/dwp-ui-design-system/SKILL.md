@@ -36,7 +36,7 @@ The user interface is built strictly around a **pure high-contrast monochrome co
 Avoid congested multi-column views. Always present the workflow in a 4-step progressive disclosure flow:
 
 - **Step 1: Appliance Model Selection** (`selected_model` dropdown).
-- **Step 2: Sub-Assembly Category Explorer & Selected Cart** (Category selectbox using `format_func` to preserve exact string keys, top floating cart summary).
+- **Step 2: Sub-Assembly Category Explorer & Bounded Component List** (Category selectbox using `format_func` to preserve exact string keys, top floating cart summary, bounded scroll container `st.container(height=450)` to prevent endless main page scrolling).
 - **Step 3: Base Overheads & Service Charges** (Visit Charges, Mobility/Labour, Refrigerant Gas Refill, Warranty selector).
 - **Step 4: Real-Time Official Estimate & WhatsApp Generator** (Itemized estimate table and copyable WhatsApp quotation box).
 
