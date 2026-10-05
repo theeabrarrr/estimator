@@ -450,7 +450,7 @@ with tab_estimator:
                             c_chk, c_info, c_price = st.columns([0.08, 0.64, 0.28])
                             
                             is_already_selected = p_no in st.session_state["estimator_selected_parts"]
-                            chk_val = c_chk.checkbox("", value=is_already_selected, key=f"chk_p_{selected_model}_{p_no}")
+                            chk_val = c_chk.checkbox("Select component", value=is_already_selected, key=f"chk_p_{selected_model}_{p_no}", label_visibility="collapsed")
 
                             if chk_val != is_already_selected:
                                 if chk_val:
