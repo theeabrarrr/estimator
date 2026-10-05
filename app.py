@@ -277,8 +277,8 @@ tab_estimator, tab_history, tab_perf = st.tabs([
 # TAB 1: SPARE PARTS & COST ESTIMATOR
 # ==========================================
 with tab_estimator:
-    st.markdown("<h4 class='main-title'>🧮 Spare Parts & Job Cost Estimator</h4>", unsafe_allow_html=True)
-    st.caption("Select appliance model to browse compatible spare parts, manage cart, set overheads, and generate instant WhatsApp quotations.")
+    st.markdown("<h4 class='main-title'>🧮 Estimate Generator </h4>", unsafe_allow_html=True)
+    st.caption("Model select karky part details, part prices, labor & service charges waghera dekh saktay hain.")
 
     # Persistent selection state
     if "estimator_selected_parts" not in st.session_state:
