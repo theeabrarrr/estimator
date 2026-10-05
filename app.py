@@ -46,76 +46,55 @@ st.set_page_config(
 # Initialize database schema and auto-seed if required
 init_estimator_schema()
 
-# Custom Styling (High-Contrast Theme: #FFFFFF White & #000000 Black, Light & Dark Mode Compatible)
+# Custom Styling (Clean High-Contrast #FFFFFF & #000000 Theme, Seamless Light & Dark Mode Inheritance)
 st.markdown("""
 <style>
-    /* Default / Light Mode Colors */
     .stApp {
-        --dwp-text: #000000;
-        --dwp-bg: #FFFFFF;
-        --dwp-card-bg: #F9FAFB;
-        --dwp-border: rgba(0, 0, 0, 0.15);
+        --dwp-border: rgba(128, 128, 128, 0.35);
     }
 
-    /* Dark Mode Overrides (Automatic detection via System Media Query & Streamlit Attributes) */
-    @media (prefers-color-scheme: dark) {
-        .stApp {
-            --dwp-text: #FFFFFF !important;
-            --dwp-bg: #0E1117 !important;
-            --dwp-card-bg: #1A1D24 !important;
-            --dwp-border: rgba(255, 255, 255, 0.2) !important;
-        }
-    }
-
-    [data-theme="dark"] .stApp, .stApp[data-theme="dark"], body[data-theme="dark"] .stApp, [data-testid="stAppViewContainer"][data-theme="dark"] {
-        --dwp-text: #FFFFFF !important;
-        --dwp-bg: #0E1117 !important;
-        --dwp-card-bg: #1A1D24 !important;
-        --dwp-border: rgba(255, 255, 255, 0.2) !important;
-    }
-
-    .main-title { font-size: 1.5rem; font-weight: 800; color: var(--dwp-text) !important; margin-bottom: 0.1rem; }
-    .sub-title { font-size: 0.85rem; color: var(--dwp-text) !important; opacity: 0.85; margin-bottom: 0.8rem; }
+    .main-title { font-size: 1.5rem; font-weight: 800; color: var(--text-color) !important; margin-bottom: 0.1rem; }
+    .sub-title { font-size: 0.85rem; color: var(--text-color) !important; opacity: 0.8; margin-bottom: 0.8rem; }
     
     .dwp-step-box {
-        background-color: var(--dwp-card-bg) !important;
+        background-color: var(--secondary-background-color, rgba(128,128,128,0.06)) !important;
         border: 1px solid var(--dwp-border) !important;
-        border-left: 4px solid var(--dwp-text) !important;
+        border-left: 4px solid var(--text-color) !important;
         padding: 12px 16px;
         border-radius: 8px;
         margin-top: 14px;
         margin-bottom: 14px;
-        color: var(--dwp-text) !important;
+        color: var(--text-color) !important;
     }
     
     .dwp-step-title {
         font-weight: 700;
         font-size: 1.0rem;
-        color: var(--dwp-text) !important;
+        color: var(--text-color) !important;
     }
 
     .dwp-cart-box {
-        background-color: var(--dwp-card-bg) !important;
-        border: 1px solid var(--dwp-text) !important;
+        background-color: var(--secondary-background-color, rgba(128,128,128,0.06)) !important;
+        border: 1px solid var(--dwp-border) !important;
         padding: 12px 16px;
         border-radius: 8px;
         margin-bottom: 14px;
-        color: var(--dwp-text) !important;
+        color: var(--text-color) !important;
     }
 
     .bill-card {
-        background-color: var(--dwp-card-bg) !important;
-        border-left: 4px solid var(--dwp-text) !important;
+        background-color: var(--secondary-background-color, rgba(128,128,128,0.06)) !important;
+        border-left: 4px solid var(--text-color) !important;
         border: 1px solid var(--dwp-border) !important;
         padding: 14px;
         border-radius: 8px;
         margin: 10px 0;
-        color: var(--dwp-text) !important;
+        color: var(--text-color) !important;
     }
 
     .dwp-badge {
-        background-color: var(--dwp-bg) !important;
-        color: var(--dwp-text) !important;
+        background-color: transparent !important;
+        color: var(--text-color) !important;
         font-weight: 600;
         padding: 2px 8px;
         border-radius: 12px;
@@ -125,68 +104,79 @@ st.markdown("""
     }
 
     .dwp-badge-highlight {
-        background-color: var(--dwp-bg) !important;
-        color: var(--dwp-text) !important;
+        background-color: transparent !important;
+        color: var(--text-color) !important;
         font-weight: 700;
         padding: 2px 8px;
         border-radius: 12px;
         font-size: 0.74rem;
-        border: 1.5px solid var(--dwp-text) !important;
+        border: 1.5px solid var(--text-color) !important;
         display: inline-block;
     }
 
     .badge-amount {
-        background-color: var(--dwp-bg) !important;
-        color: var(--dwp-text) !important;
+        background-color: transparent !important;
+        color: var(--text-color) !important;
         padding: 3px 8px;
         border-radius: 12px;
         font-size: 0.78rem;
         font-weight: 700;
-        border: 1px solid var(--dwp-text) !important;
+        border: 1px solid var(--text-color) !important;
         margin-right: 4px;
+    }
+
+    .badge-cash, .badge-partial, .badge-warranty {
+        background-color: transparent !important;
+        color: var(--text-color) !important;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        border: 1px solid var(--dwp-border) !important;
     }
 
     .dwp-bill-table {
         width: 100%;
         font-size: 0.88rem;
         line-height: 1.8;
-        color: var(--dwp-text) !important;
+        color: var(--text-color) !important;
         border-collapse: collapse;
     }
 
-    .dwp-bill-table tr, .dwp-bill-table td {
-        color: var(--dwp-text) !important;
+    .dwp-bill-table tr, .dwp-bill-table td, .dwp-bill-table th {
+        color: var(--text-color) !important;
     }
 
     .dwp-item-desc {
         font-weight: 700;
-        color: var(--dwp-text) !important;
+        color: var(--text-color) !important;
         font-size: 0.96rem;
     }
 
     .dwp-item-sku {
-        color: var(--dwp-text) !important;
+        color: var(--text-color) !important;
+        background-color: transparent !important;
         font-weight: 700;
-        opacity: 0.9;
+        opacity: 0.85;
     }
 
     .dwp-price-tag {
         font-size: 1.05rem;
         font-weight: 800;
-        color: var(--dwp-text) !important;
+        color: var(--text-color) !important;
         text-align: right;
         padding-top: 4px;
     }
 
-    .history-card { background-color: var(--dwp-card-bg) !important; border: 1px solid var(--dwp-border) !important; border-radius: 8px; padding: 12px; margin-bottom: 12px; color: var(--dwp-text) !important; }
-    .scope-box { background-color: var(--dwp-card-bg) !important; border: 1px solid var(--dwp-border) !important; padding: 8px 12px; border-radius: 6px; font-size: 0.82rem; color: var(--dwp-text) !important; margin-bottom: 12px; }
-    .support-box { background-color: var(--dwp-card-bg) !important; border: 1px solid var(--dwp-border) !important; border-radius: 8px; padding: 12px; margin-top: 2rem; font-size: 0.82rem; color: var(--dwp-text) !important; text-align: center; }
-    .credit-footer { font-size: 0.75rem; color: var(--dwp-text) !important; opacity: 0.8; text-align: center; margin-top: 1rem; border-top: 1px solid var(--dwp-border) !important; padding-top: 8px; }
+    .history-card { background-color: var(--secondary-background-color, rgba(128,128,128,0.06)) !important; border: 1px solid var(--dwp-border) !important; border-radius: 8px; padding: 12px; margin-bottom: 12px; color: var(--text-color) !important; }
+    .scope-box { background-color: var(--secondary-background-color, rgba(128,128,128,0.06)) !important; border: 1px solid var(--dwp-border) !important; padding: 8px 12px; border-radius: 6px; font-size: 0.82rem; color: var(--text-color) !important; margin-bottom: 12px; }
+    .support-box { background-color: var(--secondary-background-color, rgba(128,128,128,0.06)) !important; border: 1px solid var(--dwp-border) !important; border-radius: 8px; padding: 12px; margin-top: 2rem; font-size: 0.82rem; color: var(--text-color) !important; text-align: center; }
+    .credit-footer { font-size: 0.75rem; color: var(--text-color) !important; opacity: 0.75; text-align: center; margin-top: 1rem; border-top: 1px solid var(--dwp-border) !important; padding-top: 8px; }
     
     /* Stock Status Badges */
-    .stock-badge-in { background-color: var(--dwp-bg) !important; color: var(--dwp-text) !important; font-weight: 700; padding: 2px 8px; border-radius: 12px; font-size: 0.73rem; border: 1.5px solid var(--dwp-text) !important; display: inline-block; }
-    .stock-badge-low { background-color: var(--dwp-bg) !important; color: var(--dwp-text) !important; font-weight: 700; padding: 2px 8px; border-radius: 12px; font-size: 0.73rem; border: 1px solid var(--dwp-border) !important; display: inline-block; }
-    .stock-badge-out { background-color: var(--dwp-bg) !important; color: var(--dwp-text) !important; font-weight: 700; padding: 2px 8px; border-radius: 12px; font-size: 0.73rem; border: 1px solid var(--dwp-border) !important; opacity: 0.7; display: inline-block; }
+    .stock-badge-in { background-color: transparent !important; color: var(--text-color) !important; font-weight: 700; padding: 2px 8px; border-radius: 12px; font-size: 0.73rem; border: 1.5px solid var(--text-color) !important; display: inline-block; }
+    .stock-badge-low { background-color: transparent !important; color: var(--text-color) !important; font-weight: 700; padding: 2px 8px; border-radius: 12px; font-size: 0.73rem; border: 1px solid var(--dwp-border) !important; display: inline-block; }
+    .stock-badge-out { background-color: transparent !important; color: var(--text-color) !important; font-weight: 700; padding: 2px 8px; border-radius: 12px; font-size: 0.73rem; border: 1px solid var(--dwp-border) !important; opacity: 0.7; display: inline-block; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -515,7 +505,7 @@ with tab_estimator:
         # STEP 3: BASE OVERHEADS & SERVICE CHARGES
         # ==========================================
         st.markdown("<div class='dwp-step-box'>"
-                    "<span class='dwp-step-title'>💵 STEP 3: Service Charges & Overheads</span>"
+                    "<span class='dwp-step-title'>💵 STEP 3: Service Charges </span>"
                     "</div>", unsafe_allow_html=True)
 
         col_b1, col_b2, col_b3 = st.columns(3)
@@ -718,20 +708,20 @@ with tab_history:
                 st.markdown(f"""
                 <div class="history-card">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                        <span style="font-weight: 700; color: #1E293B; font-size: 1rem;">Complaint #{c_no}</span>
+                        <span style="font-weight: 700; color: var(--text-color); font-size: 1rem;">Complaint #{c_no}</span>
                         <div>
                             <span class="badge-amount">{amt_display}</span>
                             <span class="{badge_class}">{c_type}</span>
                         </div>
                     </div>
-                    <div style="font-size: 0.85rem; color: #334155; line-height: 1.5;">
+                    <div style="font-size: 0.85rem; color: var(--text-color); line-height: 1.5;">
                         <b>Model:</b> {model} &nbsp;|&nbsp; <b>Serial:</b> <code>{serial}</code><br>
                         <b>Customer:</b> {cust_name} (📞 {phone})<br>
                         <b>Technician:</b> {tech}<br>
                         <b>Complaint Date:</b> {c_date} &nbsp;|&nbsp; <b>Closed Date:</b> {closed_date}<br>
                         <b>Purchase Date:</b> {p_date if p_date else 'N/A'}<br>
-                        <hr style="margin: 6px 0; border: none; border-top: 1px dashed #CBD5E1;">
-                        <b>Closing Remarks:</b> <span style="color: #0369A1; font-weight: 500;">{remarks}</span>
+                        <hr style="margin: 6px 0; border: none; border-top: 1px dashed var(--dwp-border);">
+                        <b>Closing Remarks:</b> <span style="color: var(--text-color); font-weight: 500; opacity: 0.9;">{remarks}</span>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
