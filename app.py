@@ -49,82 +49,100 @@ init_estimator_schema()
 # Custom Styling (High-Contrast Theme: #FFFFFF White & #000000 Black, Light & Dark Mode Compatible)
 st.markdown("""
 <style>
-    :root {
-        --dwp-text: var(--text-color, #000000);
-        --dwp-bg: var(--background-color, #FFFFFF);
-        --dwp-card-bg: var(--secondary-background-color, #F9FAFB);
-        --dwp-border: rgba(128, 128, 128, 0.3);
+    /* Default / Light Mode Colors */
+    .stApp {
+        --dwp-text: #000000;
+        --dwp-bg: #FFFFFF;
+        --dwp-card-bg: #F9FAFB;
+        --dwp-border: rgba(0, 0, 0, 0.15);
     }
 
-    .main-title { font-size: 1.5rem; font-weight: 800; color: var(--dwp-text); margin-bottom: 0.1rem; }
-    .sub-title { font-size: 0.85rem; color: var(--dwp-text); opacity: 0.8; margin-bottom: 0.8rem; }
+    /* Dark Mode Overrides (Automatic detection via System Media Query & Streamlit Attributes) */
+    @media (prefers-color-scheme: dark) {
+        .stApp {
+            --dwp-text: #FFFFFF !important;
+            --dwp-bg: #0E1117 !important;
+            --dwp-card-bg: #1A1D24 !important;
+            --dwp-border: rgba(255, 255, 255, 0.2) !important;
+        }
+    }
+
+    [data-theme="dark"] .stApp, .stApp[data-theme="dark"], body[data-theme="dark"] .stApp, [data-testid="stAppViewContainer"][data-theme="dark"] {
+        --dwp-text: #FFFFFF !important;
+        --dwp-bg: #0E1117 !important;
+        --dwp-card-bg: #1A1D24 !important;
+        --dwp-border: rgba(255, 255, 255, 0.2) !important;
+    }
+
+    .main-title { font-size: 1.5rem; font-weight: 800; color: var(--dwp-text) !important; margin-bottom: 0.1rem; }
+    .sub-title { font-size: 0.85rem; color: var(--dwp-text) !important; opacity: 0.85; margin-bottom: 0.8rem; }
     
     .dwp-step-box {
-        background-color: var(--dwp-card-bg);
-        border: 1px solid var(--dwp-border);
-        border-left: 4px solid var(--dwp-text);
+        background-color: var(--dwp-card-bg) !important;
+        border: 1px solid var(--dwp-border) !important;
+        border-left: 4px solid var(--dwp-text) !important;
         padding: 12px 16px;
         border-radius: 8px;
         margin-top: 14px;
         margin-bottom: 14px;
-        color: var(--dwp-text);
+        color: var(--dwp-text) !important;
     }
     
     .dwp-step-title {
         font-weight: 700;
         font-size: 1.0rem;
-        color: var(--dwp-text);
+        color: var(--dwp-text) !important;
     }
 
     .dwp-cart-box {
-        background-color: var(--dwp-card-bg);
-        border: 1px solid var(--dwp-text);
+        background-color: var(--dwp-card-bg) !important;
+        border: 1px solid var(--dwp-text) !important;
         padding: 12px 16px;
         border-radius: 8px;
         margin-bottom: 14px;
-        color: var(--dwp-text);
+        color: var(--dwp-text) !important;
     }
 
     .bill-card {
-        background-color: var(--dwp-card-bg);
-        border-left: 4px solid var(--dwp-text);
-        border: 1px solid var(--dwp-border);
+        background-color: var(--dwp-card-bg) !important;
+        border-left: 4px solid var(--dwp-text) !important;
+        border: 1px solid var(--dwp-border) !important;
         padding: 14px;
         border-radius: 8px;
         margin: 10px 0;
-        color: var(--dwp-text);
+        color: var(--dwp-text) !important;
     }
 
     .dwp-badge {
-        background-color: var(--dwp-bg);
-        color: var(--dwp-text);
+        background-color: var(--dwp-bg) !important;
+        color: var(--dwp-text) !important;
         font-weight: 600;
         padding: 2px 8px;
         border-radius: 12px;
         font-size: 0.74rem;
-        border: 1px solid var(--dwp-border);
+        border: 1px solid var(--dwp-border) !important;
         display: inline-block;
     }
 
     .dwp-badge-highlight {
-        background-color: var(--dwp-bg);
-        color: var(--dwp-text);
+        background-color: var(--dwp-bg) !important;
+        color: var(--dwp-text) !important;
         font-weight: 700;
         padding: 2px 8px;
         border-radius: 12px;
         font-size: 0.74rem;
-        border: 1.5px solid var(--dwp-text);
+        border: 1.5px solid var(--dwp-text) !important;
         display: inline-block;
     }
 
     .badge-amount {
-        background-color: var(--dwp-bg);
-        color: var(--dwp-text);
+        background-color: var(--dwp-bg) !important;
+        color: var(--dwp-text) !important;
         padding: 3px 8px;
         border-radius: 12px;
         font-size: 0.78rem;
         font-weight: 700;
-        border: 1px solid var(--dwp-text);
+        border: 1px solid var(--dwp-text) !important;
         margin-right: 4px;
     }
 
@@ -132,7 +150,7 @@ st.markdown("""
         width: 100%;
         font-size: 0.88rem;
         line-height: 1.8;
-        color: var(--dwp-text);
+        color: var(--dwp-text) !important;
         border-collapse: collapse;
     }
 
@@ -140,15 +158,35 @@ st.markdown("""
         color: var(--dwp-text) !important;
     }
 
-    .history-card { background-color: var(--dwp-card-bg); border: 1px solid var(--dwp-border); border-radius: 8px; padding: 12px; margin-bottom: 12px; color: var(--dwp-text); }
-    .scope-box { background-color: var(--dwp-card-bg); border: 1px solid var(--dwp-border); padding: 8px 12px; border-radius: 6px; font-size: 0.82rem; color: var(--dwp-text); margin-bottom: 12px; }
-    .support-box { background-color: var(--dwp-card-bg); border: 1px solid var(--dwp-text); border-radius: 8px; padding: 12px; margin-top: 2rem; font-size: 0.82rem; color: var(--dwp-text); text-align: center; }
-    .credit-footer { font-size: 0.75rem; color: var(--dwp-text); opacity: 0.7; text-align: center; margin-top: 1rem; border-top: 1px solid var(--dwp-border); padding-top: 8px; }
+    .dwp-item-desc {
+        font-weight: 700;
+        color: var(--dwp-text) !important;
+        font-size: 0.96rem;
+    }
+
+    .dwp-item-sku {
+        color: var(--dwp-text) !important;
+        font-weight: 700;
+        opacity: 0.9;
+    }
+
+    .dwp-price-tag {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: var(--dwp-text) !important;
+        text-align: right;
+        padding-top: 4px;
+    }
+
+    .history-card { background-color: var(--dwp-card-bg) !important; border: 1px solid var(--dwp-border) !important; border-radius: 8px; padding: 12px; margin-bottom: 12px; color: var(--dwp-text) !important; }
+    .scope-box { background-color: var(--dwp-card-bg) !important; border: 1px solid var(--dwp-border) !important; padding: 8px 12px; border-radius: 6px; font-size: 0.82rem; color: var(--dwp-text) !important; margin-bottom: 12px; }
+    .support-box { background-color: var(--dwp-card-bg) !important; border: 1px solid var(--dwp-border) !important; border-radius: 8px; padding: 12px; margin-top: 2rem; font-size: 0.82rem; color: var(--dwp-text) !important; text-align: center; }
+    .credit-footer { font-size: 0.75rem; color: var(--dwp-text) !important; opacity: 0.8; text-align: center; margin-top: 1rem; border-top: 1px solid var(--dwp-border) !important; padding-top: 8px; }
     
     /* Stock Status Badges */
-    .stock-badge-in { background-color: var(--dwp-bg); color: var(--dwp-text); font-weight: 700; padding: 2px 8px; border-radius: 12px; font-size: 0.73rem; border: 1.5px solid var(--dwp-text); display: inline-block; }
-    .stock-badge-low { background-color: var(--dwp-bg); color: var(--dwp-text); font-weight: 700; padding: 2px 8px; border-radius: 12px; font-size: 0.73rem; border: 1px solid var(--dwp-border); display: inline-block; }
-    .stock-badge-out { background-color: var(--dwp-bg); color: var(--dwp-text); font-weight: 700; padding: 2px 8px; border-radius: 12px; font-size: 0.73rem; border: 1px solid var(--dwp-border); opacity: 0.7; display: inline-block; }
+    .stock-badge-in { background-color: var(--dwp-bg) !important; color: var(--dwp-text) !important; font-weight: 700; padding: 2px 8px; border-radius: 12px; font-size: 0.73rem; border: 1.5px solid var(--dwp-text) !important; display: inline-block; }
+    .stock-badge-low { background-color: var(--dwp-bg) !important; color: var(--dwp-text) !important; font-weight: 700; padding: 2px 8px; border-radius: 12px; font-size: 0.73rem; border: 1px solid var(--dwp-border) !important; display: inline-block; }
+    .stock-badge-out { background-color: var(--dwp-bg) !important; color: var(--dwp-text) !important; font-weight: 700; padding: 2px 8px; border-radius: 12px; font-size: 0.73rem; border: 1px solid var(--dwp-border) !important; opacity: 0.7; display: inline-block; }
 </style>
 """, unsafe_allow_html=True)
 
