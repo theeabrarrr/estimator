@@ -46,32 +46,109 @@ st.set_page_config(
 # Initialize database schema and auto-seed if required
 init_estimator_schema()
 
-# Custom Styling (Strict 4-Color Palette: #0369A1 Navy, #0F172A Dark Slate, #F8FAFC Light Slate, #0284C7 Sky Accent)
+# Custom Styling (High-Contrast Theme: #FFFFFF White & #000000 Black, Light & Dark Mode Compatible)
 st.markdown("""
 <style>
-    .main-title { font-size: 1.45rem; font-weight: 800; color: #0369A1; margin-bottom: 0.1rem; }
-    .sub-title { font-size: 0.84rem; color: #0F172A; margin-bottom: 0.8rem; opacity: 0.8; }
-    .bill-card { background-color: #F8FAFC; border-left: 4px solid #0369A1; border: 1px solid #E2E8F0; padding: 14px; border-radius: 8px; margin: 10px 0; }
-    .grand-total { font-size: 1.6rem; font-weight: 800; color: #0F172A; }
-    .history-card { background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
-    .badge-warranty { background-color: #F8FAFC; color: #0369A1; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; border: 1px solid #0284C7; }
-    .badge-cash { background-color: #F8FAFC; color: #0F172A; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; border: 1px solid #E2E8F0; }
-    .badge-partial { background-color: #F8FAFC; color: #0284C7; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; border: 1px solid #0284C7; }
-    .badge-amount { background-color: #F8FAFC; color: #0369A1; padding: 3px 8px; border-radius: 12px; font-size: 0.78rem; font-weight: 700; border: 1px solid #0284C7; margin-right: 4px; }
-    .scope-box { background-color: #F8FAFC; border: 1px solid #E2E8F0; padding: 8px 12px; border-radius: 6px; font-size: 0.82rem; color: #0F172A; margin-bottom: 12px; }
-    .support-box { background-color: #F8FAFC; border: 1px solid #0369A1; border-radius: 8px; padding: 12px; margin-top: 2rem; font-size: 0.82rem; color: #0F172A; text-align: center; }
-    .credit-footer { font-size: 0.75rem; color: #0F172A; opacity: 0.7; text-align: center; margin-top: 1rem; border-top: 1px solid #E2E8F0; padding-top: 8px; }
+    :root {
+        --dwp-text: var(--text-color, #000000);
+        --dwp-bg: var(--background-color, #FFFFFF);
+        --dwp-card-bg: var(--secondary-background-color, #F9FAFB);
+        --dwp-border: rgba(128, 128, 128, 0.3);
+    }
+
+    .main-title { font-size: 1.5rem; font-weight: 800; color: var(--dwp-text); margin-bottom: 0.1rem; }
+    .sub-title { font-size: 0.85rem; color: var(--dwp-text); opacity: 0.8; margin-bottom: 0.8rem; }
+    
+    .dwp-step-box {
+        background-color: var(--dwp-card-bg);
+        border: 1px solid var(--dwp-border);
+        border-left: 4px solid var(--dwp-text);
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-top: 14px;
+        margin-bottom: 14px;
+        color: var(--dwp-text);
+    }
+    
+    .dwp-step-title {
+        font-weight: 700;
+        font-size: 1.0rem;
+        color: var(--dwp-text);
+    }
+
+    .dwp-cart-box {
+        background-color: var(--dwp-card-bg);
+        border: 1px solid var(--dwp-text);
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 14px;
+        color: var(--dwp-text);
+    }
+
+    .bill-card {
+        background-color: var(--dwp-card-bg);
+        border-left: 4px solid var(--dwp-text);
+        border: 1px solid var(--dwp-border);
+        padding: 14px;
+        border-radius: 8px;
+        margin: 10px 0;
+        color: var(--dwp-text);
+    }
+
+    .dwp-badge {
+        background-color: var(--dwp-bg);
+        color: var(--dwp-text);
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.74rem;
+        border: 1px solid var(--dwp-border);
+        display: inline-block;
+    }
+
+    .dwp-badge-highlight {
+        background-color: var(--dwp-bg);
+        color: var(--dwp-text);
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.74rem;
+        border: 1.5px solid var(--dwp-text);
+        display: inline-block;
+    }
+
+    .badge-amount {
+        background-color: var(--dwp-bg);
+        color: var(--dwp-text);
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        border: 1px solid var(--dwp-text);
+        margin-right: 4px;
+    }
+
+    .dwp-bill-table {
+        width: 100%;
+        font-size: 0.88rem;
+        line-height: 1.8;
+        color: var(--dwp-text);
+        border-collapse: collapse;
+    }
+
+    .dwp-bill-table tr, .dwp-bill-table td {
+        color: var(--dwp-text) !important;
+    }
+
+    .history-card { background-color: var(--dwp-card-bg); border: 1px solid var(--dwp-border); border-radius: 8px; padding: 12px; margin-bottom: 12px; color: var(--dwp-text); }
+    .scope-box { background-color: var(--dwp-card-bg); border: 1px solid var(--dwp-border); padding: 8px 12px; border-radius: 6px; font-size: 0.82rem; color: var(--dwp-text); margin-bottom: 12px; }
+    .support-box { background-color: var(--dwp-card-bg); border: 1px solid var(--dwp-text); border-radius: 8px; padding: 12px; margin-top: 2rem; font-size: 0.82rem; color: var(--dwp-text); text-align: center; }
+    .credit-footer { font-size: 0.75rem; color: var(--dwp-text); opacity: 0.7; text-align: center; margin-top: 1rem; border-top: 1px solid var(--dwp-border); padding-top: 8px; }
     
     /* Stock Status Badges */
-    .stock-badge-in { background-color: #F8FAFC; color: #0369A1; font-weight: 700; padding: 2px 8px; border-radius: 12px; font-size: 0.73rem; border: 1px solid #0284C7; display: inline-block; }
-    .stock-badge-low { background-color: #F8FAFC; color: #0284C7; font-weight: 700; padding: 2px 8px; border-radius: 12px; font-size: 0.73rem; border: 1px solid #0284C7; display: inline-block; }
-    .stock-badge-out { background-color: #F8FAFC; color: #0F172A; font-weight: 700; padding: 2px 8px; border-radius: 12px; font-size: 0.73rem; border: 1px solid #E2E8F0; display: inline-block; }
-    .item-card { background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 10px; margin-bottom: 8px; }
-
-    /* Multi-Tier Resolution Badges */
-    .badge-tier-1 { background-color: #F8FAFC; color: #0369A1; padding: 2px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 700; border: 1px solid #0284C7; display: inline-block; margin-left: 4px; }
-    .badge-tier-2 { background-color: #F8FAFC; color: #0F172A; padding: 2px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 600; border: 1px solid #E2E8F0; display: inline-block; margin-left: 4px; }
-    .badge-tier-3 { background-color: #F8FAFC; color: #0284C7; padding: 2px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 600; border: 1px solid #0284C7; display: inline-block; margin-left: 4px; }
+    .stock-badge-in { background-color: var(--dwp-bg); color: var(--dwp-text); font-weight: 700; padding: 2px 8px; border-radius: 12px; font-size: 0.73rem; border: 1.5px solid var(--dwp-text); display: inline-block; }
+    .stock-badge-low { background-color: var(--dwp-bg); color: var(--dwp-text); font-weight: 700; padding: 2px 8px; border-radius: 12px; font-size: 0.73rem; border: 1px solid var(--dwp-border); display: inline-block; }
+    .stock-badge-out { background-color: var(--dwp-bg); color: var(--dwp-text); font-weight: 700; padding: 2px 8px; border-radius: 12px; font-size: 0.73rem; border: 1px solid var(--dwp-border); opacity: 0.7; display: inline-block; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -172,7 +249,7 @@ tab_estimator, tab_history, tab_perf = st.tabs([
 # TAB 1: SPARE PARTS & COST ESTIMATOR
 # ==========================================
 with tab_estimator:
-    st.markdown("<h4 style='color: #0369A1; font-weight: 800;'>🧮 Spare Parts & Job Cost Estimator</h4>", unsafe_allow_html=True)
+    st.markdown("<h4 class='main-title'>🧮 Spare Parts & Job Cost Estimator</h4>", unsafe_allow_html=True)
     st.caption("Select appliance model to browse compatible spare parts, manage cart, set overheads, and generate instant WhatsApp quotations.")
 
     # Persistent selection state
@@ -189,8 +266,8 @@ with tab_estimator:
     # ==========================================
     # STEP 1: MODEL SELECTION
     # ==========================================
-    st.markdown("<div style='background-color: #F8FAFC; border-left: 4px solid #0369A1; border: 1px solid #E2E8F0; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px;'>"
-                "<span style='font-weight: 700; color: #0369A1; font-size: 1.0rem;'>🏷️ STEP 1: Select Equipment Model</span>"
+    st.markdown("<div class='dwp-step-box'>"
+                "<span class='dwp-step-title'>🏷️ STEP 1: Select Equipment Model</span>"
                 "</div>", unsafe_allow_html=True)
 
     selected_model = st.selectbox(
@@ -217,8 +294,8 @@ with tab_estimator:
         # ==========================================
         # STEP 2: COMPATIBLE SPARE PARTS & CATEGORY EXPLORER
         # ==========================================
-        st.markdown("<div style='background-color: #F8FAFC; border-left: 4px solid #0369A1; border: 1px solid #E2E8F0; padding: 12px 16px; border-radius: 8px; margin-top: 16px; margin-bottom: 16px;'>"
-                    "<span style='font-weight: 700; color: #0369A1; font-size: 1.0rem;'>🔩 STEP 2: Compatible Spare Parts & Sub-Assemblies</span>"
+        st.markdown("<div class='dwp-step-box'>"
+                    "<span class='dwp-step-title'>🔩 STEP 2: Select Parts</span>"
                     "</div>", unsafe_allow_html=True)
 
         if parts_df.empty:
@@ -231,12 +308,12 @@ with tab_estimator:
             if st.session_state["estimator_selected_parts"]:
                 cart_total = sum(p['price'] for p in st.session_state['estimator_selected_parts'].values())
                 st.markdown(f"""
-                <div style="background-color: #F8FAFC; border: 1px solid #0284C7; padding: 12px 16px; border-radius: 8px; margin-bottom: 14px;">
+                <div class="dwp-cart-box">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-weight: 700; color: #0369A1; font-size: 0.98rem;">
-                            🛒 Currently Selected Spare Parts ({len(st.session_state['estimator_selected_parts'])} items)
+                        <span class="dwp-step-title">
+                            🛒 Currently Selected Parts ({len(st.session_state['estimator_selected_parts'])} items)
                         </span>
-                        <span style="font-weight: 800; color: #0F172A; font-size: 1.05rem;">
+                        <span class="dwp-price-tag" style="padding-top: 0;">
                             Subtotal: Rs. {cart_total:,}
                         </span>
                     </div>
@@ -246,7 +323,7 @@ with tab_estimator:
                 for pno, pinfo in list(st.session_state["estimator_selected_parts"].items()):
                     c_p1, c_p2 = st.columns([0.84, 0.16])
                     with c_p1:
-                        st.markdown(f"• **{pinfo['description']}** (`{pno}`) &nbsp;|&nbsp; <span style='color: #0369A1; font-weight: 700;'>Rs. {pinfo['price']:,}</span> &nbsp;<span style='color: #0F172A; font-size: 0.78rem;'>[{pinfo['board_type']}]</span>", unsafe_allow_html=True)
+                        st.markdown(f"• **{pinfo['description']}** (`{pno}`) &nbsp;|&nbsp; <span class='dwp-price-tag' style='font-size:0.9rem;'>Rs. {pinfo['price']:,}</span> &nbsp;<span class='dwp-badge'>[{pinfo['board_type']}]</span>", unsafe_allow_html=True)
                     with c_p2:
                         if st.button("❌ Remove", key=f"btn_rem_{pno}", use_container_width=True):
                             st.session_state["estimator_selected_parts"].pop(pno, None)
@@ -256,7 +333,7 @@ with tab_estimator:
                     st.session_state["estimator_selected_parts"] = {}
                     st.rerun()
 
-                st.markdown("<hr style='margin: 12px 0; border: none; border-top: 1px dashed #E2E8F0;'>", unsafe_allow_html=True)
+                st.markdown("<hr style='margin: 12px 0; border: none; border-top: 1px dashed var(--dwp-border);'>", unsafe_allow_html=True)
 
             # Sub-Assembly Category Selection (Preserving exact category names with parentheses)
             categories = sorted([b for b in parts_df['board_type'].dropna().unique() if b.strip()])
@@ -330,13 +407,13 @@ with tab_estimator:
                 except Exception:
                     pass
 
-                freq_badge = f'<span style="background-color: #F8FAFC; color: #0369A1; padding: 2px 7px; border-radius: 10px; font-size: 0.72rem; font-weight: 700; border: 1px solid #0284C7;">🔥 High Frequency ({freq} jobs)</span>' if freq >= 20 else f'<span style="background-color: #F8FAFC; color: #0F172A; padding: 2px 7px; border-radius: 10px; font-size: 0.72rem;">Replaced {freq} times</span>'
+                freq_badge = f'<span class="dwp-badge-highlight">🔥 High Frequency ({freq} jobs)</span>' if freq >= 20 else f'<span class="dwp-badge">Replaced {freq} times</span>'
                 
-                stock_badge = f'<span style="background-color: #F8FAFC; color: #0369A1; font-weight: 700; padding: 2px 8px; border-radius: 12px; font-size: 0.73rem; border: 1px solid #0284C7;">🟢 Karachi-2 Store: {b_stock} In Stock</span>' if b_stock > 0 else '<span style="background-color: #F8FAFC; color: #0F172A; padding: 2px 8px; border-radius: 12px; font-size: 0.73rem; border: 1px solid #E2E8F0;">⚪ Karachi-2 Store: 0 Available</span>'
+                stock_badge = f'<span class="stock-badge-in">🟢 Karachi-2 Store: {b_stock} In Stock</span>' if b_stock > 0 else '<span class="stock-badge-out">⚪ Karachi-2 Store: 0 Available</span>'
 
-                tech_pill = f'&nbsp;<span style="background-color: #F8FAFC; color: #0369A1; padding: 2px 6px; border-radius: 10px; font-size: 0.72rem; font-weight: 600;">🤝 In Hand: {", ".join([f"{k} ({v})" for k, v in tech_alloc.items()])}</span>' if tech_alloc else ""
+                tech_pill = f'&nbsp;<span class="dwp-badge">🤝 In Hand: {", ".join([f"{k} ({v})" for k, v in tech_alloc.items()])}</span>' if tech_alloc else ""
 
-                cross_pill = f'&nbsp;<span style="background-color: #F8FAFC; color: #0284C7; padding: 2px 6px; border-radius: 10px; font-size: 0.72rem;">🌐 Fits {cross_cnt} models</span>' if cross_cnt > 1 else ""
+                cross_pill = f'&nbsp;<span class="dwp-badge">🌐 Fits {cross_cnt} models</span>' if cross_cnt > 1 else ""
 
                 # Item Layout Card
                 with st.container():
@@ -361,9 +438,9 @@ with tab_estimator:
                     with c_info:
                         st.markdown(f"""
                         <div style="line-height: 1.4; margin-bottom: 4px;">
-                            <span style="font-weight: 700; color: #0F172A; font-size: 0.95rem;">{p_desc}</span><br>
-                            <code style="color: #0369A1; font-weight: 600;">SKU: {p_no}</code> &nbsp;|&nbsp; 
-                            <span style="color: #0F172A; font-size: 0.8rem;">{p_board}</span><br>
+                            <span class="dwp-item-desc">{p_desc}</span><br>
+                            <code class="dwp-item-sku">SKU: {p_no}</code> &nbsp;|&nbsp; 
+                            <span class="dwp-badge">[{p_board}]</span><br>
                             <div style="margin-top: 3px;">
                                 {freq_badge} &nbsp; {stock_badge} {tech_pill} {cross_pill}
                             </div>
@@ -380,7 +457,7 @@ with tab_estimator:
 
                     with c_price:
                         if is_pending or p_price == 0:
-                            st.markdown('<span style="background-color: #F8FAFC; color: #0F172A; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; border: 1px solid #0369A1;">⚠️ Pending ERP Pricing</span>', unsafe_allow_html=True)
+                            st.markdown('<span class="dwp-badge-highlight">⚠️ Pending ERP Pricing</span>', unsafe_allow_html=True)
                             with st.expander("⚙️ Manual Price"):
                                 new_val = st.number_input("Price (PKR):", min_value=0, step=500, key=f"inp_{p_no}")
                                 if st.button("💾 Save", key=f"btn_{p_no}"):
@@ -392,15 +469,15 @@ with tab_estimator:
                                         st.success("Price updated in Database!")
                                         st.rerun()
                         else:
-                            st.markdown(f'<div style="font-size: 1.05rem; font-weight: 700; color: #0369A1; text-align: right; padding-top: 4px;">Rs. {p_price:,}</div>', unsafe_allow_html=True)
+                            st.markdown(f'<div class="dwp-price-tag">Rs. {p_price:,}</div>', unsafe_allow_html=True)
 
-                    st.markdown("<hr style='margin: 6px 0; border: none; border-top: 1px solid #E2E8F0;'>", unsafe_allow_html=True)
+                    st.markdown("<hr style='margin: 6px 0; border: none; border-top: 1px solid var(--dwp-border);'>", unsafe_allow_html=True)
 
         # ==========================================
         # STEP 3: BASE OVERHEADS & SERVICE CHARGES
         # ==========================================
-        st.markdown("<div style='background-color: #F8FAFC; border-left: 4px solid #0369A1; border: 1px solid #E2E8F0; padding: 12px 16px; border-radius: 8px; margin-top: 20px; margin-bottom: 16px;'>"
-                    "<span style='font-weight: 700; color: #0369A1; font-size: 1.0rem;'>💵 STEP 3: Service Charges & Overheads</span>"
+        st.markdown("<div class='dwp-step-box'>"
+                    "<span class='dwp-step-title'>💵 STEP 3: Service Charges & Overheads</span>"
                     "</div>", unsafe_allow_html=True)
 
         col_b1, col_b2, col_b3 = st.columns(3)
@@ -409,7 +486,7 @@ with tab_estimator:
         with col_b2:
             chk_mobility = st.checkbox(f"🔧 Mobility / Labour (Rs. {MOBILITY_CHARGES:,})", value=True, key="chk_mobility")
         with col_b3:
-            chk_gas = st.checkbox(f"⚡ Gas Refill Required (+Rs. {gas_amount:,})", value=False, key="chk_gas")
+            chk_gas = st.checkbox(f"⚡ Gas (+Rs. {gas_amount:,})", value=False, key="chk_gas")
 
         billing_type = st.radio(
             "📋 Customer Warranty Status:",
@@ -439,8 +516,8 @@ with tab_estimator:
         # ==========================================
         # STEP 4: REAL-TIME QUOTATION & WHATSAPP GENERATOR
         # ==========================================
-        st.markdown("<div style='background-color: #F8FAFC; border-left: 4px solid #0369A1; border: 1px solid #E2E8F0; padding: 12px 16px; border-radius: 8px; margin-top: 20px; margin-bottom: 16px;'>"
-                    "<span style='font-weight: 700; color: #0369A1; font-size: 1.0rem;'>📊 STEP 4: Real-Time Official Estimate & WhatsApp Generator</span>"
+        st.markdown("<div class='dwp-step-box'>"
+                    "<span class='dwp-step-title'>📊 STEP 4: Real-Time Official Estimate & WhatsApp Generator</span>"
                     "</div>", unsafe_allow_html=True)
 
         col_sum1, col_sum2 = st.columns([1.5, 1])
@@ -455,13 +532,13 @@ with tab_estimator:
         parts_rows_html = ""
         if selected_parts_data:
             for p in selected_parts_data:
-                p_price_str = f"Rs. {p['price']:,}" if p['price'] > 0 else "<span style='color:#0F172A;'>Pending Price</span>"
+                p_price_str = f"Rs. {p['price']:,}" if p['price'] > 0 else "<span>Pending Price</span>"
                 parts_rows_html += (
                     f"<tr>"
-                    f"<td style='padding: 3px 0 3px 14px; font-size: 0.84rem; color: #0F172A;'>"
-                    f"• <b>{p['description']}</b> <code style='font-size:0.74rem;'>({p['part_no']})</code>"
+                    f"<td style='padding: 3px 0 3px 14px; font-size: 0.84rem;'>"
+                    f"• <b>{p['description']}</b> <code>({p['part_no']})</code>"
                     f"</td>"
-                    f"<td style='text-align: right; font-weight: 600; font-size: 0.86rem; color: #0F172A; white-space: nowrap;'>"
+                    f"<td style='text-align: right; font-weight: 600; font-size: 0.86rem; white-space: nowrap;'>"
                     f"{p_price_str}"
                     f"</td>"
                     f"</tr>"
@@ -469,29 +546,29 @@ with tab_estimator:
         else:
             parts_rows_html = (
                 "<tr>"
-                "<td style='padding: 3px 0 3px 14px; font-size: 0.82rem; color: #0F172A; font-style: italic;'>"
+                "<td style='padding: 3px 0 3px 14px; font-size: 0.82rem; font-style: italic;'>"
                 "No spare parts selected (Standard service & inspection only)"
                 "</td>"
-                "<td style='text-align: right; color: #0F172A;'>Rs. 0</td>"
+                "<td style='text-align: right;'>Rs. 0</td>"
                 "</tr>"
             )
 
         bill_card_html = (
             f"<div class='bill-card'>"
             f"<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'>"
-            f"<span style='font-size: 1.05rem; font-weight: 700; color: #0369A1;'>DWP Service Official Estimate</span>"
+            f"<span style='font-size: 1.05rem; font-weight: 700;'>DWP Service Official Estimate</span>"
             f"<span class='badge-amount'>{billing_type.split()[0]}</span>"
             f"</div>"
-            f"<table style='width: 100%; font-size: 0.88rem; line-height: 1.8; color: #0F172A; border-collapse: collapse;'>"
-            f"<tr style='background-color: #F8FAFC; border-top: 1px solid #E2E8F0;'>"
-            f"<td colspan='2' style='font-weight: 700; color: #0369A1; padding: 4px 0;'>"
+            f"<table class='dwp-bill-table'>"
+            f"<tr style='border-top: 1px solid var(--dwp-border);'>"
+            f"<td colspan='2' style='font-weight: 700; padding: 4px 0;'>"
             f"📦 Selected Spare Parts ({len(selected_parts_data)} item{'' if len(selected_parts_data) == 1 else 's'}):"
             f"</td>"
             f"</tr>"
             f"{parts_rows_html}"
-            f"<tr style='border-top: 1px dashed #E2E8F0;'>"
+            f"<tr style='border-top: 1px dashed var(--dwp-border);'>"
             f"<td style='padding: 4px 0;'><b>Parts Subtotal:</b></td>"
-            f"<td style='text-align: right; font-weight: 700; color: #0369A1;'>Rs. {parts_total:,}</td>"
+            f"<td style='text-align: right; font-weight: 700;'>Rs. {parts_total:,}</td>"
             f"</tr>"
             f"<tr>"
             f"<td style='padding: 2px 0;'>Visit Charges:</td>"
@@ -502,15 +579,15 @@ with tab_estimator:
             f"<td style='text-align: right;'>Rs. {mobility_total:,}</td>"
             f"</tr>"
             f"<tr>"
-            f"<td style='padding: 2px 0;'>Refrigerant Gas ({gas_label}):</td>"
+            f"<td style='padding: 2px 0;'> Gas Charges ({gas_label}):</td>"
             f"<td style='text-align: right;'>Rs. {gas_total:,}</td>"
             f"</tr>"
-            f"<tr style='border-top: 2px solid #E2E8F0; font-weight: 800; font-size: 1.15rem; color: #0F172A;'>"
+            f"<tr style='border-top: 2px solid var(--dwp-border); font-weight: 800; font-size: 1.15rem;'>"
             f"<td style='padding-top: 8px;'>Total Customer Payable:</td>"
-            f"<td style='text-align: right; padding-top: 8px; color: #0369A1;'>Rs. {customer_payable:,}</td>"
+            f"<td style='text-align: right; padding-top: 8px;'>Rs. {customer_payable:,}</td>"
             f"</tr>"
             f"</table>"
-            f"<div style='font-size: 0.76rem; color: #0F172A; margin-top: 8px;'>"
+            f"<div style='font-size: 0.76rem; opacity: 0.8; margin-top: 8px;'>"
             f"ℹ️ <b>Policy:</b> {policy_note}"
             f"</div>"
             f"</div>"

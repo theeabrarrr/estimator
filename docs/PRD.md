@@ -300,23 +300,22 @@ To ensure that any AI coding assistant or developer working on this repository o
 ---
 
 ### 🛠️ CUSTOMER SKILL 5: `dwp-ui-design-system`
-**Purpose:** UI/UX design system, 4-color palette limitation, progressive disclosure step-by-step layout, and clean card styling for DWP Field Assistant Engine.
+**Purpose:** UI/UX design system, pure #FFFFFF (White) & #000000 (Black) high-contrast theme, Dark Mode compatibility, typography hierarchy, and progressive 4-step disclosure layout for DWP Field Assistant Engine.
 
 #### Execution Protocol:
-1. **Strict 4-Color Palette Limit:**
-   - **Primary Navy Blue (`#0369A1` / `#1E3A8A`):** Main headers, primary buttons, active section titles.
-   - **Dark Slate (`#0F172A`):** Body text, subheadings, net totals.
-   - **Light Slate (`#F8FAFC`):** Card surfaces, container fills, section backgrounds.
-   - **Sky Accent (`#0284C7`):** Interactive selections, badges, price highlights.
-   - *No more than 4 primary colors across any UI view.*
-2. **Progressive Step-by-Step Layout Flow:**
-   - **Step 1:** Appliance Model Selection.
-   - **Step 2:** Category & Sub-Assembly Explorer (click category to reveal compatible spare parts).
-   - **Step 3:** Selected Spare Parts Chips (clean container with remove actions).
-   - **Step 4:** Base Overhead Controls (Visit, Mobility/Labour, Refrigerant Gas) & Warranty Status.
-   - **Step 5:** Real-Time Itemized Bill Card & Pre-formatted WhatsApp Quotation.
-3. **De-cluttering & Spacing:**
-   - Generous card padding, clean visual hierarchy, floating cart container, non-congested typography.
+1. **Strict Pure White & Black Palette (`#FFFFFF` & `#000000`):**
+   - **White (`#FFFFFF`):** Light mode surface background, dark mode high-contrast text.
+   - **Black (`#000000`):** Dark mode surface background, light mode high-contrast text, borders, headers.
+   - **Adaptive CSS Theme Variables (`var(--text-color)`, `var(--secondary-background-color)`):** All custom cards, badges, step boxes, and table cells MUST use adaptive CSS variables so text never clashes or overlaps when switching between Light Mode and Dark Mode.
+2. **Dark Mode & Light Mode Contract:**
+   - **Light Mode:** White `#FFFFFF` background, Black `#000000` text, neutral borders.
+   - **Dark Mode:** Dark `#000000` / `#0E1117` background, White `#FFFFFF` text, neutral borders.
+   - Never hardcode dark static text inside HTML containers without adaptive theme variables.
+3. **Progressive 4-Step Layout Flow:**
+   - **Step 1:** Appliance Model Selection (`selected_model` dropdown).
+   - **Step 2:** Category & Sub-Assembly Explorer (selectbox with `format_func` preserving exact category keys, top floating cart).
+   - **Step 3:** Base Overhead Controls (Visit, Mobility/Labour, Refrigerant Gas) & Warranty Status.
+   - **Step 4:** Real-Time Itemized Bill Card & Pre-formatted WhatsApp Quotation.
 
 ---
 
@@ -324,6 +323,6 @@ To ensure that any AI coding assistant or developer working on this repository o
 
 - **Ground Truth Baseline:** Fully reconciled against 13,965 closed service tickets and 50 PDF stock movement pages.
 - **Automated Regression Suite:** All 8 unit tests in `tests/test_estimator_suite.py` must pass cleanly before any code commit.
-- **User Interface Standards:** Streamlit UI must adhere to `dwp-ui-design-system` (max 4 colors, progressive step-by-step disclosure, clean visual hierarchy, and one-click WhatsApp quote formatting).
+- **User Interface Standards:** Streamlit UI must adhere to `dwp-ui-design-system` (#FFFFFF & #000000 palette, seamless Light & Dark Mode contrast, 4-step progressive disclosure, and one-click WhatsApp quote formatting).
 
 

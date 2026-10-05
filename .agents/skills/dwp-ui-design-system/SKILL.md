@@ -1,51 +1,47 @@
 ---
 name: dwp-ui-design-system
-description: Standard UI/UX design system and layout guidelines for DWP Field Assistant Engine. Enforces max 4-color palette, progressive step-by-step disclosure, non-congested card layouts, and interactive category selection.
+description: Standard UI/UX design system and layout guidelines for DWP Field Assistant Engine. Enforces pure #FFFFFF (White) & #000000 (Black) high-contrast color palette, dark mode compatibility, typography hierarchy, progressive step-by-step disclosure, and clean card styling.
 ---
 
 # DWP Field Assistant UI/UX Design System
 
-This skill defines the authoritative design system and layout principles for all UI modules in the **DWP Field Assistant Engine** (`estimator`). Any agent modifying or extending the interface MUST strictly follow these rules.
+This skill defines the authoritative design system, typography guidelines, and layout principles for all UI modules in the **DWP Field Assistant Engine** (`estimator`). Any agent modifying or extending the interface MUST strictly follow these rules.
 
 ---
 
-## 🎨 1. Strict 4-Color Palette Rule
-To eliminate visual clutter and ensure an enterprise-grade, clean interface, **no more than 4 primary colors** may be used across the application:
+## 🎨 1. Strict High-Contrast Color Palette (#FFFFFF & #000000)
+The user interface is built strictly around a **pure high-contrast monochrome color palette**:
 
-1. **Primary Navy Blue (`#0369A1` / `#1E3A8A`)**: Used for main titles, key section headers, active tab highlights, and primary buttons.
-2. **Dark Slate (`#0F172A`)**: Primary text color, heavy subheadings, and net totals.
-3. **Light Slate (`#F8FAFC`)**: Card background fills, container surfaces, and section backgrounds.
-4. **Sky Accent (`#0284C7`)**: Secondary action buttons, interactive badges, selection indicators, and key amounts.
+1. **Pure White (`#FFFFFF`)**: Primary light background, surface fill, and dark-mode high-contrast text color.
+2. **Pure Black (`#000000`)**: Primary dark background, high-contrast light-mode text color, borders, and main title headers.
+3. **Adaptive CSS Variables (`var(--text-color)`, `var(--secondary-background-color)`)**: Every custom container, card, badge, table cell, and step box MUST use adaptive CSS variables or theme classes so that colors adapt automatically in both **Light Mode** and **Dark Mode**.
 
-*Neutral borders & dividers (`#E2E8F0` / `#CBD5E1`) may be used for card separation.*
-
----
-
-## 📐 2. Layout Structure & Progressive Disclosure
-Avoid congested multi-column views, dense text blocks, or overwhelming tables. Structure the user journey using **progressive step-by-step disclosure**:
-
-### Step 1: Model Selection Header
-- Clean, prominent dropdown for selecting the equipment model.
-- Displays unit metadata (brand, tonnage, category) cleanly in a single line.
-
-### Step 2: Category & Sub-Assembly Explorer
-- Instead of showing all spare parts in a long cluttered list at once, group parts by **Category / Sub-Assembly** (e.g., *Outdoor Inverter PCB*, *Evaporator Assembly*, *Valves*, *Sensors*).
-- Clicking/selecting a category dynamically filters and expands the compatible spare parts list underneath.
-
-### Step 3: Interactive Cart & Selected Parts Container
-- Selected spare parts are shown in a clean, non-congested summary chip container.
-- Each item has an explicit remove action without cluttering the main browsing grid.
-
-### Step 4: Base Overheads & Service Charges
-- Simple horizontal control row for **Visit Charges**, **Mobility/Labour Charges**, and **Refrigerant Gas Refill**.
-- Warranty status selector (`Cash`, `Under Warranty`, `Partial Warranty`) cleanly integrated below overheads.
-
-### Step 5: Real-Time Official Estimate & WhatsApp Output
-- High-contrast, clean summary card presenting itemized cost breakdown.
-- Copyable, pre-formatted WhatsApp quotation output with direct chat launch button.
+### Dark Mode & Light Mode Contract:
+- **Light Mode:** `#FFFFFF` background, `#000000` crisp black typography, neutral borders (`rgba(0,0,0,0.15)`).
+- **Dark Mode:** `#000000` / `#0E1117` dark background, `#FFFFFF` crisp white typography, neutral borders (`rgba(255,255,255,0.2)`).
+- **Zero Text Overlapping:** Never hardcode fixed dark text (`#0F172A`, `#1E3A8A`) inside containers without dark mode overrides. All text elements MUST inherit adaptive theme variables to prevent contrast clashing or overlapping.
 
 ---
 
-## 🚀 3. Quality Verification & Strict GitHub Push Workflow
-- All UI modifications must be verified for responsiveness and clean rendering before declaring completion.
+## ✒️ 2. Typography & Visual Hierarchy
+- **Main App Title:** `font-size: 1.5rem; font-weight: 800; color: var(--text-color);`
+- **Sub-titles & Captions:** `font-size: 0.85rem; opacity: 0.8; color: var(--text-color);`
+- **Step Headers (`.dwp-step-title`):** `font-weight: 700; font-size: 1.0rem; color: var(--text-color);`
+- **Part Descriptions:** `font-weight: 700; font-size: 0.96rem; color: var(--text-color);`
+- **Prices & Totals:** `font-weight: 800; font-size: 1.05rem; color: var(--text-color);`
+
+---
+
+## 📐 3. Progressive Step-by-Step Layout Flow
+Avoid congested multi-column views. Always present the workflow in a 4-step progressive disclosure flow:
+
+- **Step 1: Appliance Model Selection** (`selected_model` dropdown).
+- **Step 2: Sub-Assembly Category Explorer & Selected Cart** (Category selectbox using `format_func` to preserve exact string keys, top floating cart summary).
+- **Step 3: Base Overheads & Service Charges** (Visit Charges, Mobility/Labour, Refrigerant Gas Refill, Warranty selector).
+- **Step 4: Real-Time Official Estimate & WhatsApp Generator** (Itemized estimate table and copyable WhatsApp quotation box).
+
+---
+
+## 🚀 4. Quality Verification & Strict GitHub Push Protocol
+- Test interface across both **Light Mode** and **Dark Mode** to ensure zero text color clashing or layout distortion.
 - **Mandatory Git Push**: Every change must be committed with a descriptive git message and pushed to GitHub immediately.
