@@ -41,12 +41,8 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Initialize database schema and auto-seed if required (cached across sessions)
-@st.cache_resource
-def ensure_db_initialized():
-    init_estimator_schema()
-
-ensure_db_initialized()
+# Initialize database schema and auto-seed if required
+init_estimator_schema()
 
 # Custom Styling (Clean High-Contrast #FFFFFF & #000000 Theme, Seamless Light & Dark Mode Inheritance)
 st.markdown("""

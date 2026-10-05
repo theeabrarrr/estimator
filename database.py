@@ -179,11 +179,10 @@ def init_estimator_schema():
             cursor.execute("SELECT COUNT(*) FROM tech_performance_master")
             perf_count = cursor.fetchone()[0]
 
-        if cat_count == 0 or priced_count == 0:
+        if cat_count == 0:
             try:
                 import etl
-                if cat_count == 0:
-                    etl.sync_model_part_catalog_from_feedback()
+                etl.sync_model_part_catalog_from_feedback()
                 etl.parse_store_stock_pdf()
             except Exception as e:
                 print(f"Catalog init error: {e}")
