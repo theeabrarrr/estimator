@@ -193,7 +193,7 @@ with st.sidebar:
     p_fb = st.file_uploader("Quality Feedback Report", type=["csv", "xlsx", "xls"], key="p_fb")
     p_can = st.file_uploader("Cancel / Nil / Transfer Report", type=["xlsx", "xls"], key="p_can")
 
-    if st.button("📊 Update Technician Performance", use_container_width=True):
+    if st.button("📊 Update Technician Performance", width="stretch"):
         if p_fb and p_can:
             with st.spinner("Processing Performance KPI..."):
                 cnt = ingest_performance_pipeline(p_fb, p_can)
@@ -212,7 +212,7 @@ with st.sidebar:
     u_fb = st.file_uploader("Feedback File", type=["csv", "xlsx", "xls"], key="u_fb")
     u_coll = st.file_uploader("Collection Pricing File", type=["xlsx", "xls"], key="u_coll")
 
-    if st.button("➕ Append to Master History", use_container_width=True):
+    if st.button("➕ Append to Master History", width="stretch"):
         if u_fb:
             with st.spinner("Appending records..."):
                 ingest_feedback_and_pricing(u_fb, u_coll)
@@ -229,7 +229,7 @@ with st.sidebar:
                 data=csv_data,
                 file_name="dwp_pending_erp_pricing_parts.csv",
                 mime="text/csv",
-                use_container_width=True
+                width="stretch"
             )
     except Exception:
         pass
@@ -241,7 +241,7 @@ with st.sidebar:
         st.caption("Nayi closed complaints upload karein. Existing models/parts mein installation counts add hojayenge aur naye models catalog mein shamil hojayenge.")
         daily_fb = st.file_uploader("Daily Closed Complaints", type=["csv", "xlsx", "xls"], key="daily_fb")
         daily_coll = st.file_uploader("Daily Collection File (Optional)", type=["xlsx", "xls"], key="daily_coll")
-        if st.button("➕ Merge Daily Complaints into Engine", use_container_width=True):
+        if st.button("➕ Merge Daily Complaints into Engine", width="stretch"):
             if daily_fb:
                 with st.spinner("Merging into Master History & Catalog..."):
                     ingest_feedback_and_pricing(daily_fb, daily_coll)
@@ -256,7 +256,7 @@ with st.sidebar:
         st.markdown("###### 🔄 Update Daily ERP Stock & Prices")
         st.caption("Rozana ka naya Store Wise Stock Movement PDF upload karein taky Karachi-2 Store ki live availability aur retail prices update hojayen.")
         daily_pdf = st.file_uploader("Latest Stock Movement PDF", type=["pdf"], key="daily_pdf")
-        if st.button("🔄 Sync Live Stock & Prices", use_container_width=True):
+        if st.button("🔄 Sync Live Stock & Prices", width="stretch"):
             if daily_pdf:
                 with st.spinner("Updating Live Stock & Pricing..."):
                     cnt = parse_store_stock_pdf(daily_pdf)
@@ -351,7 +351,7 @@ with tab_estimator:
                     with c_p1:
                         st.markdown(f"• **{pinfo['description']}** (`{pno}`) &nbsp;|&nbsp; <span class='dwp-price-tag' style='font-size:0.9rem;'>Rs. {pinfo['price']:,}</span> &nbsp;<span class='dwp-badge'>[{pinfo['board_type']}]</span>", unsafe_allow_html=True)
                     with c_p2:
-                        if st.button("❌ Remove", key=f"btn_rem_{pno}", use_container_width=True):
+                        if st.button("❌ Remove", key=f"btn_rem_{pno}", width="stretch"):
                             st.session_state["estimator_selected_parts"].pop(pno, None)
                             st.rerun()
 
@@ -670,7 +670,7 @@ with tab_estimator:
         if clean_ph:
             wa_intl = "92" + clean_ph.lstrip("0")
             wa_link = f"https://api.whatsapp.com/send?phone={wa_intl}&text={urllib.parse.quote(quote_text)}"
-            st.link_button(f"📲 Open WhatsApp Chat with {display_cust_name} ({clean_ph})", wa_link, use_container_width=True)
+            st.link_button(f"📲 Open WhatsApp Chat with {display_cust_name} ({clean_ph})", wa_link, width="stretch")
 
 # ==========================================
 # TAB 2: UNIT & CUSTOMER HISTORY
@@ -797,7 +797,7 @@ with tab_perf:
             pvt['Completion Rate (%)'] = ((pvt['Completed'] / pvt['Total Assigned']) * 100).round(1).astype(str) + '%'
             pvt.sort_values(by='Total Assigned', ascending=False, inplace=True)
 
-            st.dataframe(pvt, use_container_width=True)
+            st.dataframe(pvt, width="stretch")
 
 # ==========================================
 # SUPPORT BOX & CONTACT FOOTER
