@@ -7,7 +7,7 @@
 **Supported Brands:** Gree & EcoStar (HVAC, Refrigeration, Water Dispensers, Washing Machines, LED TVs)  
 **Database:** Local SQLite (`dwp_service.db`)  
 **Document Status:** Ground Truth Standard (Active & Authoritative)  
-**Version:** 2.0  
+**Version:** 2.1 (Performance & History Analytics Standard)  
 
 ---
 
@@ -19,8 +19,8 @@ The **DWP Field Assistant Engine** is an enterprise field operations, diagnostic
 - **Instant Quotation Generation:** Eliminates manual calculation errors, auto-calculates refrigerant gas rates based on equipment BTU capacity, and formats official WhatsApp quotations in seconds.
 - **Zero-Hallucination Spare Parts Compatibility:** Maps spare parts to appliance models strictly based on empirical closed field complaint history and verified parts catalogs.
 - **Real-Time ERP Stock Visibility:** Displays live stock levels at the Karachi-2 HA Store, technician in-hand stock, and enterprise warehouse totals.
-- **Searchable Service History:** Provides instant wildcard search across 13,965+ historical closed complaints spanning serial numbers, customer phone numbers, and complaint IDs.
-- **Technician KPI Tracking:** Evaluates technician completion efficiency, assigned jobs, cancellations, and nil calls over custom date ranges.
+- **Searchable Service History:** Provides instant wildcard search across 14,088+ historical closed complaints spanning serial numbers, customer phone numbers, and complaint IDs with dedicated status indicators (`🟢 Completed`, `🔴 Rejected/Canceled`).
+- **Technician KPI Tracking:** Evaluates technician completion efficiency, assigned jobs, completed calls, cancellations, and nil calls over dynamic monthly periods or custom date ranges with sequential ranking (`Sr. No`).
 
 ---
 
@@ -55,7 +55,8 @@ The **DWP Field Assistant Engine** is an enterprise field operations, diagnostic
                     ┌────────────────────────▼────────────────────────┐
                     │      ETL & Ingestion Engine (etl.py)            │
                     │   - Store Stock PDF Parser (vp786)              │
-                    │   - Quality Feedback Syncer (CSV/Excel)         │
+                    │   - Unified Complaint & KPI Pipeline            │
+                    │   - Stream-Safe Buffer & Ingestion Engine       │
                     └─────────────────────────────────────────────────┘
 ```
 
@@ -83,17 +84,31 @@ The **DWP Field Assistant Engine** is an enterprise field operations, diagnostic
    - Direct interactive WhatsApp button (`https://api.whatsapp.com/send?phone=...`).
 
 ### Module 2: 🔍 Unit & Customer History Archive
-- Wildcard search across `serial`, `phone`, and `complaint_no`.
-- Displays complaint status, assigned technician, complaint date, closed date, closing remarks, and net collection amount.
+- Wildcard search across `serial`, `phone`, `complaint_no`, and `customer_name`.
+- Dual-source lookup (`history_master` UNION ALL `tech_performance_master`) ensuring 100% visibility for completed, canceled, and rejected service tickets.
+- Clear status badges:
+  - `🟢 Completed` (green badge)
+  - `🔴 Rejected/Canceled` (red badge)
+- Formatted clean complaint numbers without Excel prefix artifacts (`="`).
+- Displays technician name, purchase date, complaint date, closed date, closing remarks, and collected revenue amount.
 
 ### Module 3: 📊 Technician Performance KPI Hub
-- Date-range filterable evaluation.
-- Metrics: Total Assigned Jobs, Completed Complaints, Canceled/Nil Calls, Zone Completion Efficiency %.
-- Personal technician scorecards and pivot table.
+- Top KPI Summary Cards:
+  - `Total Assigned Jobs`
+  - `Completed Complaints`
+  - `Rejected Calls`
+  - `Canceled Calls`
+  - `Zone Completion Efficiency %`
+- Sequential Ranking: Table begins with `Sr. No` (1, 2, 3...) sorted automatically by Completed complaints volume descending.
+- Dynamic Evaluation Period:
+  - Dropdown populated dynamically with available historical calendar months (e.g., `🗓️ January 2026`, `🗓️ September 2026`, etc.).
+  - `📅 Custom Date Range...` option with dual calendar pickers for arbitrary period analysis.
+- Non-destructive SQLite persistence: Preserves all historical months without wiping prior data.
 
 ### Sidebar Data Ingestion & Tools
+- Unified Service & Performance Sync (`sync_all_complaints_pipeline`): Ingests Quality Feedback, Cancel/Nil/Transfer, and Detail Collection reports simultaneously.
+- Stream-Safe Buffer Architecture: Auto-rewinds file pointers (`seek(0)`) to prevent `EmptyDataError` during multiple upload passes.
 - Daily Store Stock PDF Sync (`parse_store_stock_pdf`).
-- Daily Closed Complaints Append (`sync_model_part_catalog_from_feedback`).
 - Download Pending ERP Prices CSV (`get_missing_price_parts_df`).
 
 ---
@@ -174,6 +189,14 @@ CREATE TABLE IF NOT EXISTS tech_performance_master (
     status TEXT,
     closed_date TEXT
 );
+
+-- 6. High-Performance B-Tree Indexes
+CREATE INDEX IF NOT EXISTS idx_history_complaint_no ON history_master (complaint_no);
+CREATE INDEX IF NOT EXISTS idx_history_phone ON history_master (phone);
+CREATE INDEX IF NOT EXISTS idx_history_serial ON history_master (serial);
+CREATE INDEX IF NOT EXISTS idx_history_closed_date ON history_master (closed_date);
+CREATE INDEX IF NOT EXISTS idx_tech_perf_tech ON tech_performance_master (technician_name);
+CREATE INDEX IF NOT EXISTS idx_tech_perf_date ON tech_performance_master (closed_date);
 ```
 
 ---
@@ -219,6 +242,8 @@ Strict pairing rules apply based on empirical field installations:
 | **4** | **Paired Horizontal PDF Layout Spans** | 50-page stock movement report spans odd/even page pairs (Odd: items & techs 1-10; Even: techs 11-19 & total stock). | • Dual-page synchronized extraction using `pdfplumber` joining paired rows. |
 | **5** | **Finished Goods Set Interference** | Complete B-grade finished units (e.g. `Bgrade Set GW-JL500F`) present in store movement report. | • Regex scrubbing in ETL (`b[- ]?grade\s+set`) to scrub non-spare-parts items. |
 | **6** | **Single-Model ERP Description Fallacy** | Stock movement report lists only 1 default model string per row (e.g., valve `7130239` under `GS-24ECH10`). | • Model-part compatibility derived strictly from historical field complaints and `parts_master`, enabling true multi-model mapping (142 models for valve `7130239`). |
+| **7** | **Multi-Pass Stream Buffer Exhaustion (`EmptyDataError`)** | In multi-file pipelines, Streamlit `UploadedFile` pointers hit EOF on the first read, causing subsequent readers to crash with `EmptyDataError`. | • Universal stream rewinding (`seek(0)`) implemented in `safe_read()`.<br>• `sync_all_complaints_pipeline()` pre-parses inputs into in-memory DataFrames once for 3x speed and zero stream collision. |
+| **8** | **Destructive Historical Performance Wiping** | Previous ETL pipelines used destructive `DELETE FROM tech_performance_master`, wiping prior months when uploading current month records. | • Switched to non-destructive `INSERT OR REPLACE` keyed by `complaint_no`.<br>• Preserves 14,088+ multi-month baseline complaints across all past evaluation periods. |
 
 ---
 
@@ -321,8 +346,21 @@ To ensure that any AI coding assistant or developer working on this repository o
 
 ## 7. Verification & Compliance Sign-Off
 
-- **Ground Truth Baseline:** Fully reconciled against 13,965 closed service tickets and 50 PDF stock movement pages.
-- **Automated Regression Suite:** All 8 unit tests in `tests/test_estimator_suite.py` must pass cleanly before any code commit.
+- **Ground Truth Baseline:** Fully reconciled against 14,088+ historical service complaints and 50 PDF stock movement pages across 21 months.
+- **Automated Regression Suite:** All 13 unit tests in `tests/test_estimator_suite.py` must pass cleanly before any code commit:
+  - Test 01: Capacity-aware gas charge calculation
+  - Test 02: Database schema and distinct models retrieval
+  - Test 03: Parts retrieval and stock quantity normalization
+  - Test 04: Cross-model compatibility
+  - Test 05: Manual price override persistence
+  - Test 06: Missing ERP price export
+  - Test 07: Refrigerant valve tonnage constraints
+  - Test 08: Stock movement PDF parser validation
+  - Test 09: Sequential ranking (`Sr. No`) by completed complaints volume
+  - Test 10: Multi-source search query with status badges (`🟢 Completed`, `🔴 Rejected/Canceled`)
+  - Test 11: Date indexing on `closed_date` for high-speed date range queries
+  - Test 12: Dynamic month-filtering (e.g., January 2026, September 2026) without baseline wipe
+  - Test 13: Stream-safe unified ingestion pipeline (`sync_all_complaints_pipeline`)
 - **User Interface Standards:** Streamlit UI must adhere to `dwp-ui-design-system` (#FFFFFF & #000000 palette, seamless Light & Dark Mode contrast, 4-step progressive disclosure, and one-click WhatsApp quote formatting).
 
 

@@ -3,21 +3,57 @@ import re
 from database import get_connection, init_estimator_schema
 
 def safe_read(file_obj):
+    if file_obj is None:
+        return pd.DataFrame()
+    if isinstance(file_obj, pd.DataFrame):
+        return file_obj.copy()
     if isinstance(file_obj, str):
         if file_obj.lower().endswith('.csv'):
-            return pd.read_csv(file_obj, dtype=str)
+            try:
+                return pd.read_csv(file_obj, dtype=str)
+            except UnicodeDecodeError:
+                return pd.read_csv(file_obj, dtype=str, encoding='latin1')
         return pd.read_excel(file_obj, dtype=str)
     
+    # File-like object (e.g. Streamlit UploadedFile, BytesIO)
+    if hasattr(file_obj, 'seek'):
+        file_obj.seek(0)
+    
     fname = getattr(file_obj, 'name', '').lower()
+    df = None
     if fname.endswith('.csv'):
-        return pd.read_csv(file_obj, dtype=str)
-    else:
         try:
-            return pd.read_excel(file_obj, dtype=str)
+            df = pd.read_csv(file_obj, dtype=str)
+        except UnicodeDecodeError:
+            if hasattr(file_obj, 'seek'):
+                file_obj.seek(0)
+            df = pd.read_csv(file_obj, dtype=str, encoding='latin1')
         except Exception:
             if hasattr(file_obj, 'seek'):
                 file_obj.seek(0)
-            return pd.read_csv(file_obj, dtype=str)
+            try:
+                df = pd.read_excel(file_obj, dtype=str)
+            except Exception:
+                df = pd.DataFrame()
+    else:
+        try:
+            df = pd.read_excel(file_obj, dtype=str)
+        except Exception:
+            if hasattr(file_obj, 'seek'):
+                file_obj.seek(0)
+            try:
+                df = pd.read_csv(file_obj, dtype=str)
+            except UnicodeDecodeError:
+                if hasattr(file_obj, 'seek'):
+                    file_obj.seek(0)
+                df = pd.read_csv(file_obj, dtype=str, encoding='latin1')
+            except Exception:
+                df = pd.DataFrame()
+
+    if hasattr(file_obj, 'seek'):
+        file_obj.seek(0)
+
+    return df if df is not None else pd.DataFrame()
 
 def standardize_columns(df):
     df.columns = (
@@ -168,7 +204,7 @@ def ingest_performance_pipeline(fb_source, cancel_source=None):
     clean_dates = master_perf['closed_date'].astype(str).str.replace('Sept', 'Sep', regex=False)
     parsed = pd.to_datetime(clean_dates, format='mixed', errors='coerce').dt.strftime('%Y-%m-%d')
     today_str = pd.Timestamp.now().strftime('%Y-%m-%d')
-    parsed_dates = parsed.fillna(clean_dates).replace('', today_str).replace('nan', today_str)
+    parsed_dates = parsed.fillna(today_str).replace('', today_str).replace('nan', today_str)
 
     perf_records = pd.DataFrame({
         'complaint_no': master_perf['complaint_no'],
@@ -179,10 +215,26 @@ def ingest_performance_pipeline(fb_source, cancel_source=None):
 
     with get_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM tech_performance_master")
         cursor.executemany("INSERT OR REPLACE INTO tech_performance_master (complaint_no, technician_name, status, closed_date) VALUES (?, ?, ?, ?)", perf_records)
         conn.commit()
     return len(perf_records)
+
+def sync_all_complaints_pipeline(fb_source, cancel_source=None, coll_source=None):
+    """
+    Unified ingestion pipeline (Option A):
+    1. Ingests feedback + collection into history_master
+    2. Ingests feedback + cancel into tech_performance_master (non-destructive)
+    3. Incrementally updates model_part_catalog from feedback
+    Returns (perf_count, m_cnt, p_cnt)
+    """
+    fb_df = safe_read(fb_source)
+    cancel_df = safe_read(cancel_source) if cancel_source is not None else None
+    coll_df = safe_read(coll_source) if coll_source is not None else None
+
+    ingest_feedback_and_pricing(fb_df, coll_df)
+    perf_count = ingest_performance_pipeline(fb_df, cancel_df)
+    m_cnt, p_cnt, _ = sync_model_part_catalog_from_feedback(fb_df, is_incremental=True)
+    return perf_count, m_cnt, p_cnt
 
 # ============================================================================
 # ESTIMATOR PIPELINES: STORE STOCK PDF & QUALITY FEEDBACK CATALOG
@@ -221,6 +273,8 @@ def parse_store_stock_pdf(pdf_source=None) -> int:
     parsed_records = []
     seen_parts = set()
     
+    if hasattr(pdf_source, 'seek'):
+        pdf_source.seek(0)
     with pdfplumber.open(pdf_source) as pdf:
         num_pages = len(pdf.pages)
         for pair_idx in range(0, num_pages, 2):
@@ -324,10 +378,7 @@ def sync_model_part_catalog_from_feedback(fb_source=None, is_incremental: bool =
     if fb_source is None:
         fb_source = getattr(config, 'DEFAULT_FB_FILE', 'quality_feedback_report_28SEP2026_142900.csv')
     
-    if isinstance(fb_source, str):
-        df = pd.read_csv(fb_source, dtype=str)
-    else:
-        df = safe_read(fb_source)
+    df = safe_read(fb_source)
     
     # Standardize column lookup
     col_map = {str(c).strip().upper(): c for c in df.columns}

@@ -11,7 +11,7 @@ if APP_ROOT not in sys.path:
 
 import re
 import urllib.parse
-from datetime import datetime
+from datetime import datetime, date
 import pandas as pd
 import streamlit as st
 
@@ -28,7 +28,8 @@ from database import (
 import etl
 from etl import (
     normalize_phone, ingest_performance_pipeline, ingest_feedback_and_pricing,
-    parse_store_stock_pdf, sync_model_part_catalog_from_feedback
+    parse_store_stock_pdf, sync_model_part_catalog_from_feedback,
+    sync_all_complaints_pipeline
 )
 
 import config
@@ -133,6 +134,30 @@ st.markdown("""
         border: 1px solid var(--dwp-border) !important;
     }
 
+    .status-badge-completed {
+        background-color: rgba(34, 197, 94, 0.15) !important;
+        color: #16a34a !important;
+        border: 1px solid #16a34a !important;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        display: inline-block;
+        margin-right: 4px;
+    }
+
+    .status-badge-rejected {
+        background-color: rgba(239, 68, 68, 0.15) !important;
+        color: #dc2626 !important;
+        border: 1px solid #dc2626 !important;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        display: inline-block;
+        margin-right: 4px;
+    }
+
     .dwp-bill-table {
         width: 100%;
         font-size: 0.88rem;
@@ -188,36 +213,36 @@ st.markdown('<div class="sub-title">Field Diagnostic, Cost & Live Stock Estimato
 # ==========================================
 with st.sidebar:
     st.markdown("---")
-    st.markdown("### 📊 Module 3: Performance Sync")
-    st.caption("Dono files upload karein aur button dabayein.")
-    p_fb = st.file_uploader("Quality Feedback Report", type=["csv", "xlsx", "xls"], key="p_fb")
-    p_can = st.file_uploader("Cancel / Nil / Transfer Report", type=["xlsx", "xls"], key="p_can")
+    st.markdown("### 📥 Daily Service & Performance Sync")
+    st.caption("Upload complaints to update Master History, Technician KPI, and Parts Catalog simultaneously.")
+    sync_fb = st.file_uploader("1. Quality Feedback Report (Completed)", type=["csv", "xlsx", "xls"], key="sync_fb")
+    sync_can = st.file_uploader("2. Cancel / Nil / Transfer Report (Optional)", type=["xlsx", "xls"], key="sync_can")
+    sync_coll = st.file_uploader("3. Collection Pricing File (Optional)", type=["xlsx", "xls"], key="sync_coll")
 
-    if st.button("📊 Update Technician Performance", width="stretch"):
-        if p_fb and p_can:
-            with st.spinner("Processing Performance KPI..."):
-                cnt = ingest_performance_pipeline(p_fb, p_can)
+    if st.button("🔄 Sync All Complaints & Performance", width="stretch"):
+        if sync_fb:
+            with st.spinner("Syncing Master History, KPI & Catalog..."):
+                perf_cnt, m_cnt, p_cnt = sync_all_complaints_pipeline(sync_fb, sync_can, sync_coll)
                 st.cache_data.clear()
-                if cnt > 0:
-                    st.success(f"Performance successfully updated! ({cnt:,} records processed)")
-                    st.rerun()
-                else:
-                    st.error("No valid performance records found in uploaded files. Please check file columns.")
+                st.success(f"Synced successfully! {perf_cnt:,} KPI records, {m_cnt} models, {p_cnt} parts updated.")
+                st.rerun()
         else:
-            st.error("Dono files lazmi upload karein!")
+            st.error("Quality Feedback Report lazmi upload karein!")
 
     st.markdown("---")
-    st.markdown("### 🧮 Module 1 & 2: Archive Append")
-    st.caption("Optional: Nayi closed complaints ko History mein add karne ke liye.")
-    u_fb = st.file_uploader("Feedback File", type=["csv", "xlsx", "xls"], key="u_fb")
-    u_coll = st.file_uploader("Collection Pricing File", type=["xlsx", "xls"], key="u_coll")
-
-    if st.button("➕ Append to Master History", width="stretch"):
-        if u_fb:
-            with st.spinner("Appending records..."):
-                ingest_feedback_and_pricing(u_fb, u_coll)
+    st.markdown("### 📦 Store Stock & Retail Pricing Sync")
+    st.caption("Store Wise Stock Movement PDF upload karein taky Karachi-2 Store live inventory aur retail prices update hon.")
+    sync_pdf = st.file_uploader("Latest Stock Movement PDF", type=["pdf"], key="sync_pdf")
+    if st.button("🔄 Sync Live Stock & Prices", width="stretch"):
+        if sync_pdf:
+            with st.spinner("Updating Live Stock & Prices..."):
+                cnt = parse_store_stock_pdf(sync_pdf)
                 st.cache_data.clear()
-                st.success("History updated safely without overwriting!")
+                st.success(f"Stock & prices updated for {cnt:,} items!")
+                st.rerun()
+        else:
+            st.error("Stock Movement PDF upload karein!")
+
     st.markdown("---")
     st.markdown("### 📋 Estimator & Pricing Tools")
     try:
@@ -233,37 +258,6 @@ with st.sidebar:
             )
     except Exception:
         pass
-
-    with st.expander("📥 Daily Data Ingestion & Live Updates"):
-        st.caption("Daily ERP stock movement PDF ya daily closed complaints add karein. 1-saal ka baseline data mehfooz rahy ga aur naye records judty rahengy.")
-        
-        st.markdown("###### ➕ Append Daily Closed Complaints")
-        st.caption("Nayi closed complaints upload karein. Existing models/parts mein installation counts add hojayenge aur naye models catalog mein shamil hojayenge.")
-        daily_fb = st.file_uploader("Daily Closed Complaints", type=["csv", "xlsx", "xls"], key="daily_fb")
-        daily_coll = st.file_uploader("Daily Collection File (Optional)", type=["xlsx", "xls"], key="daily_coll")
-        if st.button("➕ Merge Daily Complaints into Engine", width="stretch"):
-            if daily_fb:
-                with st.spinner("Merging into Master History & Catalog..."):
-                    ingest_feedback_and_pricing(daily_fb, daily_coll)
-                    m_cnt, p_cnt, ev_cnt = sync_model_part_catalog_from_feedback(daily_fb, is_incremental=True)
-                    st.cache_data.clear()
-                    st.success(f"Successfully merged! {m_cnt} models, {p_cnt} parts updated.")
-                    st.rerun()
-            else:
-                st.error("Closed complaints file upload karein!")
-
-        st.markdown("---")
-        st.markdown("###### 🔄 Update Daily ERP Stock & Prices")
-        st.caption("Rozana ka naya Store Wise Stock Movement PDF upload karein taky Karachi-2 Store ki live availability aur retail prices update hojayen.")
-        daily_pdf = st.file_uploader("Latest Stock Movement PDF", type=["pdf"], key="daily_pdf")
-        if st.button("🔄 Sync Live Stock & Prices", width="stretch"):
-            if daily_pdf:
-                with st.spinner("Updating Live Stock & Pricing..."):
-                    cnt = parse_store_stock_pdf(daily_pdf)
-                    st.success(f"Stock & prices updated for {cnt} items!")
-                    st.rerun()
-            else:
-                st.error("Stock Movement PDF upload karein!")
 
 tab_estimator, tab_history, tab_perf = st.tabs([
     "🧮 Spare Parts & Cost Estimator",
@@ -687,13 +681,15 @@ with tab_history:
         match_df = search_history_records(q_raw, q_phone)
 
         if match_df.empty:
-            st.warning(f"`{query}` ke against koi closed complaint nahi mili.")
+            st.warning(f"`{query}` ke against koi record nahi mila.")
         else:
-            st.info(f"`{query}` ke **{len(match_df)}** closed service record(s) milay hain:")
+            st.info(f"`{query}` ke **{len(match_df)}** service record(s) milay hain:")
             for _, r in match_df.iterrows():
-                c_no = r['complaint_no']
+                raw_c_no = str(r['complaint_no'])
+                c_no = raw_c_no.replace('="', '').replace('"', '').strip()
+                raw_serial = str(r['serial'])
+                serial = raw_serial.replace('="', '').replace('"', '').strip()
                 model = r['model']
-                serial = r['serial']
                 cust_name = r['customer_name']
                 phone = r['phone']
                 tech = r['technician_name']
@@ -701,8 +697,14 @@ with tab_history:
                 p_date = r['purchase_date']
                 c_date = r['complaint_date']
                 closed_date = r['closed_date']
-                remarks = r['remarks'] if r['remarks'] else "No closing remarks logged."
+                remarks = r['remarks'] if r['remarks'] else "No remarks logged."
                 closed_amt = int(r.get('closed_amount', 0))
+                status = str(r.get('status', 'COMPLETED')).upper().strip()
+
+                if status == 'COMPLETED':
+                    status_badge = '<span class="status-badge-completed">🟢 Completed</span>'
+                else:
+                    status_badge = f'<span class="status-badge-rejected">🔴 {status.title()}</span>'
 
                 amt_display = f"Rs. {closed_amt:,}" if closed_amt > 0 else ("Free Under Warranty" if "warranty" in c_type.lower() else "Rs. 0 (Nil Collection)")
                 badge_class = "badge-cash" if "cash" in c_type.lower() else ("badge-partial" if "partial" in c_type.lower() else "badge-warranty")
@@ -712,6 +714,7 @@ with tab_history:
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                         <span style="font-weight: 700; color: var(--text-color); font-size: 1rem;">Complaint #{c_no}</span>
                         <div>
+                            {status_badge}
                             <span class="badge-amount">{amt_display}</span>
                             <span class="{badge_class}">{c_type}</span>
                         </div>
@@ -732,54 +735,113 @@ with tab_history:
 # TAB 3: TECHNICIAN PERFORMANCE
 # ==========================================
 with tab_perf:
-    perf_data = fetch_performance_data()
+    @st.cache_data
+    def get_cached_performance_data():
+        return fetch_performance_data()
+
+    perf_data = get_cached_performance_data().copy()
     if perf_data.empty:
         st.info("ℹ️ **Technician Performance Report Abhi Load Nahi Hai.**\n\nSidebar mein **Module 3: Performance Sync** ke andar dono files upload karke **Update Technician Performance** dabayein.")
     else:
         perf_data['parsed_date'] = pd.to_datetime(perf_data['closed_date'], errors='coerce')
         valid_dates = perf_data['parsed_date'].dropna()
-
-        st.markdown("##### 📅 Select Date Range for KPI Evaluation")
-        col_d1, col_d2 = st.columns(2)
-        min_avail = valid_dates.min().date() if not valid_dates.empty else datetime.now().date()
+        min_avail = valid_dates.min().date() if not valid_dates.empty else date(2025, 1, 1)
         max_avail = valid_dates.max().date() if not valid_dates.empty else datetime.now().date()
-        default_start = max(min_avail, max_avail.replace(day=1)) if max_avail else min_avail
 
-        with col_d1:
-            start_date = st.date_input("From Date:", value=default_start, min_value=min_avail, max_value=max_avail)
-        with col_d2:
-            end_date = st.date_input("To Date:", value=max_avail, min_value=min_avail, max_value=max_avail)
+        st.markdown("##### 📅 Select Period for KPI Evaluation")
+        
+        import calendar
 
-        mask = (perf_data['parsed_date'].dt.date >= start_date) & (perf_data['parsed_date'].dt.date <= end_date)
+        # Build list of available months dynamically from perf_data['closed_date']
+        perf_data['month_period'] = perf_data['closed_date'].astype(str).str.slice(0, 7)
+        available_months = sorted([m for m in perf_data['month_period'].dropna().unique() if len(m) == 7 and m.startswith('20')], reverse=True)
+        
+        month_labels = {}
+        for m_str in available_months:
+            try:
+                dt_m = datetime.strptime(m_str, '%Y-%m')
+                month_labels[m_str] = dt_m.strftime('%B %Y')
+            except Exception:
+                month_labels[m_str] = m_str
+
+        period_options = [f"🗓️ {month_labels[m]}" for m in available_months]
+        period_options += ["🌐 Full Year Baseline (All Time)", "⚙️ Custom Date Range..."]
+        
+        sel_period = st.selectbox(
+            "Evaluation Period:",
+            options=period_options,
+            index=0 if period_options else None,
+            key="sel_kpi_period"
+        )
+
+        min_calendar = min(date(2025, 1, 1), min_avail) if min_avail else date(2025, 1, 1)
+        max_calendar = max(max_avail, datetime.now().date()) if max_avail else datetime.now().date()
+
+        if "Custom Date Range" in str(sel_period):
+            col_d1, col_d2 = st.columns(2)
+            default_start = max(min_calendar, max_avail.replace(day=1)) if max_avail else min_calendar
+            with col_d1:
+                start_date = st.date_input("From Date:", value=default_start, min_value=min_calendar, max_value=max_calendar, key="kpi_fdate")
+            with col_d2:
+                end_date = st.date_input("To Date:", value=max_calendar, min_value=min_calendar, max_value=max_calendar, key="kpi_tdate")
+            start_str = start_date.strftime('%Y-%m-%d')
+            end_str = end_date.strftime('%Y-%m-%d')
+            period_label = f"{start_date.strftime('%d-%b-%Y')} se {end_date.strftime('%d-%b-%Y')} tak"
+        elif "Full Year Baseline" in str(sel_period):
+            start_str = "2025-01-01"
+            end_str = "2099-12-31"
+            period_label = "Full Year Baseline (All Recorded History)"
+        else:
+            chosen_m = None
+            for m_key, m_lab in month_labels.items():
+                if m_lab in str(sel_period):
+                    chosen_m = m_key
+                    break
+            if not chosen_m and available_months:
+                chosen_m = available_months[0]
+            if not chosen_m:
+                chosen_m = datetime.now().strftime('%Y-%m')
+
+            dt_start = datetime.strptime(chosen_m, '%Y-%m')
+            _, last_day = calendar.monthrange(dt_start.year, dt_start.month)
+            dt_end = dt_start.replace(day=last_day)
+            start_str = dt_start.strftime('%Y-%m-%d')
+            end_str = dt_end.strftime('%Y-%m-%d')
+            period_label = f"{dt_start.strftime('%B %Y')} (01-{dt_start.strftime('%b')} to {last_day:02d}-{dt_start.strftime('%b-%Y')})"
+
+        mask = (perf_data['closed_date'] >= start_str) & (perf_data['closed_date'] <= end_str)
         scoped_data = perf_data[mask].copy()
 
         if scoped_data.empty:
-            st.warning(f"{start_date.strftime('%d-%b-%Y')} se {end_date.strftime('%d-%b-%Y')} ke darmiyan koi complaints nahi mili.")
+            st.warning(f"{period_label} ke darmiyan koi complaints nahi mili.")
         else:
             tot_assigned = len(scoped_data)
             tot_completed = int((scoped_data['status'] == 'COMPLETED').sum())
+            tot_rejected = int((scoped_data['status'] == 'REJECTED').sum())
+            tot_canceled = int((scoped_data['status'].isin(['CANCELED', 'NIL'])).sum())
             efficiency = (tot_completed / max(tot_assigned, 1)) * 100
 
             st.markdown(f"""
             <div class="scope-box">
-                📅 <b>Selected Scope:</b> {start_date.strftime('%d-%b-%Y')} se {end_date.strftime('%d-%b-%Y')} tak &nbsp;|&nbsp; <b>Note:</b> Transferred calls excluded from KPI
+                📅 <b>Selected Scope:</b> {period_label} &nbsp;|&nbsp; <b>Note:</b> Transferred calls excluded from KPI
             </div>
             """, unsafe_allow_html=True)
 
-            k1, k2, k3 = st.columns(3)
-            k1.metric("Assigned Complaints", f"{tot_assigned:,}")
-            k2.metric("Completed Complaints", f"{tot_completed:,}")
-            k3.metric("Zone Efficiency", f"{efficiency:.1f}%")
+            k1, k2, k3, k4, k5 = st.columns(5)
+            k1.metric("Total Assigned", f"{tot_assigned:,}")
+            k2.metric("Completed", f"{tot_completed:,}")
+            k3.metric("Rejected", f"{tot_rejected:,}")
+            k4.metric("Canceled", f"{tot_canceled:,}")
+            k5.metric("Zone Efficiency", f"{efficiency:.1f}%")
 
             st.divider()
 
             all_techs = ["-- All Technicians (Branch View) --"] + sorted([t for t in scoped_data['technician_name'].dropna().unique() if t.strip()])
             selected_tech = st.selectbox("👤 Select Technician (Personal Score):", options=all_techs)
 
-            filtered_df = scoped_data[scoped_data['technician_name'] == selected_tech] if selected_tech != "-- All Technicians (Branch View) --" else scoped_data
-
-            pvt = pd.pivot_table(
-                filtered_df,
+            # Build summary table across all technicians in scope to establish overall rankings
+            all_pvt = pd.pivot_table(
+                scoped_data,
                 index='technician_name',
                 columns='status',
                 values='complaint_no',
@@ -787,17 +849,40 @@ with tab_perf:
                 fill_value=0
             )
 
-            for s in ['COMPLETED', 'CANCELED', 'REJECTED', 'NIL']:
-                if s not in pvt.columns:
-                    pvt[s] = 0
+            for s in ['COMPLETED', 'REJECTED', 'CANCELED', 'NIL']:
+                if s not in all_pvt.columns:
+                    all_pvt[s] = 0
 
-            pvt = pvt[['COMPLETED', 'CANCELED', 'REJECTED', 'NIL']]
-            pvt.rename(columns={'COMPLETED': 'Completed', 'CANCELED': 'Canceled', 'REJECTED': 'Rejected', 'NIL': 'Nil'}, inplace=True)
-            pvt['Total Assigned'] = pvt.sum(axis=1)
-            pvt['Completion Rate (%)'] = ((pvt['Completed'] / pvt['Total Assigned']) * 100).round(1).astype(str) + '%'
-            pvt.sort_values(by='Total Assigned', ascending=False, inplace=True)
+            completed_series = all_pvt['COMPLETED']
+            rejected_series = all_pvt['REJECTED']
+            canceled_series = all_pvt['CANCELED'] + all_pvt['NIL']
+            assigned_series = all_pvt.sum(axis=1)
 
-            st.dataframe(pvt, width="stretch")
+            summary_df = pd.DataFrame({
+                'Technician': all_pvt.index,
+                'Assigned': assigned_series.values,
+                'Completed': completed_series.values,
+                'Rejected': rejected_series.values,
+                'Canceled': canceled_series.values,
+            })
+
+            summary_df['Completion Rate (%)'] = (
+                (summary_df['Completed'] / summary_df['Assigned'].replace(0, 1)) * 100
+            ).round(1).astype(str) + '%'
+
+            # Sort strictly based on completed volume descending, then assigned volume descending
+            summary_df.sort_values(by=['Completed', 'Assigned'], ascending=[False, False], inplace=True)
+            summary_df.reset_index(drop=True, inplace=True)
+
+            # Add sequential ranking column starting from 1
+            summary_df.insert(0, 'Sr. No', range(1, len(summary_df) + 1))
+
+            if selected_tech != "-- All Technicians (Branch View) --":
+                display_df = summary_df[summary_df['Technician'] == selected_tech].copy()
+            else:
+                display_df = summary_df.copy()
+
+            st.dataframe(display_df, hide_index=True, width="stretch")
 
 # ==========================================
 # SUPPORT BOX & CONTACT FOOTER

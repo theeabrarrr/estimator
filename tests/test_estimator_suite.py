@@ -121,5 +121,114 @@ class TestEstimatorSuite(unittest.TestCase):
             # Must include QD36LW or QD36LWL
             self.assertTrue('QD36LW' in p_nos or 'QD36LWL' in p_nos, f"Expected QD36 compressor in {m}")
 
+    def test_09_performance_table_ranking_and_breakdowns(self):
+        """Verify technician performance ranking 'Sr. No' starting from 1 by completed volume and breakdown columns."""
+        perf_data = database.fetch_performance_data()
+        self.assertFalse(perf_data.empty, "Performance data should not be empty")
+
+        pvt = pd.pivot_table(
+            perf_data,
+            index='technician_name',
+            columns='status',
+            values='complaint_no',
+            aggfunc='count',
+            fill_value=0
+        )
+        for s in ['COMPLETED', 'REJECTED', 'CANCELED', 'NIL']:
+            if s not in pvt.columns:
+                pvt[s] = 0
+
+        summary_df = pd.DataFrame({
+            'Technician': pvt.index,
+            'Assigned': pvt.sum(axis=1).values,
+            'Completed': pvt['COMPLETED'].values,
+            'Rejected': pvt['REJECTED'].values,
+            'Canceled': (pvt['CANCELED'] + pvt['NIL']).values,
+        })
+        summary_df['Completion Rate (%)'] = (
+            (summary_df['Completed'] / summary_df['Assigned'].replace(0, 1)) * 100
+        ).round(1).astype(str) + '%'
+
+        summary_df.sort_values(by=['Completed', 'Assigned'], ascending=[False, False], inplace=True)
+        summary_df.reset_index(drop=True, inplace=True)
+        summary_df.insert(0, 'Sr. No', range(1, len(summary_df) + 1))
+
+        # Assert 'Sr. No' starts at 1 and is strictly sequential
+        self.assertEqual(summary_df.iloc[0]['Sr. No'], 1)
+        self.assertEqual(summary_df['Sr. No'].tolist(), list(range(1, len(summary_df) + 1)))
+
+        # Assert sorted descending by Completed volume
+        completed_list = summary_df['Completed'].tolist()
+        self.assertEqual(completed_list, sorted(completed_list, reverse=True))
+
+        # Assert all required breakdown columns are present
+        for col in ['Sr. No', 'Technician', 'Assigned', 'Completed', 'Rejected', 'Canceled']:
+            self.assertIn(col, summary_df.columns)
+
+    def test_10_search_history_includes_canceled_and_status(self):
+        """Verify search query includes rejected/canceled records with status attribute."""
+        # 1. Search for a rejected ticket from tech_performance_master
+        rejected_res = database.search_history_records("282634581", "")
+        self.assertFalse(rejected_res.empty, "Should find rejected ticket 282634581")
+        self.assertIn('status', rejected_res.columns)
+        self.assertEqual(rejected_res.iloc[0]['status'], 'REJECTED')
+
+        # 2. Search for a completed ticket from history_master
+        comp_sample = "152503767"
+        completed_res = database.search_history_records(comp_sample, "")
+        self.assertFalse(completed_res.empty, "Should find completed ticket")
+        self.assertIn('status', completed_res.columns)
+        self.assertEqual(completed_res.iloc[0]['status'], 'COMPLETED')
+
+    def test_11_performance_date_indexing_and_speed(self):
+        """Verify indexes on closed_date and date-range filtered performance query speed."""
+        with database.get_connection() as conn:
+            c = conn.cursor()
+            tech_indexes = [r[1] for r in c.execute("PRAGMA index_list(tech_performance_master)").fetchall()]
+            hist_indexes = [r[1] for r in c.execute("PRAGMA index_list(history_master)").fetchall()]
+            self.assertIn("idx_tech_perf_date", tech_indexes)
+            self.assertIn("idx_history_closed_date", hist_indexes)
+
+        # Date range filtered query works smoothly
+        range_data = database.fetch_performance_data("2026-10-01", "2026-10-02")
+        self.assertIsInstance(range_data, pd.DataFrame)
+        self.assertTrue((range_data['closed_date'] >= "2026-10-01").all())
+        self.assertTrue((range_data['closed_date'] <= "2026-10-02").all())
+
+    def test_12_month_filtering_and_baseline_presence(self):
+        """Verify January 2026 data exists in tech_performance_master and filters accurately."""
+        perf_data = database.fetch_performance_data()
+        self.assertFalse(perf_data.empty)
+        
+        # Test January 2026 filter
+        jan_mask = (perf_data['closed_date'] >= '2026-01-01') & (perf_data['closed_date'] <= '2026-01-31')
+        jan_records = perf_data[jan_mask]
+        self.assertGreater(len(jan_records), 100, "Expected >100 complaints in January 2026")
+        self.assertTrue((jan_records['closed_date'].str.startswith('2026-01')).all())
+
+        # Test September 2026 filter
+        sep_mask = (perf_data['closed_date'] >= '2026-09-01') & (perf_data['closed_date'] <= '2026-09-30')
+        sep_records = perf_data[sep_mask]
+        self.assertGreater(len(sep_records), 500, "Expected >500 complaints in September 2026")
+
+    def test_13_unified_ingestion_pipeline(self):
+        """Verify sync_all_complaints_pipeline function handles uploaded file streams without EmptyDataError."""
+        import io
+        self.assertTrue(hasattr(etl, 'sync_all_complaints_pipeline'))
+        fb_csv = """COMPLAINT_NO,MODEL_NAME,HARDWARE_PART_NOS,HARDWARE_PRODUCTS,HARDWARE_BOARD_TYPES,COMPLETED_STATUS,CLOSED_DATE,PHONE,CUSTOMER_NAME,TECHNICIAN_NAME
+TEST-SUITE-001,GS-18PITH11W,11001060868,Evaporator,Evaporator Assy,COMPLETED,2026-01-15,03001234567,John Doe,Ameer Hamza
+"""
+        fb_stream = io.BytesIO(fb_csv.encode('utf-8'))
+        fb_stream.name = "feedback.csv"
+        perf_cnt, m_cnt, p_cnt = etl.sync_all_complaints_pipeline(fb_stream)
+        self.assertGreaterEqual(perf_cnt, 1)
+
+        # Cleanup
+        with database.get_connection() as conn:
+            c = conn.cursor()
+            c.execute("DELETE FROM history_master WHERE complaint_no = 'TEST-SUITE-001'")
+            c.execute("DELETE FROM tech_performance_master WHERE complaint_no = 'TEST-SUITE-001'")
+            conn.commit()
+
 if __name__ == "__main__":
     unittest.main()

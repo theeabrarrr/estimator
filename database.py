@@ -24,13 +24,53 @@ def search_history_records(query_str, clean_phone_str):
         phone_no_zero = phone_param.lstrip('0') if phone_param else clean_q
         
         sql = """
-            SELECT complaint_no, model, serial, customer_name, phone, technician_name,
-                   complaint_type, purchase_date, complaint_date, closed_date, remarks, closed_amount
-            FROM history_master
-            WHERE serial LIKE ? 
-               OR complaint_no LIKE ? 
-               OR (phone != '' AND (phone LIKE ? OR phone LIKE ? OR phone LIKE ?))
-               OR customer_name LIKE ?
+            SELECT 
+                h.complaint_no, 
+                h.model, 
+                h.serial, 
+                h.customer_name, 
+                h.phone, 
+                COALESCE(t.technician_name, h.technician_name) AS technician_name,
+                h.complaint_type, 
+                h.purchase_date, 
+                h.complaint_date, 
+                COALESCE(h.closed_date, t.closed_date) AS closed_date, 
+                h.remarks, 
+                h.closed_amount,
+                COALESCE(t.status, 'COMPLETED') AS status
+            FROM history_master h
+            LEFT JOIN tech_performance_master t 
+                ON (h.complaint_no = t.complaint_no OR REPLACE(REPLACE(h.complaint_no, '=', ''), '"', '') = t.complaint_no)
+            WHERE h.serial LIKE ? 
+               OR h.complaint_no LIKE ? 
+               OR (h.phone != '' AND (h.phone LIKE ? OR h.phone LIKE ? OR h.phone LIKE ?))
+               OR h.customer_name LIKE ?
+
+            UNION ALL
+
+            SELECT 
+                t.complaint_no,
+                'N/A' AS model,
+                'N/A' AS serial,
+                'N/A' AS customer_name,
+                '' AS phone,
+                t.technician_name,
+                'Service Call' AS complaint_type,
+                '' AS purchase_date,
+                '' AS complaint_date,
+                t.closed_date,
+                'Logged in performance/canceled logs (' || t.status || ')' AS remarks,
+                0 AS closed_amount,
+                t.status AS status
+            FROM tech_performance_master t
+            WHERE t.status IN ('REJECTED', 'CANCELED', 'NIL')
+              AND NOT EXISTS (
+                  SELECT 1 FROM history_master h 
+                  WHERE h.complaint_no = t.complaint_no 
+                     OR REPLACE(REPLACE(h.complaint_no, '=', ''), '"', '') = t.complaint_no
+              )
+              AND (t.complaint_no LIKE ? OR t.technician_name LIKE ?)
+
             ORDER BY closed_date DESC LIMIT 30
         """
         match_df = pd.read_sql_query(sql, conn, params=(
@@ -39,18 +79,28 @@ def search_history_records(query_str, clean_phone_str):
             f"%{query_str}%",
             f"%{phone_param}%",
             f"%{phone_no_zero}%",
+            f"%{query_str}%",
+            f"%{clean_q}%",
             f"%{query_str}%"
         ))
     return match_df
 
-def fetch_performance_data():
+def fetch_performance_data(start_date=None, end_date=None):
     init_estimator_schema()
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='tech_performance_master'")
         if cursor.fetchone() is None:
             return pd.DataFrame()
-        return pd.read_sql_query("SELECT * FROM tech_performance_master", conn)
+        if start_date and end_date:
+            s_str = str(start_date)
+            e_str = str(end_date)
+            return pd.read_sql_query(
+                "SELECT * FROM tech_performance_master WHERE closed_date >= ? AND closed_date <= ? ORDER BY closed_date DESC",
+                conn,
+                params=(s_str, e_str)
+            )
+        return pd.read_sql_query("SELECT * FROM tech_performance_master ORDER BY closed_date DESC", conn)
 
 # ============================================================================
 # SPARE PARTS ESTIMATOR ENGINE SCHEMA & DATA ACCESS LAYER
@@ -90,6 +140,7 @@ def init_estimator_schema():
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_history_complaint_no ON history_master (complaint_no)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_history_phone ON history_master (phone)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_history_serial ON history_master (serial)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_history_closed_date ON history_master (closed_date)")
 
             # 2. Tech Performance Master Table
             cursor.execute("""
@@ -101,6 +152,7 @@ def init_estimator_schema():
                 )
             """)
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_tech_perf_tech ON tech_performance_master (technician_name)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_tech_perf_date ON tech_performance_master (closed_date)")
             
             # 3. Model-to-Part Compatibility Table
             cursor.execute("""
@@ -198,7 +250,7 @@ def init_estimator_schema():
             except Exception as e:
                 print(f"History master init error: {e}")
 
-        if perf_count == 0:
+        if perf_count < 1000:
             try:
                 import etl
                 import config
