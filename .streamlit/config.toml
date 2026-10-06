@@ -1,6 +1,9 @@
 [server]
 headless = true
 
+[client]
+showErrorDetails = true
+
 [theme]
 primaryColor = "#000000"
 backgroundColor = "#FFFFFF"

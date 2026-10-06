@@ -1,6 +1,15 @@
+from __future__ import annotations
 import pandas as pd
 import re
-from database import get_connection, init_estimator_schema
+import json
+import config
+import database
+
+def get_connection():
+    return database.get_connection()
+
+def init_estimator_schema():
+    return database.init_estimator_schema()
 
 def safe_read(file_obj):
     if file_obj is None:
@@ -239,11 +248,6 @@ def sync_all_complaints_pipeline(fb_source, cancel_source=None, coll_source=None
 # ============================================================================
 # ESTIMATOR PIPELINES: STORE STOCK PDF & QUALITY FEEDBACK CATALOG
 # ============================================================================
-import json
-import pdfplumber
-import config
-from database import upsert_master_parts, upsert_model_catalog, append_model_catalog
-
 def clean_excel_str(val):
     if pd.isna(val) or val is None:
         return ""
@@ -258,6 +262,11 @@ def parse_store_stock_pdf(pdf_source=None) -> int:
     technician hand allocations, and enterprise totals. Normalizes negative balances.
     Filters out complete B-grade finished units.
     """
+    try:
+        import pdfplumber
+    except ImportError:
+        return 0
+
     if pdf_source is None:
         pdf_source = getattr(config, 'DEFAULT_STOCK_PDF', 'vp786 (1 year stock movement report).pdf')
     
@@ -364,7 +373,7 @@ def parse_store_stock_pdf(pdf_source=None) -> int:
                 ))
     
     if parsed_records:
-        upsert_master_parts(parsed_records)
+        database.upsert_master_parts(parsed_records)
     return len(parsed_records)
 
 def sync_model_part_catalog_from_feedback(fb_source=None, is_incremental: bool = False) -> tuple[int, int, int]:
@@ -465,9 +474,9 @@ def sync_model_part_catalog_from_feedback(fb_source=None, is_incremental: bool =
         models_set.add(m)
         
     if is_incremental:
-        append_model_catalog(catalog_records)
+        database.append_model_catalog(catalog_records)
     else:
-        upsert_model_catalog(catalog_records)
+        database.upsert_model_catalog(catalog_records)
     
     # Ensure all parts exist in master_parts_lookup (flag unpriced parts as is_pricing_pending = 1)
     with get_connection() as conn:
