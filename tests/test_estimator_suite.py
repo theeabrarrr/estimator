@@ -230,5 +230,16 @@ TEST-SUITE-001,GS-18PITH11W,11001060868,Evaporator,Evaporator Assy,COMPLETED,202
             c.execute("DELETE FROM tech_performance_master WHERE complaint_no = 'TEST-SUITE-001'")
             conn.commit()
 
+    def test_14_stock_pdf_stream_ingestion(self):
+        """Verify parse_store_stock_pdf handles file streams with memory optimizations."""
+        import io
+        stock_pdf_path = "vp786 (1 year stock movement report).pdf"
+        if os.path.exists(stock_pdf_path):
+            with open(stock_pdf_path, 'rb') as f:
+                pdf_stream = io.BytesIO(f.read())
+                pdf_stream.name = stock_pdf_path
+                cnt = etl.parse_store_stock_pdf(pdf_stream)
+                self.assertGreaterEqual(cnt, 500, "Expected >= 500 items parsed from PDF")
+
 if __name__ == "__main__":
     unittest.main()

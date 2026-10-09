@@ -1,4 +1,7 @@
 from __future__ import annotations
+import os
+import tempfile
+import gc
 import pandas as pd
 import re
 import json
@@ -236,6 +239,7 @@ def sync_all_complaints_pipeline(fb_source, cancel_source=None, coll_source=None
     3. Incrementally updates model_part_catalog from feedback
     Returns (perf_count, m_cnt, p_cnt)
     """
+    import gc
     fb_df = safe_read(fb_source)
     cancel_df = safe_read(cancel_source) if cancel_source is not None else None
     coll_df = safe_read(coll_source) if coll_source is not None else None
@@ -243,6 +247,10 @@ def sync_all_complaints_pipeline(fb_source, cancel_source=None, coll_source=None
     ingest_feedback_and_pricing(fb_df, coll_df)
     perf_count = ingest_performance_pipeline(fb_df, cancel_df)
     m_cnt, p_cnt, _ = sync_model_part_catalog_from_feedback(fb_df, is_incremental=True)
+
+    del fb_df, cancel_df, coll_df
+    gc.collect()
+
     return perf_count, m_cnt, p_cnt
 
 # ============================================================================
@@ -261,11 +269,14 @@ def parse_store_stock_pdf(pdf_source=None) -> int:
     Parses Karachi-2 HA Store stock report PDF (vp786), extracts prices, store stock,
     technician hand allocations, and enterprise totals. Normalizes negative balances.
     Filters out complete B-grade finished units.
+    Memory-optimized for cloud deployment (Streamlit Cloud 1GB limit).
     """
     try:
         import pdfplumber
     except ImportError:
         return 0
+    import tempfile
+    import gc
 
     if pdf_source is None:
         pdf_source = getattr(config, 'DEFAULT_STOCK_PDF', 'vp786 (1 year stock movement report).pdf')
@@ -281,97 +292,135 @@ def parse_store_stock_pdf(pdf_source=None) -> int:
     
     parsed_records = []
     seen_parts = set()
-    
-    if hasattr(pdf_source, 'seek'):
-        pdf_source.seek(0)
-    with pdfplumber.open(pdf_source) as pdf:
-        num_pages = len(pdf.pages)
-        for pair_idx in range(0, num_pages, 2):
-            p1 = pdf.pages[pair_idx]
-            p2 = pdf.pages[pair_idx + 1] if pair_idx + 1 < num_pages else None
-            
-            t1 = p1.extract_tables()
-            t2 = p2.extract_tables() if p2 else []
-            if not t1 or not t2:
-                continue
+    source_doc = getattr(pdf_source, 'name', str(pdf_source))
+
+    # Memory optimization: if pdf_source is a file stream (UploadedFile or BytesIO),
+    # write to temporary disk file so pdfminer streams it without duplicating buffers in RAM.
+    temp_file_path = None
+    file_to_open = pdf_source
+    if hasattr(pdf_source, 'read'):
+        if hasattr(pdf_source, 'seek'):
+            pdf_source.seek(0)
+        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp:
+            if hasattr(pdf_source, 'getvalue'):
+                tmp.write(pdf_source.getvalue())
+            else:
+                tmp.write(pdf_source.read())
+            temp_file_path = tmp.name
+            file_to_open = temp_file_path
+        if hasattr(pdf_source, 'seek'):
+            pdf_source.seek(0)
+
+    try:
+        with pdfplumber.open(file_to_open) as pdf:
+            num_pages = len(pdf.pages)
+            for pair_idx in range(0, num_pages, 2):
+                p1 = pdf.pages[pair_idx]
+                p2 = pdf.pages[pair_idx + 1] if pair_idx + 1 < num_pages else None
                 
-            table1 = t1[0]
-            table2 = t2[0]
-            min_rows = min(len(table1), len(table2))
-            
-            for r_idx in range(1, min_rows):
-                r1 = table1[r_idx]
-                r2 = table2[r_idx]
-                
-                p_no = str(r1[1] if r1[1] is not None else (r2[1] if r2[1] is not None else '')).replace('\n', '').strip()
-                desc = str(r1[2] if r1[2] is not None else (r2[2] if r2[2] is not None else '')).replace('\n', ' ').strip()
-                model = str(r1[3] if r1[3] is not None else (r2[3] if r2[3] is not None else '')).replace('\n', ' ').strip()
-                price_str = str(r1[4] if r1[4] is not None else (r2[4] if r2[4] is not None else '')).replace('\n', '').replace(',', '').strip()
-                
-                if not p_no and not desc:
+                table1 = p1.extract_table()
+                table2 = p2.extract_table() if p2 else None
+
+                # CRITICAL FOR STREAMLIT CLOUD: Free internal page layout objects immediately
+                if hasattr(p1, 'flush_cache'):
+                    p1.flush_cache()
+                if p2 and hasattr(p2, 'flush_cache'):
+                    p2.flush_cache()
+
+                if not table1 or not table2:
                     continue
+                    
+                min_rows = min(len(table1), len(table2))
                 
-                # Rule 7: Filter out complete B-Grade finished units
-                if re.search(r'b[- ]?grade\s+set', p_no + ' ' + desc, re.IGNORECASE):
-                    continue
-                
-                if p_no in seen_parts:
-                    continue
-                seen_parts.add(p_no)
-                
-                try:
-                    price = int(round(float(price_str))) if price_str else 0
-                except Exception:
-                    price = 0
-                
-                def parse_qty(v):
-                    if v is None:
-                        return 0
-                    s = str(v).replace('\n', '').replace(',', '').strip()
+                for r_idx in range(1, min_rows):
+                    r1 = table1[r_idx]
+                    r2 = table2[r_idx]
+
+                    if not r1 or not r2:
+                        continue
+
+                    def get_col(row, idx):
+                        return row[idx] if len(row) > idx and row[idx] is not None else None
+
+                    col1_p = get_col(r1, 1) or get_col(r2, 1) or ''
+                    col2_d = get_col(r1, 2) or get_col(r2, 2) or ''
+                    col3_m = get_col(r1, 3) or get_col(r2, 3) or ''
+                    col4_pr = get_col(r1, 4) or get_col(r2, 4) or ''
+
+                    p_no = str(col1_p).replace('\n', '').strip()
+                    desc = str(col2_d).replace('\n', ' ').strip()
+                    model = str(col3_m).replace('\n', ' ').strip()
+                    price_str = str(col4_pr).replace('\n', '').replace(',', '').strip()
+                    
+                    if not p_no and not desc:
+                        continue
+                    
+                    # Rule 7: Filter out complete B-Grade finished units
+                    if re.search(r'b[- ]?grade\s+set', p_no + ' ' + desc, re.IGNORECASE):
+                        continue
+                    
+                    if p_no in seen_parts:
+                        continue
+                    seen_parts.add(p_no)
+                    
                     try:
-                        return int(float(s))
+                        price = int(round(float(price_str))) if price_str else 0
                     except Exception:
-                        return 0
-                
-                sales_store = parse_qty(r1[14] if len(r1) > 14 else 0)
-                branch_store = parse_qty(r1[15] if len(r1) > 15 else 0)
-                total_stock = parse_qty(r2[14] if len(r2) > 14 else 0)
-                
-                tech_dict = {}
-                for t_name, idx in zip(tech_p1_names, tech_p1_indices):
-                    val = parse_qty(r1[idx] if len(r1) > idx else 0)
-                    if val != 0:
-                        tech_dict[t_name] = val
-                        
-                for t_name, idx in zip(tech_p2_names, tech_p2_indices):
-                    val = parse_qty(r2[idx] if len(r2) > idx else 0)
-                    if val != 0:
-                        tech_dict[t_name] = val
-                
-                tech_total = sum(tech_dict.values())
-                avail_branch = max(0, branch_store)
-                avail_total = max(0, total_stock)
-                stock_status = 'In Stock' if avail_branch > 0 else 'Out of Stock'
-                
-                source_doc = getattr(pdf_source, 'name', str(pdf_source))
-                
-                parsed_records.append((
-                    p_no,
-                    desc,
-                    model,
-                    price,
-                    branch_store,
-                    sales_store,
-                    tech_total,
-                    total_stock,
-                    avail_branch,
-                    avail_total,
-                    stock_status,
-                    json.dumps(tech_dict),
-                    0,  # is_pricing_pending = 0 since present in stock report
-                    source_doc
-                ))
-    
+                        price = 0
+                    
+                    def parse_qty(v):
+                        if v is None:
+                            return 0
+                        s = str(v).replace('\n', '').replace(',', '').strip()
+                        try:
+                            return int(float(s))
+                        except Exception:
+                            return 0
+                    
+                    sales_store = parse_qty(get_col(r1, 14))
+                    branch_store = parse_qty(get_col(r1, 15))
+                    total_stock = parse_qty(get_col(r2, 14))
+                    
+                    tech_dict = {}
+                    for t_name, idx in zip(tech_p1_names, tech_p1_indices):
+                        val = parse_qty(get_col(r1, idx))
+                        if val != 0:
+                            tech_dict[t_name] = val
+                            
+                    for t_name, idx in zip(tech_p2_names, tech_p2_indices):
+                        val = parse_qty(get_col(r2, idx))
+                        if val != 0:
+                            tech_dict[t_name] = val
+                    
+                    tech_total = sum(tech_dict.values())
+                    avail_branch = max(0, branch_store)
+                    avail_total = max(0, total_stock)
+                    stock_status = 'In Stock' if avail_branch > 0 else 'Out of Stock'
+                    
+                    parsed_records.append((
+                        p_no,
+                        desc,
+                        model,
+                        price,
+                        branch_store,
+                        sales_store,
+                        tech_total,
+                        total_stock,
+                        avail_branch,
+                        avail_total,
+                        stock_status,
+                        json.dumps(tech_dict),
+                        0,  # is_pricing_pending = 0 since present in stock report
+                        source_doc
+                    ))
+    finally:
+        if temp_file_path and os.path.exists(temp_file_path):
+            try:
+                os.remove(temp_file_path)
+            except Exception:
+                pass
+        gc.collect()
+
     if parsed_records:
         database.upsert_master_parts(parsed_records)
     return len(parsed_records)

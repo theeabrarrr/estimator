@@ -223,10 +223,16 @@ with st.sidebar:
     if st.button("🔄 Sync All Complaints & Performance", width="stretch"):
         if sync_fb:
             with st.spinner("Syncing Master History, KPI & Catalog..."):
-                perf_cnt, m_cnt, p_cnt = sync_all_complaints_pipeline(sync_fb, sync_can, sync_coll)
-                st.cache_data.clear()
-                st.success(f"Synced successfully! {perf_cnt:,} KPI records, {m_cnt} models, {p_cnt} parts updated.")
-                st.rerun()
+                try:
+                    import gc
+                    gc.collect()
+                    perf_cnt, m_cnt, p_cnt = sync_all_complaints_pipeline(sync_fb, sync_can, sync_coll)
+                    st.cache_data.clear()
+                    gc.collect()
+                    st.success(f"Synced successfully! {perf_cnt:,} KPI records, {m_cnt} models, {p_cnt} parts updated.")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Sync error: {e}")
         else:
             st.error("Quality Feedback Report lazmi upload karein!")
 
@@ -237,10 +243,16 @@ with st.sidebar:
     if st.button("🔄 Sync Live Stock & Prices", width="stretch"):
         if sync_pdf:
             with st.spinner("Updating Live Stock & Prices..."):
-                cnt = parse_store_stock_pdf(sync_pdf)
-                st.cache_data.clear()
-                st.success(f"Stock & prices updated for {cnt:,} items!")
-                st.rerun()
+                try:
+                    import gc
+                    gc.collect()
+                    cnt = parse_store_stock_pdf(sync_pdf)
+                    st.cache_data.clear()
+                    gc.collect()
+                    st.success(f"Stock & prices updated for {cnt:,} items!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Stock PDF parse error: {e}")
         else:
             st.error("Stock Movement PDF upload karein!")
 
