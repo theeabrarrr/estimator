@@ -23,7 +23,8 @@ from database import (
     search_history_records, fetch_performance_data,
     init_estimator_schema, get_all_models_for_estimator,
     get_parts_by_model, update_part_price,
-    get_missing_price_parts_df, get_cross_model_compatibilities
+    get_missing_price_parts_df, get_cross_model_compatibilities,
+    is_turso_active
 )
 
 import etl
@@ -215,6 +216,10 @@ st.markdown('<div class="sub-title">Field Diagnostic, Cost & Live Stock Estimato
 with st.sidebar:
     st.markdown("---")
     st.markdown("### 📥 Daily Service & Performance Sync")
+    if is_turso_active():
+        st.markdown("<div style='margin-bottom:8px;'><span style='display:inline-block; padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:700; background:rgba(34,197,94,0.15); color:#16a34a; border:1px solid #16a34a;'>🟢 Cloud Storage: Permanent (Turso Cloud)</span></div>", unsafe_allow_html=True)
+    else:
+        st.markdown("<div style='margin-bottom:8px;'><span style='display:inline-block; padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:600; opacity:0.8;'>💻 Local Storage (dwp_service.db)</span></div>", unsafe_allow_html=True)
     st.caption("Upload complaints to update Master History, Technician KPI, and Parts Catalog simultaneously.")
     sync_fb = st.file_uploader("1. Quality Feedback Report (Completed)", type=["csv", "xlsx", "xls"], key="sync_fb")
     sync_can = st.file_uploader("2. Cancel / Nil / Transfer Report (Optional)", type=["xlsx", "xls"], key="sync_can")
@@ -235,6 +240,20 @@ with st.sidebar:
                     st.error(f"Sync error: {e}")
         else:
             st.error("Quality Feedback Report lazmi upload karein!")
+
+    if not is_turso_active() and os.path.exists(database.DB_FILE):
+        try:
+            with open(database.DB_FILE, "rb") as fp_db:
+                st.download_button(
+                    label="💾 Download Database Backup (.db)",
+                    data=fp_db.read(),
+                    file_name="dwp_service.db",
+                    mime="application/x-sqlite3",
+                    width="stretch",
+                    help="Container reboot se pehle updated database file download karein."
+                )
+        except Exception:
+            pass
 
     st.markdown("---")
     st.markdown("### 📦 Store Stock & Retail Pricing Sync")
