@@ -310,16 +310,16 @@ def fetch_performance_data(start_date=None, end_date=None):
 # SPARE PARTS ESTIMATOR ENGINE SCHEMA & DATA ACCESS LAYER
 # ============================================================================
 
-_IS_INITIALIZING_SCHEMA = False
+_SCHEMA_INITIALIZED = False
 
-def init_estimator_schema():
+def init_estimator_schema(force: bool = False):
     """
     Ensures history_master, tech_performance_master, model_part_catalog, master_parts_lookup, and v_model_compatible_parts exist.
+    Guarded to run at most once per process lifetime unless force=True.
     """
-    global _IS_INITIALIZING_SCHEMA
-    if _IS_INITIALIZING_SCHEMA:
+    global _SCHEMA_INITIALIZED
+    if _SCHEMA_INITIALIZED and not force:
         return
-    _IS_INITIALIZING_SCHEMA = True
     try:
         with get_connection() as conn:
             cursor = conn.cursor()
@@ -420,20 +420,20 @@ def init_estimator_schema():
             """)
             conn.commit()
 
-            cursor.execute("SELECT COUNT(*) FROM model_part_catalog")
-            cat_count = cursor.fetchone()[0]
-
-            cursor.execute("SELECT COUNT(*) FROM master_parts_lookup WHERE retail_price > 0")
-            priced_count = cursor.fetchone()[0]
-
-            cursor.execute("SELECT COUNT(*) FROM history_master")
-            hist_count = cursor.fetchone()[0]
-
-            cursor.execute("SELECT COUNT(*) FROM history_master WHERE phone IS NOT NULL AND phone != ''")
-            valid_phone_count = cursor.fetchone()[0]
-
-            cursor.execute("SELECT COUNT(*) FROM tech_performance_master")
-            perf_count = cursor.fetchone()[0]
+            cursor.execute("""
+                SELECT 
+                    (SELECT COUNT(*) FROM model_part_catalog),
+                    (SELECT COUNT(*) FROM master_parts_lookup WHERE retail_price > 0),
+                    (SELECT COUNT(*) FROM history_master),
+                    (SELECT COUNT(*) FROM history_master WHERE phone IS NOT NULL AND phone != ''),
+                    (SELECT COUNT(*) FROM tech_performance_master)
+            """)
+            counts_row = cursor.fetchone()
+            cat_count = counts_row[0] if counts_row else 0
+            priced_count = counts_row[1] if counts_row else 0
+            hist_count = counts_row[2] if counts_row else 0
+            valid_phone_count = counts_row[3] if counts_row else 0
+            perf_count = counts_row[4] if counts_row else 0
 
         if cat_count == 0:
             try:
@@ -468,8 +468,11 @@ def init_estimator_schema():
         if cat_count == 0:
             merge_parts_master_into_catalog()
             enrich_cross_series_compatibilities()
-    finally:
-        _IS_INITIALIZING_SCHEMA = False
+
+        _SCHEMA_INITIALIZED = True
+    except Exception as e:
+        _SCHEMA_INITIALIZED = False
+        raise e
 
 def enrich_cross_series_compatibilities() -> None:
     """
@@ -777,6 +780,28 @@ def get_cross_model_compatibilities(part_no: str) -> list[tuple[str, int]]:
             ORDER BY historical_frequency DESC, model ASC
         """
         return cursor.execute(sql, (str(part_no).strip(),)).fetchall()
+
+def get_all_cross_model_compatibilities_map() -> dict[str, list[tuple[str, int]]]:
+    """
+    Returns a complete mapping of part_no -> list of (model, frequency) pairs.
+    Fetches all model-part associations in a single bulk query to eliminate N+1 latency.
+    """
+    init_estimator_schema()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        sql = """
+            SELECT part_no, model, historical_frequency
+            FROM model_part_catalog
+            ORDER BY historical_frequency DESC, model ASC
+        """
+        rows = cursor.execute(sql).fetchall()
+        result: dict[str, list[tuple[str, int]]] = {}
+        for p_no, model, freq in rows:
+            clean_p = str(p_no).strip()
+            if clean_p not in result:
+                result[clean_p] = []
+            result[clean_p].append((str(model).strip(), int(freq) if freq else 1))
+        return result
 
 def update_part_price(part_no: str, new_price: float | int) -> bool:
     """

@@ -24,6 +24,7 @@ from database import (
     init_estimator_schema, get_all_models_for_estimator,
     get_parts_by_model, update_part_price,
     get_missing_price_parts_df, get_cross_model_compatibilities,
+    get_all_cross_model_compatibilities_map,
     is_turso_active
 )
 
@@ -65,6 +66,10 @@ def get_cached_parts_by_model(model_name: str):
 @st.cache_data(ttl=3600, show_spinner=False)
 def get_cached_cross_model_compatibilities(part_no: str):
     return get_cross_model_compatibilities(part_no)
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_cached_all_cross_compatibilities_map():
+    return get_all_cross_model_compatibilities_map()
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def get_cached_missing_price_parts_df():
@@ -466,6 +471,7 @@ with tab_estimator:
             st.caption(f"Showing **{len(filtered_parts)}** components ({avail_cnt} in stock at Karachi-2 Store, {zero_cnt} available via procurement/indent).")
 
             # Compatible Parts List Bounded Scroll Container (Prevents endless main page scrolling)
+            cross_compat_map = get_cached_all_cross_compatibilities_map()
             with st.container(height=450):
                 if filtered_parts.empty:
                     st.info("No matching spare parts found for the selected category/search filter.")
@@ -529,7 +535,7 @@ with tab_estimator:
                                 
                                 if cross_cnt > 1:
                                     with st.expander(f"🔍 View {cross_cnt} Compatible Models for {p_no}"):
-                                        compat_models = get_cached_cross_model_compatibilities(p_no)
+                                        compat_models = cross_compat_map.get(p_no, [])
                                         m_summary = ", ".join([f"**{m}** ({f})" for m, f in compat_models[:8]])
                                         if len(compat_models) > 8:
                                             m_summary += f", +{len(compat_models)-8} more"
