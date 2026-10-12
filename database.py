@@ -4,18 +4,221 @@ import sqlite3
 import pandas as pd
 import json
 import re
+import base64
+import requests
 
 from contextlib import contextmanager
 
 DB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dwp_service.db")
 
+def get_turso_credentials():
+    url = os.environ.get("TURSO_DATABASE_URL")
+    token = os.environ.get("TURSO_AUTH_TOKEN")
+    if not url or not token:
+        try:
+            import streamlit as st
+            if hasattr(st, "secrets"):
+                if not url and "TURSO_DATABASE_URL" in st.secrets:
+                    url = str(st.secrets["TURSO_DATABASE_URL"])
+                if not token and "TURSO_AUTH_TOKEN" in st.secrets:
+                    token = str(st.secrets["TURSO_AUTH_TOKEN"])
+        except Exception:
+            pass
+    return (url.strip() if url else None), (token.strip() if token else None)
+
+def is_turso_active() -> bool:
+    url, token = get_turso_credentials()
+    return bool(url and token)
+
+class TursoCursor:
+    def __init__(self, conn):
+        self.conn = conn
+        self.description = None
+        self._rows = []
+        self._idx = 0
+        self.rowcount = -1
+        self.lastrowid = None
+
+    def _format_arg(self, val):
+        if val is None or pd.isna(val):
+            return {"type": "null"}
+        elif isinstance(val, bool):
+            return {"type": "integer", "value": "1" if val else "0"}
+        elif isinstance(val, int):
+            return {"type": "integer", "value": str(val)}
+        elif isinstance(val, float):
+            return {"type": "float", "value": val}
+        elif isinstance(val, (bytes, bytearray)):
+            return {"type": "blob", "base64": base64.b64encode(val).decode("ascii")}
+        else:
+            return {"type": "text", "value": str(val)}
+
+    def _parse_val(self, item):
+        t = item.get("type")
+        if t == "null":
+            return None
+        elif t == "integer":
+            return int(item.get("value", 0))
+        elif t == "float":
+            return float(item.get("value", 0.0))
+        elif t == "text":
+            return item.get("value", "")
+        elif t == "blob":
+            return base64.b64decode(item.get("base64", ""))
+        return item.get("value")
+
+    def execute(self, sql, params=()):
+        if params is None:
+            params = ()
+        elif not isinstance(params, (list, tuple)):
+            params = (params,)
+
+        stmt = {
+            "sql": sql,
+            "args": [self._format_arg(p) for p in params]
+        }
+        payload = {
+            "requests": [
+                {"type": "execute", "stmt": stmt},
+                {"type": "close"}
+            ]
+        }
+        res = self.conn._post(payload)
+        first_res = res.get("results", [{}])[0]
+        if first_res.get("type") == "error":
+            err = first_res.get("error", {})
+            raise sqlite3.OperationalError(f"Turso Error: {err.get('message', 'Unknown error')}")
+
+        exec_res = first_res.get("response", {}).get("result", {})
+        cols = [c["name"] for c in exec_res.get("cols", [])]
+        self.description = [(c, None, None, None, None, None, None) for c in cols] if cols else None
+        
+        raw_rows = exec_res.get("rows", [])
+        self._rows = [tuple(self._parse_val(cell) for cell in row) for row in raw_rows]
+        self._idx = 0
+        self.rowcount = exec_res.get("affected_row_count", len(self._rows))
+        self.lastrowid = exec_res.get("last_insert_rowid")
+        return self
+
+    def executemany(self, sql, seq_of_params):
+        if not seq_of_params:
+            return self
+        batch_size = 200
+        param_list = list(seq_of_params)
+        for i in range(0, len(param_list), batch_size):
+            chunk = param_list[i:i + batch_size]
+            requests_list = []
+            for row in chunk:
+                if row is None:
+                    row = ()
+                elif not isinstance(row, (list, tuple)):
+                    row = (row,)
+                stmt = {
+                    "sql": sql,
+                    "args": [self._format_arg(p) for p in row]
+                }
+                requests_list.append({"type": "execute", "stmt": stmt})
+            requests_list.append({"type": "close"})
+            res = self.conn._post({"requests": requests_list})
+            for r in res.get("results", []):
+                if r.get("type") == "error":
+                    err = r.get("error", {})
+                    raise sqlite3.OperationalError(f"Turso Batch Error: {err.get('message', 'Unknown error')}")
+        return self
+
+    def fetchone(self):
+        if self._idx < len(self._rows):
+            row = self._rows[self._idx]
+            self._idx += 1
+            return row
+        return None
+
+    def fetchall(self):
+        if self._idx < len(self._rows):
+            rows = self._rows[self._idx:]
+            self._idx = len(self._rows)
+            return rows
+        return []
+
+    def close(self):
+        pass
+
+class TursoConnection:
+    def __init__(self, url, token):
+        base = re.sub(r"^libsql://", "https://", url.strip()).rstrip("/")
+        if not base.startswith("http://") and not base.startswith("https://"):
+            base = "https://" + base
+        self.pipeline_url = f"{base}/v2/pipeline"
+        self.token = token.strip()
+        self.session = requests.Session()
+        self.session.headers.update({
+            "Authorization": f"Bearer {self.token}",
+            "Content-Type": "application/json"
+        })
+
+    def _post(self, payload):
+        import time
+        max_retries = 3
+        last_err = None
+        for attempt in range(max_retries):
+            try:
+                resp = self.session.post(self.pipeline_url, json=payload, timeout=60)
+                if resp.status_code != 200:
+                    raise sqlite3.OperationalError(f"Turso HTTP {resp.status_code}: {resp.text}")
+                return resp.json()
+            except (requests.exceptions.RequestException, ConnectionError) as e:
+                last_err = e
+                if attempt < max_retries - 1:
+                    time.sleep(1.5 * (attempt + 1))
+                else:
+                    _reset_shared_turso_connection()
+                    raise sqlite3.OperationalError(f"Turso Network Error after {max_retries} attempts: {last_err}")
+
+    def cursor(self):
+        return TursoCursor(self)
+
+    def commit(self):
+        pass
+
+    def close(self):
+        try:
+            self.session.close()
+        except Exception:
+            pass
+
+    def rollback(self):
+        pass
+
+_SHARED_TURSO_CONN = None
+
+def _get_shared_turso_connection(url: str, token: str) -> TursoConnection:
+    global _SHARED_TURSO_CONN
+    if _SHARED_TURSO_CONN is None:
+        _SHARED_TURSO_CONN = TursoConnection(url, token)
+    return _SHARED_TURSO_CONN
+
+def _reset_shared_turso_connection():
+    global _SHARED_TURSO_CONN
+    if _SHARED_TURSO_CONN is not None:
+        try:
+            _SHARED_TURSO_CONN.close()
+        except Exception:
+            pass
+        _SHARED_TURSO_CONN = None
+
 @contextmanager
 def get_connection():
-    conn = sqlite3.connect(DB_FILE)
-    try:
+    url, token = get_turso_credentials()
+    if url and token:
+        conn = _get_shared_turso_connection(url, token)
         yield conn
-    finally:
-        conn.close()
+    else:
+        conn = sqlite3.connect(DB_FILE)
+        try:
+            yield conn
+        finally:
+            conn.close()
+
 
 def search_history_records(query_str, clean_phone_str):
     init_estimator_schema()

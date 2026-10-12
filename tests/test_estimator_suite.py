@@ -241,5 +241,30 @@ TEST-SUITE-001,GS-18PITH11W,11001060868,Evaporator,Evaporator Assy,COMPLETED,202
                 cnt = etl.parse_store_stock_pdf(pdf_stream)
                 self.assertGreaterEqual(cnt, 500, "Expected >= 500 items parsed from PDF")
 
+    def test_15_turso_adapter_and_fallback(self):
+        """Verify Turso cloud credentials detection, adapter formatting, and graceful local fallback."""
+        self.assertTrue(hasattr(database, 'get_turso_credentials'))
+        self.assertTrue(hasattr(database, 'is_turso_active'))
+        
+        # Test fallback to local SQLite when credentials are empty
+        url, token = database.get_turso_credentials()
+        self.assertIsInstance(database.is_turso_active(), bool)
+        
+        # Verify connection yields valid connection
+        with database.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT 1")
+            res = cursor.fetchone()
+            self.assertEqual(res[0], 1)
+
+        # Test Turso cursor argument formatting
+        dummy_conn = database.TursoConnection("https://test.turso.io", "test-token")
+        turso_cursor = database.TursoCursor(dummy_conn)
+        self.assertEqual(turso_cursor._format_arg(123), {"type": "integer", "value": "123"})
+        self.assertEqual(turso_cursor._format_arg("abc"), {"type": "text", "value": "abc"})
+        self.assertEqual(turso_cursor._format_arg(None), {"type": "null"})
+        self.assertEqual(turso_cursor._parse_val({"type": "integer", "value": "99"}), 99)
+        self.assertEqual(turso_cursor._parse_val({"type": "text", "value": "hello"}), "hello")
+
 if __name__ == "__main__":
     unittest.main()
