@@ -150,16 +150,28 @@ class TursoConnection:
             base = "https://" + base
         self.pipeline_url = f"{base}/v2/pipeline"
         self.token = token.strip()
-        self.headers = {
+        self.session = requests.Session()
+        self.session.headers.update({
             "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json"
-        }
+        })
 
     def _post(self, payload):
-        resp = requests.post(self.pipeline_url, headers=self.headers, json=payload, timeout=45)
-        if resp.status_code != 200:
-            raise sqlite3.OperationalError(f"Turso HTTP {resp.status_code}: {resp.text}")
-        return resp.json()
+        import time
+        max_retries = 3
+        last_err = None
+        for attempt in range(max_retries):
+            try:
+                resp = self.session.post(self.pipeline_url, json=payload, timeout=60)
+                if resp.status_code != 200:
+                    raise sqlite3.OperationalError(f"Turso HTTP {resp.status_code}: {resp.text}")
+                return resp.json()
+            except (requests.exceptions.RequestException, ConnectionError) as e:
+                last_err = e
+                if attempt < max_retries - 1:
+                    time.sleep(1.5 * (attempt + 1))
+                else:
+                    raise sqlite3.OperationalError(f"Turso Network Error after {max_retries} attempts: {last_err}")
 
     def cursor(self):
         return TursoCursor(self)
@@ -168,10 +180,14 @@ class TursoConnection:
         pass
 
     def close(self):
-        pass
+        try:
+            self.session.close()
+        except Exception:
+            pass
 
     def rollback(self):
         pass
+
 
 @contextmanager
 def get_connection():
