@@ -171,6 +171,7 @@ class TursoConnection:
                 if attempt < max_retries - 1:
                     time.sleep(1.5 * (attempt + 1))
                 else:
+                    _reset_shared_turso_connection()
                     raise sqlite3.OperationalError(f"Turso Network Error after {max_retries} attempts: {last_err}")
 
     def cursor(self):
@@ -188,16 +189,29 @@ class TursoConnection:
     def rollback(self):
         pass
 
+_SHARED_TURSO_CONN = None
+
+def _get_shared_turso_connection(url: str, token: str) -> TursoConnection:
+    global _SHARED_TURSO_CONN
+    if _SHARED_TURSO_CONN is None:
+        _SHARED_TURSO_CONN = TursoConnection(url, token)
+    return _SHARED_TURSO_CONN
+
+def _reset_shared_turso_connection():
+    global _SHARED_TURSO_CONN
+    if _SHARED_TURSO_CONN is not None:
+        try:
+            _SHARED_TURSO_CONN.close()
+        except Exception:
+            pass
+        _SHARED_TURSO_CONN = None
 
 @contextmanager
 def get_connection():
     url, token = get_turso_credentials()
     if url and token:
-        conn = TursoConnection(url, token)
-        try:
-            yield conn
-        finally:
-            conn.close()
+        conn = _get_shared_turso_connection(url, token)
+        yield conn
     else:
         conn = sqlite3.connect(DB_FILE)
         try:

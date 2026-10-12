@@ -47,6 +47,33 @@ st.set_page_config(
 # Initialize database schema and auto-seed if required
 init_estimator_schema()
 
+# Top-level session state initialization
+if "estimator_selected_parts" not in st.session_state:
+    st.session_state["estimator_selected_parts"] = {}
+if "estimator_active_model" not in st.session_state:
+    st.session_state["estimator_active_model"] = None
+
+# Top-level cached queries to eliminate redundant round-trips over Turso Cloud
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_cached_all_models():
+    return get_all_models_for_estimator()
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_cached_parts_by_model(model_name: str):
+    return get_parts_by_model(model_name)
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_cached_cross_model_compatibilities(part_no: str):
+    return get_cross_model_compatibilities(part_no)
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_cached_missing_price_parts_df():
+    return get_missing_price_parts_df()
+
+@st.cache_data(ttl=3600, show_spinner="Loading Technician KPI Data...")
+def get_cached_performance_data():
+    return fetch_performance_data()
+
 # Custom Styling (Clean High-Contrast #FFFFFF & #000000 Theme, Seamless Light & Dark Mode Inheritance)
 st.markdown("""
 <style>
@@ -278,7 +305,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("### 📋 Estimator & Pricing Tools")
     try:
-        missing_df = get_missing_price_parts_df()
+        missing_df = get_cached_missing_price_parts_df()
         if not missing_df.empty:
             csv_data = missing_df.to_csv(index=False).encode('utf-8')
             st.download_button(
@@ -304,16 +331,13 @@ with tab_estimator:
     st.markdown("<h4 class='main-title'>🧮 Estimate Generator </h4>", unsafe_allow_html=True)
     st.caption("Model select karky part details, part prices, labor & service charges waghera dekh saktay hain.")
 
-    # Persistent selection state
-    if "estimator_selected_parts" not in st.session_state:
-        st.session_state["estimator_selected_parts"] = {}
-
-    all_models = get_all_models_for_estimator()
+    all_models = get_cached_all_models()
     if not all_models:
         st.info("Catalog is initializing...")
         sync_model_part_catalog_from_feedback()
         parse_store_stock_pdf()
-        all_models = get_all_models_for_estimator()
+        get_cached_all_models.clear()
+        all_models = get_cached_all_models()
 
     # ==========================================
     # STEP 1: MODEL SELECTION
@@ -341,7 +365,7 @@ with tab_estimator:
                 st.session_state["p_search"] = ""
 
         gas_amount, gas_label = calculate_gas_charge(selected_model)
-        parts_df = get_parts_by_model(selected_model)
+        parts_df = get_cached_parts_by_model(selected_model)
 
         # ==========================================
         # STEP 2: COMPATIBLE SPARE PARTS & CATEGORY EXPLORER
@@ -505,7 +529,7 @@ with tab_estimator:
                                 
                                 if cross_cnt > 1:
                                     with st.expander(f"🔍 View {cross_cnt} Compatible Models for {p_no}"):
-                                        compat_models = get_cross_model_compatibilities(p_no)
+                                        compat_models = get_cached_cross_model_compatibilities(p_no)
                                         m_summary = ", ".join([f"**{m}** ({f})" for m, f in compat_models[:8]])
                                         if len(compat_models) > 8:
                                             m_summary += f", +{len(compat_models)-8} more"
@@ -519,6 +543,8 @@ with tab_estimator:
                                         if st.button("💾 Save", key=f"btn_{p_no}"):
                                             if new_val > 0:
                                                 update_part_price(p_no, new_val)
+                                                get_cached_parts_by_model.clear()
+                                                get_cached_missing_price_parts_df.clear()
                                                 if p_no in st.session_state["estimator_selected_parts"]:
                                                     st.session_state["estimator_selected_parts"][p_no]['price'] = int(new_val)
                                                     st.session_state["estimator_selected_parts"][p_no]['is_pending'] = False
@@ -710,7 +736,8 @@ with tab_history:
     if query:
         q_raw = query.upper().replace('=', '').replace('"', '').strip()
         q_phone = normalize_phone(query)
-        match_df = search_history_records(q_raw, q_phone)
+        with st.spinner("Searching records..."):
+            match_df = search_history_records(q_raw, q_phone)
 
         if match_df.empty:
             st.warning(f"`{query}` ke against koi record nahi mila.")
@@ -767,10 +794,6 @@ with tab_history:
 # TAB 3: TECHNICIAN PERFORMANCE
 # ==========================================
 with tab_perf:
-    @st.cache_data
-    def get_cached_performance_data():
-        return fetch_performance_data()
-
     perf_data = get_cached_performance_data().copy()
     if perf_data.empty:
         st.info("ℹ️ **Technician Performance Report Abhi Load Nahi Hai.**\n\nSidebar mein **Module 3: Performance Sync** ke andar dono files upload karke **Update Technician Performance** dabayein.")
