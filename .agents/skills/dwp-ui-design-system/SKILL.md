@@ -1,47 +1,76 @@
 ---
 name: dwp-ui-design-system
-description: Standard UI/UX design system and layout guidelines for DWP Field Assistant Engine. Enforces pure #FFFFFF (White) & #000000 (Black) high-contrast color palette, dark mode compatibility, typography hierarchy, progressive step-by-step disclosure, and clean card styling.
+description: Standard UI/UX design system and layout guidelines for DWP Field Assistant Engine. Enforces sleek Corporate Claymorphism design with balanced 3D inflated surfaces, tactile inner/outer shadows, rounded clay cards (16px-20px), clay pill badges, and seamless Light/Dark mode adaptability.
 ---
 
-# DWP Field Assistant UI/UX Design System
+# DWP Field Assistant UI/UX Design System: Sleek Corporate Claymorphism
 
 This skill defines the authoritative design system, typography guidelines, and layout principles for all UI modules in the **DWP Field Assistant Engine** (`estimator`). Any agent modifying or extending the interface MUST strictly follow these rules.
 
 ---
 
-## 🎨 1. Strict High-Contrast Color Palette (#FFFFFF & #000000)
-The user interface is built strictly around a **pure high-contrast monochrome color palette**:
+## 🎨 1. Corporate Claymorphism Aesthetic & Color Palette
 
-1. **Pure White (`#FFFFFF`)**: Primary light background, surface fill, and dark-mode high-contrast text color.
-2. **Pure Black (`#000000`)**: Primary dark background, high-contrast light-mode text color, borders, and main title headers.
-3. **Adaptive CSS Variables (`var(--text-color)`, `var(--secondary-background-color)`)**: Every custom container, card, badge, table cell, and step box MUST use adaptive CSS variables or theme classes so that colors adapt automatically in both **Light Mode** and **Dark Mode**.
+Claymorphism transforms traditional flat interfaces into tactile, friendly, physical-feeling 3D clay surfaces while maintaining high contrast, corporate sophistication, and strict readability.
 
-### Dark Mode & Light Mode Contract:
-- **Light Mode:** `#FFFFFF` background, `#000000` crisp black typography, neutral borders (`rgba(0,0,0,0.15)`).
-- **Dark Mode:** `#000000` / `#0E1117` dark background, `#FFFFFF` crisp white typography, neutral borders (`rgba(255,255,255,0.2)`).
-- **Zero Text Overlapping:** Never hardcode fixed dark text (`#0F172A`, `#1E3A8A`) inside containers without dark mode overrides. All text elements MUST inherit adaptive theme variables to prevent contrast clashing or overlapping.
-
----
-
-## ✒️ 2. Typography & Visual Hierarchy
-- **Main App Title:** `font-size: 1.5rem; font-weight: 800; color: var(--text-color);`
-- **Sub-titles & Captions:** `font-size: 0.85rem; opacity: 0.8; color: var(--text-color);`
-- **Step Headers (`.dwp-step-title`):** `font-weight: 700; font-size: 1.0rem; color: var(--text-color);`
-- **Part Descriptions:** `font-weight: 700; font-size: 0.96rem; color: var(--text-color);`
-- **Prices & Totals:** `font-weight: 800; font-size: 1.05rem; color: var(--text-color);`
+### Core Visual Attributes:
+1. **Inflated 3D Matte Surfaces**: Non-glossy, soft-feel surfaces created through double-layer lighting (outer elevation drop-shadow + subtle inner inset bevels).
+2. **Generous Rounded Corners**: 
+   - Cards and Step Containers: `border-radius: 16px - 20px;`
+   - Badges and Action Pills: `border-radius: 9999px;` or `14px;`
+   - Inputs and Selectboxes: `border-radius: 12px;`
+3. **Tactile Micro-Interactions**:
+   - Hover state: Gentle lift (`transform: translateY(-2px);`) with expanded soft shadow.
+   - Active / Click state: Physical clay compression (`transform: translateY(1px);`) with reduced shadow.
 
 ---
 
-## 📐 3. Progressive Step-by-Step Layout Flow
-Avoid congested multi-column views. Always present the workflow in a 4-step progressive disclosure flow:
+## 🌓 2. Adaptive Light & Dark Mode Clay Tokens
 
-- **Step 1: Appliance Model Selection** (`selected_model` dropdown).
-- **Step 2: Sub-Assembly Category Explorer & Bounded Component List** (Category selectbox using `format_func` to preserve exact string keys, top floating cart summary, bounded scroll container `st.container(height=450)` to prevent endless main page scrolling).
-- **Step 3: Base Overheads & Service Charges** (Visit Charges, Mobility/Labour, Refrigerant Gas Refill, Warranty selector).
-- **Step 4: Real-Time Official Estimate & WhatsApp Generator** (Itemized estimate table and copyable WhatsApp quotation box).
+All custom CSS variables adapt automatically using Streamlit's base theme variables:
+
+### Light Mode:
+- **Surface Fill**: Soft porcelain / cloud (`#F4F7FC` / `rgba(240, 244, 250, 0.85)`)
+- **Text Color**: Deep charcoal / obsidian (`#0F172A` via `var(--text-color)`)
+- **Outer Drop Shadow**: `8px 8px 18px rgba(166, 178, 200, 0.35), -6px -6px 14px rgba(255, 255, 255, 0.85)`
+- **Inner Inset Shadow**: `inset 2px 2px 4px rgba(255, 255, 255, 0.7), inset -2px -2px 4px rgba(166, 178, 200, 0.25)`
+- **Border**: `1px solid rgba(255, 255, 255, 0.6)`
+
+### Dark Mode:
+- **Surface Fill**: Deep obsidian / dark titanium (`#181C26` / `rgba(24, 28, 38, 0.9)`)
+- **Text Color**: Crisp snow white (`#F8FAFC` via `var(--text-color)`)
+- **Outer Drop Shadow**: `8px 8px 20px rgba(0, 0, 0, 0.6), -4px -4px 12px rgba(255, 255, 255, 0.04)`
+- **Inner Inset Shadow**: `inset 2px 2px 4px rgba(255, 255, 255, 0.07), inset -2px -2px 4px rgba(0, 0, 0, 0.45)`
+- **Border**: `1px solid rgba(255, 255, 255, 0.08)`
 
 ---
 
-## 🚀 4. Quality Verification & Strict GitHub Push Protocol
-- Test interface across both **Light Mode** and **Dark Mode** to ensure zero text color clashing or layout distortion.
+## ✒️ 3. Typography & Hierarchy
+- **Main App Title:** `font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em;`
+- **Sub-titles & Captions:** `font-size: 0.86rem; opacity: 0.8;`
+- **Step Headers (`.dwp-step-title`):** `font-weight: 700; font-size: 1.0rem;`
+- **Part Descriptions:** `font-weight: 700; font-size: 0.95rem;`
+- **Prices & Totals:** `font-weight: 800; font-size: 1.1rem;`
+- **Monospace SKUs:** `font-family: monospace; font-size: 0.84rem; font-weight: 700;`
+
+---
+
+## 📐 4. High-Productivity 2-Column Split Dashboard Flow
+
+Avoid endless single-column scrolling. Tab 1 utilizes a split desktop layout:
+- **Left Column (Parts Explorer)**:
+  - Step 1: Model Selection.
+  - Step 2: Sub-Assembly Category filter, Part search input, Branch inventory toggle.
+  - Bounded scroll container (`st.container(height=560)`) displaying individual clay component cards with SKU, description, stock status pill, frequency badge, and cross-model fit.
+- **Right Column (Sticky Live Quotation & Checkout)**:
+  - Live Selected Parts Cart with individual remove and clear all controls.
+  - Step 3: Service charges & customer warranty radio.
+  - Step 4: Customer name, phone, serial inputs.
+  - Real-time Official Estimate Bill Receipt.
+  - Instant WhatsApp 1-click quotation launcher.
+
+---
+
+## 🚀 5. Quality Verification & Git Protocol
+- Test interface across both **Light Mode** and **Dark Mode** to ensure shadows, contrast, and text remain crisp.
 - **Mandatory Git Push**: Every change must be committed with a descriptive git message and pushed to GitHub immediately.
