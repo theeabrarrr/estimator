@@ -6,8 +6,11 @@ import json
 import re
 import base64
 import requests
-
+import warnings
 from contextlib import contextmanager
+
+# Suppress harmless pandas DBAPI UserWarning when using custom Turso connection wrappers
+warnings.filterwarnings('ignore', category=UserWarning, message='.*pandas only supports SQLAlchemy connectable.*')
 
 DB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dwp_service.db")
 
