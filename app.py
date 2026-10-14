@@ -302,6 +302,43 @@ st.markdown("""
         line-height: 1.3 !important;
     }
 
+    /* Ultra-Compact 2-Line Clay Part Card & Meta */
+    .compact-part-name {
+        font-weight: 700;
+        font-size: 0.87rem;
+        color: var(--text-color) !important;
+        line-height: 1.22;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .compact-meta-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 5px;
+        font-size: 0.71rem;
+        color: var(--text-color) !important;
+        margin-top: 3px;
+        line-height: 1.15;
+    }
+
+    .compact-meta-pill {
+        background-color: var(--secondary-background-color) !important;
+        color: var(--text-color) !important;
+        font-weight: 600;
+        padding: 1px 7px;
+        border-radius: 9999px;
+        font-size: 0.69rem;
+        border: 1px solid var(--dwp-border) !important;
+        box-shadow: 1px 1px 3px rgba(0,0,0,0.04);
+        display: inline-flex;
+        align-items: center;
+        white-space: nowrap;
+    }
+
     /* 3D Clay Physical Buttons */
     div.stButton > button {
         border-radius: 14px !important;
@@ -660,14 +697,23 @@ with tab_estimator:
                             is_pending = bool(r['is_pricing_pending'])
                             cross_cnt = int(r['cross_model_count']) if r['cross_model_count'] else 1
 
-                            freq_badge = f'<span class="dwp-badge-highlight">🔥 High Frequency ({freq} jobs)</span>' if freq >= 20 else f'<span class="dwp-badge">Replaced {freq} times</span>'
-                            stock_badge = f'<span class="stock-badge-in">🟢 Karachi-2: {b_stock} In Stock</span>' if b_stock > 0 else '<span class="stock-badge-out">⚪ Karachi-2: 0 Available</span>'
-                            cross_pill = f'&nbsp;<span class="dwp-badge">🌐 Fits {cross_cnt} models</span>' if cross_cnt > 1 else ""
+                            # Construct hover tooltip for compatible models without taking vertical space
+                            compat_models = cross_compat_map.get(p_no, [])
+                            if compat_models:
+                                tooltip_txt = "Compatible Models: " + ", ".join([f"{m} ({f})" for m, f in compat_models[:10]])
+                                if len(compat_models) > 10:
+                                    tooltip_txt += f", +{len(compat_models)-10} more"
+                            else:
+                                tooltip_txt = f"Fits model {selected_model}"
 
+                            freq_badge = f'<span class="compact-meta-pill" style="border: 1px solid var(--text-color); font-weight: 700;">🔥 {freq} jobs</span>' if freq >= 20 else f'<span class="compact-meta-pill">{freq} jobs</span>'
+                            stock_badge = f'<span class="compact-meta-pill" style="color: #16a34a; border-color: rgba(34,197,94,0.4); background: rgba(34,197,94,0.08); font-weight:700;">🟢 Karachi-2: {b_stock}</span>' if b_stock > 0 else '<span class="compact-meta-pill" style="opacity: 0.7;">⚪ Karachi-2: 0</span>'
+                            cross_pill = f'<span class="compact-meta-pill" title="{tooltip_txt}" style="cursor: help;">🌐 Fits {cross_cnt} models</span>' if cross_cnt > 1 else ""
+
+                            is_already_selected = p_no in st.session_state["estimator_selected_parts"]
+                            
                             with st.container():
-                                c_chk, c_info, c_price = st.columns([0.08, 0.65, 0.27])
-                                
-                                is_already_selected = p_no in st.session_state["estimator_selected_parts"]
+                                c_chk, c_info, c_price = st.columns([0.07, 0.71, 0.22])
                                 chk_val = c_chk.checkbox("Select component", value=is_already_selected, key=f"chk_p_{selected_model}_{p_no}", label_visibility="collapsed")
 
                                 if chk_val != is_already_selected:
@@ -685,31 +731,25 @@ with tab_estimator:
 
                                 with c_info:
                                     st.markdown(f"""
-                                    <div style="line-height: 1.45; margin-bottom: 4px;">
-                                        <span class="dwp-item-desc">{p_desc}</span><br>
-                                        <code class="dwp-item-sku">SKU: {p_no}</code> &nbsp;|&nbsp; 
-                                        <span class="dwp-badge">[{p_board}]</span><br>
-                                        <div style="margin-top: 4px;">
-                                            {freq_badge} &nbsp; {stock_badge} {cross_pill}
+                                    <div style="line-height: 1.25;">
+                                        <span class="compact-part-name" title="{p_desc}">{p_desc}</span>
+                                        <div class="compact-meta-row">
+                                            <code style="font-size:0.73rem; font-weight:700; opacity:0.85;">SKU: {p_no}</code>
+                                            <span class="compact-meta-pill">[{p_board}]</span>
+                                            {stock_badge}
+                                            {freq_badge}
+                                            {cross_pill}
                                         </div>
                                     </div>
                                     """, unsafe_allow_html=True)
-                                    
-                                    if cross_cnt > 1:
-                                        with st.expander(f"🔍 Compatible Models for {p_no}"):
-                                            compat_models = cross_compat_map.get(p_no, [])
-                                            m_summary = ", ".join([f"**{m}** ({f})" for m, f in compat_models[:8]])
-                                            if len(compat_models) > 8:
-                                                m_summary += f", +{len(compat_models)-8} more"
-                                            st.caption(f"Installed on: {m_summary}")
 
                                 with c_price:
                                     if is_pending or p_price == 0:
-                                        st.markdown('<span class="dwp-badge-highlight">⚠️ Pending Price</span>', unsafe_allow_html=True)
+                                        st.markdown('<div style="text-align:right;"><span class="compact-meta-pill" style="border: 1px solid var(--text-color); font-weight: 700; color: #dc2626;">⚠️ Pending</span></div>', unsafe_allow_html=True)
                                     else:
-                                        st.markdown(f'<div class="dwp-price-tag">Rs. {p_price:,}</div>', unsafe_allow_html=True)
+                                        st.markdown(f'<div style="font-size:0.96rem; font-weight:800; text-align:right; color:var(--text-color); padding-top:2px;">Rs. {p_price:,}</div>', unsafe_allow_html=True)
 
-                                st.markdown("<hr style='margin: 6px 0; border: none; border-top: 1px solid var(--dwp-border);'>", unsafe_allow_html=True)
+                                st.markdown("<hr style='margin: 4px 0 5px 0; border: none; border-top: 1px solid var(--dwp-border); opacity: 0.5;'>", unsafe_allow_html=True)
 
     with col_quote:
         if not selected_model:
