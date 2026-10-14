@@ -35,7 +35,10 @@ from etl import (
 )
 
 import config
-from config import VISIT_CHARGES, MOBILITY_CHARGES, BASE_FIXED_TOTAL, calculate_gas_charge
+from config import (
+    VISIT_CHARGES, MOBILITY_CHARGES, BASE_FIXED_TOTAL, calculate_gas_charge,
+    VALVE_BYPASS_CHARGES, AC_SERVICE_CHARGES
+)
 
 # Page Configuration - Wide layout for high productivity split dashboard
 st.set_page_config(
@@ -290,6 +293,13 @@ st.markdown("""
         opacity: 0.75; 
         box-shadow: 2px 2px 6px rgba(0,0,0,0.04), inset 1px 1px 2px rgba(255,255,255,0.2) !important;
         display: inline-block; 
+    }
+
+    /* Checkbox & Radio Labels Full Wrap */
+    div[data-testid="stCheckbox"] label p {
+        white-space: normal !important;
+        font-size: 0.85rem !important;
+        line-height: 1.3 !important;
     }
 
     /* 3D Clay Physical Buttons */
@@ -739,37 +749,25 @@ with tab_estimator:
                 st.caption("ℹ️ No spare parts selected yet. Check items on the left to include them.")
 
             # STEP 3: BASE OVERHEADS & SERVICE CHARGES
-            st.markdown("<div class='dwp-step-box'><span class='dwp-step-title'>💵 STEP 3: Service Charges & Warranty</span></div>", unsafe_allow_html=True)
+            st.markdown("<div class='dwp-step-box'><span class='dwp-step-title'>💵 STEP 3: Service & Labour Charges</span></div>", unsafe_allow_html=True)
 
             col_b1, col_b2 = st.columns(2)
             with col_b1:
-                chk_visit = st.checkbox(f"🚗 Visit (Rs. {VISIT_CHARGES:,})", value=True, key="chk_visit")
+                chk_visit = st.checkbox(f"🚗 Visit Charges (Rs. {VISIT_CHARGES:,})", value=True, key="chk_visit")
+                chk_bypass = st.checkbox(f"🔄 4-Way Valve Bypass (Rs. {VALVE_BYPASS_CHARGES:,})", value=False, key="chk_bypass")
             with col_b2:
-                chk_mobility = st.checkbox(f"🔧 Labour (Rs. {MOBILITY_CHARGES:,})", value=True, key="chk_mobility")
+                chk_mobility = st.checkbox(f"🔧 Labour & Mobility (Rs. {MOBILITY_CHARGES:,})", value=True, key="chk_mobility")
+                chk_service = st.checkbox(f"🧼 AC Service Charges (Rs. {AC_SERVICE_CHARGES:,})", value=False, key="chk_service")
 
             chk_gas = st.checkbox(f"⚡ Gas Refill (+Rs. {gas_amount:,}) - {gas_label}", value=False, key="chk_gas")
-
-            billing_type = st.radio(
-                "Customer Warranty Status:",
-                options=["Cash / Out of Warranty", "Under Warranty (Free Replacement)", "Partial Warranty (Parts Free only)"],
-                key="billing_type"
-            )
 
             # Calculation & Grand Total Breakdown
             visit_total = VISIT_CHARGES if chk_visit else 0
             mobility_total = MOBILITY_CHARGES if chk_mobility else 0
+            bypass_total = VALVE_BYPASS_CHARGES if chk_bypass else 0
+            service_total = AC_SERVICE_CHARGES if chk_service else 0
             gas_total = gas_amount if chk_gas else 0
-            gross_total = parts_total + visit_total + mobility_total + gas_total
-
-            if "under warranty" in billing_type.lower():
-                customer_payable = 0
-                policy_note = "Free of charge under manufacturer warranty."
-            elif "partial warranty" in billing_type.lower():
-                customer_payable = parts_total + gas_total
-                policy_note = "Parts/Gas payable by customer; service & mobility covered under warranty."
-            else:
-                customer_payable = gross_total
-                policy_note = "Standard commercial job — full parts and service charges apply."
+            customer_payable = parts_total + visit_total + mobility_total + bypass_total + service_total + gas_total
 
             # STEP 4: CUSTOMER DETAILS & ESTIMATE
             st.markdown("<div class='dwp-step-box'><span class='dwp-step-title'>📊 STEP 4: Official Estimate & Quotation</span></div>", unsafe_allow_html=True)
@@ -810,7 +808,7 @@ with tab_estimator:
                 f"<div class='bill-card'>"
                 f"<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'>"
                 f"<span style='font-size: 1.0rem; font-weight: 700;'>Official Estimate Breakdown</span>"
-                f"<span class='badge-amount'>{billing_type.split()[0]}</span>"
+                f"<span class='dwp-badge'>Official Quote</span>"
                 f"</div>"
                 f"<table class='dwp-bill-table'>"
                 f"<tr style='border-top: 1px solid var(--dwp-border);'>"
@@ -823,25 +821,18 @@ with tab_estimator:
                 f"<td style='padding: 4px 0;'><b>Parts Subtotal:</b></td>"
                 f"<td style='text-align: right; font-weight: 700;'>Rs. {parts_total:,}</td>"
                 f"</tr>"
-                f"<tr>"
-                f"<td style='padding: 2px 0;'>Visit Charges:</td>"
-                f"<td style='text-align: right;'>Rs. {visit_total:,}</td>"
-                f"</tr>"
-                f"<tr>"
-                f"<td style='padding: 2px 0;'>Labour & Mobility:</td>"
-                f"<td style='text-align: right;'>Rs. {mobility_total:,}</td>"
-                f"</tr>"
-                f"<tr>"
-                f"<td style='padding: 2px 0;'>Gas Charges ({gas_label}):</td>"
-                f"<td style='text-align: right;'>Rs. {gas_total:,}</td>"
-                f"</tr>"
+                f"{f'<tr><td style=\"padding: 2px 0;\">Visit Charges:</td><td style=\"text-align: right;\">Rs. {visit_total:,}</td></tr>' if chk_visit else ''}"
+                f"{f'<tr><td style=\"padding: 2px 0;\">Labour & Mobility:</td><td style=\"text-align: right;\">Rs. {mobility_total:,}</td></tr>' if chk_mobility else ''}"
+                f"{f'<tr><td style=\"padding: 2px 0;\">4-Way Valve Bypass:</td><td style=\"text-align: right;\">Rs. {bypass_total:,}</td></tr>' if chk_bypass else ''}"
+                f"{f'<tr><td style=\"padding: 2px 0;\">AC Service Charges:</td><td style=\"text-align: right;\">Rs. {service_total:,}</td></tr>' if chk_service else ''}"
+                f"{f'<tr><td style=\"padding: 2px 0;\">Gas Charges ({gas_label}):</td><td style=\"text-align: right;\">Rs. {gas_total:,}</td></tr>' if chk_gas else ''}"
                 f"<tr style='border-top: 2px solid var(--dwp-border); font-weight: 800; font-size: 1.15rem;'>"
                 f"<td style='padding-top: 8px;'>Total Customer Payable:</td>"
                 f"<td style='text-align: right; padding-top: 8px;'>Rs. {customer_payable:,}</td>"
                 f"</tr>"
                 f"</table>"
                 f"<div style='font-size: 0.74rem; opacity: 0.8; margin-top: 8px;'>"
-                f"ℹ️ <b>Policy:</b> {policy_note}"
+                f"ℹ️ <b>Policy:</b> Standard commercial job — all genuine replacement parts carry official DWP warranty."
                 f"</div>"
                 f"</div>"
             )
@@ -860,20 +851,32 @@ with tab_estimator:
             display_cust_name = c_name_input if c_name_input else "Valued Customer"
             display_serial = c_serial_input if c_serial_input else "N/A"
 
+            service_charges_lines = []
+            if chk_visit:
+                service_charges_lines.append(f"• Visit Charges: Rs. {visit_total:,}")
+            if chk_mobility:
+                service_charges_lines.append(f"• Labour & Mobility: Rs. {mobility_total:,}")
+            if chk_bypass:
+                service_charges_lines.append(f"• 4-Way Valve Bypass: Rs. {bypass_total:,}")
+            if chk_service:
+                service_charges_lines.append(f"• AC Service Charges: Rs. {service_total:,}")
+            if chk_gas:
+                service_charges_lines.append(f"• Gas ({gas_label}): Rs. {gas_total:,}")
+            if not service_charges_lines:
+                service_charges_lines.append("• Nil / No additional service charges")
+            service_charges_text = "\n".join(service_charges_lines)
+
             quote_text = f"""❄️ *DIGITAL WORLD PAKISTAN (PVT) LTD* ❄️
 *Customer Service Official Quotation*
 ----------------------------------------
 *Model:* {selected_model}
 *Serial No:* {display_serial}
 *Customer:* {display_cust_name}
-*Warranty Status:* {billing_type}
 
 *REQUIRED PARTS:*
 {parts_lines}
 *LABOUR & SERVICE CHARGES:*
-• Visit Charges: Rs. {visit_total:,}
-• Labour & Mobility: Rs. {mobility_total:,}
-{f'• Gas ({gas_label}): Rs. {gas_total:,}' if chk_gas else ''}
+{service_charges_text}
 ----------------------------------------
 💰 *Total: Rs. {customer_payable:,}*
 ----------------------------------------
