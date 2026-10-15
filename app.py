@@ -812,12 +812,13 @@ with tab_estimator:
             # STEP 4: CUSTOMER DETAILS & ESTIMATE
             st.markdown("<div class='dwp-step-box'><span class='dwp-step-title'>📊 STEP 4: Official Estimate & Quotation</span></div>", unsafe_allow_html=True)
 
-            c_name_input = st.text_input("Customer Name:", placeholder="e.g. Muhammad Abrar", key="q_cname").strip()
             col_cp1, col_cp2 = st.columns(2)
             with col_cp1:
-                c_phone_input = st.text_input("Customer Phone:", placeholder="e.g. 03402696414", key="q_phone").strip()
+                c_complaint_input = st.text_input("Complaint No (Optional):", placeholder="e.g. 2826010...", key="q_complaint").strip()
+                c_name_input = st.text_input("Customer Name:", placeholder="e.g. Muhammad Abrar", key="q_cname").strip()
             with col_cp2:
                 c_serial_input = st.text_input("Serial No (Optional):", placeholder="e.g. A1022381...", key="q_serial").strip()
+                c_phone_input = st.text_input("Customer Phone:", placeholder="e.g. 03402696414", key="q_phone").strip()
 
             # Itemized table rows
             parts_rows_html = ""
@@ -890,6 +891,7 @@ with tab_estimator:
 
             display_cust_name = c_name_input if c_name_input else "Valued Customer"
             display_serial = c_serial_input if c_serial_input else "N/A"
+            display_complaint = c_complaint_input if c_complaint_input else "N/A"
 
             service_charges_lines = []
             if chk_visit:
@@ -901,30 +903,24 @@ with tab_estimator:
             if chk_service:
                 service_charges_lines.append(f"• AC Service Charges: Rs. {service_total:,}")
             if chk_gas:
-                service_charges_lines.append(f"• Gas ({gas_label}): Rs. {gas_total:,}")
+                service_charges_lines.append(f"• Gas: Rs. {gas_total:,}")
             if not service_charges_lines:
                 service_charges_lines.append("• Nil / No additional service charges")
             service_charges_text = "\n".join(service_charges_lines)
 
-            quote_text = f"""❄️ *DIGITAL WORLD PAKISTAN (PVT) LTD* ❄️
-*Customer Service Official Quotation*
-----------------------------------------
+            quote_text = f"""*Complaint No:* {display_complaint}
 *Model:* {selected_model}
 *Serial No:* {display_serial}
 *Customer:* {display_cust_name}
 
 *REQUIRED PARTS:*
-{parts_lines}
+{parts_lines.strip()}
+
 *LABOUR & SERVICE CHARGES:*
 {service_charges_text}
 ----------------------------------------
 💰 *Total: Rs. {customer_payable:,}*
-----------------------------------------
-*Terms & Conditions:*
-1. All genuine replacement parts carry official DWP warranty. (45 Days)
-2. Prices are strictly per official Karachi-2 Store.
-3. Quotation valid for 3 Days from issue date.
-"""
+----------------------------------------"""
 
             st.markdown("###### 📋 Customer WhatsApp Quotation")
             st.code(quote_text, language="markdown")
