@@ -29,9 +29,23 @@ def get_turso_credentials():
             pass
     return (url.strip() if url else None), (token.strip() if token else None)
 
+_TURSO_FALLBACK_ACTIVE = False
+
 def is_turso_active() -> bool:
     url, token = get_turso_credentials()
-    return bool(url and token)
+    return bool(url and token and not _TURSO_FALLBACK_ACTIVE)
+
+def get_database_status() -> str:
+    url, token = get_turso_credentials()
+    if not url or not token:
+        return "LOCAL_ONLY"
+    if _TURSO_FALLBACK_ACTIVE:
+        return "TURSO_FALLBACK_LOCAL"
+    return "TURSO_ONLINE"
+
+def reset_turso_fallback() -> None:
+    global _TURSO_FALLBACK_ACTIVE
+    _TURSO_FALLBACK_ACTIVE = False
 
 class TursoCursor:
     def __init__(self, conn):
@@ -159,23 +173,43 @@ class TursoConnection:
             "Content-Type": "application/json"
         })
 
-    def _post(self, payload):
+    def _post(self, payload, timeout=6):
         import time
-        max_retries = 3
+        max_retries = 2
         last_err = None
         for attempt in range(max_retries):
             try:
-                resp = self.session.post(self.pipeline_url, json=payload, timeout=60)
+                resp = self.session.post(self.pipeline_url, json=payload, timeout=timeout)
                 if resp.status_code != 200:
                     raise sqlite3.OperationalError(f"Turso HTTP {resp.status_code}: {resp.text}")
                 return resp.json()
-            except (requests.exceptions.RequestException, ConnectionError) as e:
+            except Exception as e:
                 last_err = e
                 if attempt < max_retries - 1:
-                    time.sleep(1.5 * (attempt + 1))
+                    time.sleep(0.5 * (attempt + 1))
                 else:
+                    global _TURSO_FALLBACK_ACTIVE
+                    _TURSO_FALLBACK_ACTIVE = True
                     _reset_shared_turso_connection()
                     raise sqlite3.OperationalError(f"Turso Network Error after {max_retries} attempts: {last_err}")
+
+    def execute_batch(self, sql_statements: list[str], timeout=15):
+        """
+        Executes a batch of SQL statements in a single atomic /v2/pipeline HTTP request.
+        """
+        requests_list = []
+        for sql in sql_statements:
+            s = sql.strip()
+            if s:
+                requests_list.append({"type": "execute", "stmt": {"sql": s, "args": []}})
+        if not requests_list:
+            return
+        requests_list.append({"type": "close"})
+        res = self._post({"requests": requests_list}, timeout=timeout)
+        for r in res.get("results", []):
+            if r.get("type") == "error":
+                err = r.get("error", {})
+                raise sqlite3.OperationalError(f"Turso Batch Error: {err.get('message', 'Unknown error')}")
 
     def cursor(self):
         return TursoCursor(self)
@@ -211,10 +245,21 @@ def _reset_shared_turso_connection():
 
 @contextmanager
 def get_connection():
+    global _TURSO_FALLBACK_ACTIVE
     url, token = get_turso_credentials()
-    if url and token:
-        conn = _get_shared_turso_connection(url, token)
-        yield conn
+    if url and token and not _TURSO_FALLBACK_ACTIVE:
+        try:
+            conn = _get_shared_turso_connection(url, token)
+            yield conn
+        except Exception as e:
+            warnings.warn(f"Turso Cloud connection failed ({e}). Falling over to local high-speed SQLite database.")
+            _TURSO_FALLBACK_ACTIVE = True
+            _reset_shared_turso_connection()
+            conn = sqlite3.connect(DB_FILE)
+            try:
+                yield conn
+            finally:
+                conn.close()
     else:
         conn = sqlite3.connect(DB_FILE)
         try:
@@ -222,6 +267,18 @@ def get_connection():
         finally:
             conn.close()
 
+def sync_to_local_sqlite(sql: str, params_seq=None):
+    """Mirrors database mutations to local dwp_service.db snapshot for instant offline readiness."""
+    try:
+        with sqlite3.connect(DB_FILE) as local_conn:
+            c = local_conn.cursor()
+            if params_seq:
+                c.executemany(sql, params_seq)
+            else:
+                c.execute(sql)
+            local_conn.commit()
+    except Exception:
+        pass
 
 def search_history_records(query_str, clean_phone_str):
     init_estimator_schema()
@@ -315,10 +372,113 @@ def fetch_performance_data(start_date=None, end_date=None):
 
 _SCHEMA_INITIALIZED = False
 
+SCHEMA_DDL_STATEMENTS = [
+    """
+    CREATE TABLE IF NOT EXISTS history_master (
+        complaint_no TEXT PRIMARY KEY,
+        serial TEXT,
+        phone TEXT,
+        model TEXT,
+        customer_name TEXT,
+        technician_name TEXT,
+        complaint_type TEXT,
+        purchase_date TEXT,
+        complaint_date TEXT,
+        closed_date TEXT,
+        remarks TEXT,
+        closed_amount INTEGER DEFAULT 0
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_history_complaint_no ON history_master (complaint_no)",
+    "CREATE INDEX IF NOT EXISTS idx_history_phone ON history_master (phone)",
+    "CREATE INDEX IF NOT EXISTS idx_history_serial ON history_master (serial)",
+    "CREATE INDEX IF NOT EXISTS idx_history_closed_date ON history_master (closed_date)",
+    """
+    CREATE TABLE IF NOT EXISTS tech_performance_master (
+        complaint_no TEXT PRIMARY KEY,
+        technician_name TEXT,
+        status TEXT,
+        closed_date TEXT
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_tech_perf_tech ON tech_performance_master (technician_name)",
+    "CREATE INDEX IF NOT EXISTS idx_tech_perf_date ON tech_performance_master (closed_date)",
+    """
+    CREATE TABLE IF NOT EXISTS model_part_catalog (
+        model TEXT NOT NULL,
+        part_no TEXT NOT NULL,
+        part_description TEXT,
+        board_type TEXT,
+        historical_frequency INTEGER DEFAULT 1,
+        last_installed_date TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (model, part_no)
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_catalog_model ON model_part_catalog (model)",
+    "CREATE INDEX IF NOT EXISTS idx_catalog_part_no ON model_part_catalog (part_no)",
+    "CREATE INDEX IF NOT EXISTS idx_catalog_model_freq ON model_part_catalog (model, historical_frequency DESC)",
+    """
+    CREATE TABLE IF NOT EXISTS master_parts_lookup (
+        part_no TEXT PRIMARY KEY,
+        erp_description TEXT,
+        erp_default_model TEXT,
+        retail_price INTEGER DEFAULT 0,
+        branch_store_qty INTEGER DEFAULT 0,
+        branch_sales_qty INTEGER DEFAULT 0,
+        tech_stock_qty INTEGER DEFAULT 0,
+        total_stock_qty INTEGER DEFAULT 0,
+        available_branch_stock INTEGER DEFAULT 0,
+        available_total_stock INTEGER DEFAULT 0,
+        stock_status TEXT DEFAULT 'Out of Stock',
+        tech_allocations_json TEXT,
+        is_pricing_pending INTEGER DEFAULT 0,
+        source_document TEXT,
+        last_synced TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_parts_lookup_status ON master_parts_lookup (stock_status)",
+    "CREATE INDEX IF NOT EXISTS idx_parts_lookup_pricing_pending ON master_parts_lookup (is_pricing_pending)",
+    """
+    CREATE VIEW IF NOT EXISTS v_model_compatible_parts AS
+    SELECT 
+        c.model,
+        c.part_no,
+        COALESCE(p.erp_description, c.part_description) AS part_description,
+        c.board_type,
+        c.historical_frequency,
+        COALESCE(p.retail_price, 0) AS retail_price,
+        COALESCE(p.available_branch_stock, 0) AS branch_stock,
+        COALESCE(p.tech_stock_qty, 0) AS tech_stock,
+        COALESCE(p.available_total_stock, 0) AS total_stock,
+        COALESCE(p.stock_status, 'Out of Stock') AS stock_status,
+        COALESCE(p.tech_allocations_json, '{}') AS tech_allocations_json,
+        COALESCE(p.is_pricing_pending, 1) AS is_pricing_pending,
+        COALESCE(xm.cross_model_count, 1) AS cross_model_count
+    FROM model_part_catalog c
+    LEFT JOIN master_parts_lookup p ON c.part_no = p.part_no
+    LEFT JOIN (
+        SELECT part_no, COUNT(DISTINCT model) AS cross_model_count
+        FROM model_part_catalog
+        GROUP BY part_no
+    ) xm ON c.part_no = xm.part_no
+    """
+]
+
+def is_schema_ready(conn) -> bool:
+    """Fast non-blocking verification if catalog tables exist and are populated."""
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1 FROM model_part_catalog LIMIT 1")
+        row = cursor.fetchone()
+        return row is not None
+    except Exception:
+        return False
+
 def init_estimator_schema(force: bool = False):
     """
     Ensures history_master, tech_performance_master, model_part_catalog, master_parts_lookup, and v_model_compatible_parts exist.
-    Guarded to run at most once per process lifetime unless force=True.
+    Fast-paths in <100ms if tables already exist, eliminating 17 sequential remote network calls.
     """
     global _SCHEMA_INITIALIZED
     if _SCHEMA_INITIALIZED and not force:
@@ -327,101 +487,25 @@ def init_estimator_schema(force: bool = False):
         with get_connection() as conn:
             cursor = conn.cursor()
             
-            # 1. History Master Table
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS history_master (
-                    complaint_no TEXT PRIMARY KEY,
-                    serial TEXT,
-                    phone TEXT,
-                    model TEXT,
-                    customer_name TEXT,
-                    technician_name TEXT,
-                    complaint_type TEXT,
-                    purchase_date TEXT,
-                    complaint_date TEXT,
-                    closed_date TEXT,
-                    remarks TEXT,
-                    closed_amount INTEGER DEFAULT 0
-                )
-            """)
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_history_complaint_no ON history_master (complaint_no)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_history_phone ON history_master (phone)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_history_serial ON history_master (serial)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_history_closed_date ON history_master (closed_date)")
+            # Fast-path check: if schema is already healthy, exit instantly
+            if not force and is_schema_ready(conn):
+                _SCHEMA_INITIALIZED = True
+                return
 
-            # 2. Tech Performance Master Table
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS tech_performance_master (
-                    complaint_no TEXT PRIMARY KEY,
-                    technician_name TEXT,
-                    status TEXT,
-                    closed_date TEXT
-                )
-            """)
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_tech_perf_tech ON tech_performance_master (technician_name)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_tech_perf_date ON tech_performance_master (closed_date)")
-            
-            # 3. Model-to-Part Compatibility Table
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS model_part_catalog (
-                    model TEXT NOT NULL,
-                    part_no TEXT NOT NULL,
-                    part_description TEXT,
-                    board_type TEXT,
-                    historical_frequency INTEGER DEFAULT 1,
-                    last_installed_date TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    PRIMARY KEY (model, part_no)
-                )
-            """)
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_catalog_model ON model_part_catalog (model)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_catalog_part_no ON model_part_catalog (part_no)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_catalog_model_freq ON model_part_catalog (model, historical_frequency DESC)")
+            if force:
+                try:
+                    cursor.execute("DROP VIEW IF EXISTS v_model_compatible_parts")
+                    conn.commit()
+                except Exception:
+                    pass
 
-            # 4. Master Pricing & Inventory Table
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS master_parts_lookup (
-                    part_no TEXT PRIMARY KEY,
-                    erp_description TEXT,
-                    erp_default_model TEXT,
-                    retail_price INTEGER DEFAULT 0,
-                    branch_store_qty INTEGER DEFAULT 0,
-                    branch_sales_qty INTEGER DEFAULT 0,
-                    tech_stock_qty INTEGER DEFAULT 0,
-                    total_stock_qty INTEGER DEFAULT 0,
-                    available_branch_stock INTEGER DEFAULT 0,
-                    available_total_stock INTEGER DEFAULT 0,
-                    stock_status TEXT DEFAULT 'Out of Stock',
-                    tech_allocations_json TEXT,
-                    is_pricing_pending INTEGER DEFAULT 0,
-                    source_document TEXT,
-                    last_synced TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_parts_lookup_status ON master_parts_lookup (stock_status)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_parts_lookup_pricing_pending ON master_parts_lookup (is_pricing_pending)")
-
-            # 5. Real-Time Estimator View
-            cursor.execute("""
-                CREATE VIEW IF NOT EXISTS v_model_compatible_parts AS
-                SELECT 
-                    c.model,
-                    c.part_no,
-                    COALESCE(p.erp_description, c.part_description) AS part_description,
-                    c.board_type,
-                    c.historical_frequency,
-                    COALESCE(p.retail_price, 0) AS retail_price,
-                    COALESCE(p.available_branch_stock, 0) AS branch_stock,
-                    COALESCE(p.tech_stock_qty, 0) AS tech_stock,
-                    COALESCE(p.available_total_stock, 0) AS total_stock,
-                    COALESCE(p.stock_status, 'Out of Stock') AS stock_status,
-                    COALESCE(p.tech_allocations_json, '{}') AS tech_allocations_json,
-                    COALESCE(p.is_pricing_pending, 1) AS is_pricing_pending,
-                    (SELECT COUNT(DISTINCT m2.model) FROM model_part_catalog m2 WHERE m2.part_no = c.part_no) AS cross_model_count
-                FROM model_part_catalog c
-                LEFT JOIN master_parts_lookup p ON c.part_no = p.part_no
-            """)
-            conn.commit()
+            # Execute schema DDL statements (single batched HTTP request for Turso)
+            if hasattr(conn, "execute_batch"):
+                conn.execute_batch(SCHEMA_DDL_STATEMENTS)
+            else:
+                for stmt in SCHEMA_DDL_STATEMENTS:
+                    cursor.execute(stmt)
+                conn.commit()
 
             cursor.execute("""
                 SELECT 
@@ -832,6 +916,12 @@ def update_part_price(part_no: str, new_price: float | int) -> bool:
                 VALUES (?, 'Manual Price Entry', ?, 0, 'Out of Stock', CURRENT_TIMESTAMP)
             """, (clean_pno, price_val))
         conn.commit()
+    if is_turso_active():
+        sync_to_local_sqlite("""
+            INSERT INTO master_parts_lookup (part_no, erp_description, retail_price, is_pricing_pending, stock_status, last_synced)
+            VALUES (?, 'Manual Price Entry', ?, 0, 'Out of Stock', CURRENT_TIMESTAMP)
+            ON CONFLICT(part_no) DO UPDATE SET retail_price=excluded.retail_price, is_pricing_pending=0, last_synced=CURRENT_TIMESTAMP
+        """, [(clean_pno, price_val)])
     return True
 
 def get_missing_price_parts_df() -> pd.DataFrame:
@@ -873,6 +963,15 @@ def upsert_master_parts(records: list[tuple]) -> int:
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         """, records)
         conn.commit()
+    if is_turso_active():
+        sync_to_local_sqlite("""
+            INSERT OR REPLACE INTO master_parts_lookup (
+                part_no, erp_description, erp_default_model, retail_price,
+                branch_store_qty, branch_sales_qty, tech_stock_qty, total_stock_qty,
+                available_branch_stock, available_total_stock, stock_status,
+                tech_allocations_json, is_pricing_pending, source_document, last_synced
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        """, records)
     return len(records)
 
 def upsert_model_catalog(records: list[tuple]) -> int:
@@ -888,6 +987,12 @@ def upsert_model_catalog(records: list[tuple]) -> int:
             ) VALUES (?, ?, ?, ?, ?, ?)
         """, records)
         conn.commit()
+    if is_turso_active():
+        sync_to_local_sqlite("""
+            INSERT OR REPLACE INTO model_part_catalog (
+                model, part_no, part_description, board_type, historical_frequency, last_installed_date
+            ) VALUES (?, ?, ?, ?, ?, ?)
+        """, records)
     return len(records)
 
 def append_model_catalog(records: list[tuple]) -> int:

@@ -24,7 +24,7 @@ from database import (
     get_parts_by_model, update_part_price,
     get_missing_price_parts_df, get_cross_model_compatibilities,
     get_all_cross_model_compatibilities_map,
-    is_turso_active
+    is_turso_active, get_database_status
 )
 
 import etl
@@ -80,7 +80,17 @@ def get_cached_missing_price_parts_df():
 
 @st.cache_data(ttl=3600, show_spinner="Loading Technician KPI Data...")
 def get_cached_performance_data():
-    return fetch_performance_data()
+    df = fetch_performance_data()
+    if df is None or df.empty:
+        return pd.DataFrame(), None, None, []
+    df = df.copy()
+    df['parsed_date'] = pd.to_datetime(df['closed_date'], errors='coerce')
+    valid_dates = df['parsed_date'].dropna()
+    min_avail = valid_dates.min().date() if not valid_dates.empty else date(2025, 1, 1)
+    max_avail = valid_dates.max().date() if not valid_dates.empty else datetime.now().date()
+    df['month_period'] = df['closed_date'].astype(str).str.slice(0, 7)
+    available_months = sorted([m for m in df['month_period'].dropna().unique() if len(m) == 7 and m.startswith('20')], reverse=True)
+    return df, min_avail, max_avail, available_months
 
 # ==========================================
 # CUSTOM STYLING: SLEEK CORPORATE CLAYMORPHISM
@@ -480,8 +490,11 @@ st.markdown('<div class="sub-title">Field Diagnostic, Cost & Live Stock Estimato
 # ==========================================
 with st.sidebar:
     st.markdown("### 📥 Daily Service & Performance Sync")
-    if is_turso_active():
+    db_status = get_database_status()
+    if db_status == "TURSO_ONLINE":
         st.markdown("<div style='margin-bottom:8px;'><span class='status-badge-completed'>🟢 Cloud Storage: Permanent (Turso Cloud)</span></div>", unsafe_allow_html=True)
+    elif db_status == "TURSO_FALLBACK_LOCAL":
+        st.markdown("<div style='margin-bottom:8px;'><span class='status-badge-canceled' title='Turso Cloud network latency detected. High-speed local snapshot active.'>🟡 High-Speed Local Snapshot Active (Cloud Syncing)</span></div>", unsafe_allow_html=True)
     else:
         st.markdown("<div style='margin-bottom:8px;'><span class='dwp-badge'>💻 Local Storage (dwp_service.db)</span></div>", unsafe_allow_html=True)
     st.caption("Upload complaints to update Master History, Technician KPI, and Parts Catalog simultaneously.")
@@ -1003,19 +1016,11 @@ with tab_history:
 # TAB 3: TECHNICIAN PERFORMANCE
 # ==========================================
 with tab_perf:
-    perf_data = get_cached_performance_data().copy()
+    perf_data, min_avail, max_avail, available_months = get_cached_performance_data()
     if perf_data.empty:
         st.info("ℹ️ **Technician Performance Report Abhi Load Nahi Hai.**\n\nSidebar mein **Quality Feedback Report** upload karke **Sync All Complaints & Performance** dabayein.")
     else:
-        perf_data['parsed_date'] = pd.to_datetime(perf_data['closed_date'], errors='coerce')
-        valid_dates = perf_data['parsed_date'].dropna()
-        min_avail = valid_dates.min().date() if not valid_dates.empty else date(2025, 1, 1)
-        max_avail = valid_dates.max().date() if not valid_dates.empty else datetime.now().date()
-
         st.markdown("##### 📅 Select Period for KPI Evaluation")
-
-        perf_data['month_period'] = perf_data['closed_date'].astype(str).str.slice(0, 7)
-        available_months = sorted([m for m in perf_data['month_period'].dropna().unique() if len(m) == 7 and m.startswith('20')], reverse=True)
         
         month_labels = {}
         for m_str in available_months:

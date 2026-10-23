@@ -266,5 +266,30 @@ TEST-SUITE-001,GS-18PITH11W,11001060868,Evaporator,Evaporator Assy,COMPLETED,202
         self.assertEqual(turso_cursor._parse_val({"type": "integer", "value": "99"}), 99)
         self.assertEqual(turso_cursor._parse_val({"type": "text", "value": "hello"}), "hello")
 
+    def test_16_circuit_breaker_and_fast_schema_ping(self):
+        """Verify instant schema verification ping and automatic circuit-breaker fallback to local SQLite."""
+        self.assertTrue(hasattr(database, 'is_schema_ready'))
+        self.assertTrue(hasattr(database, 'get_database_status'))
+        self.assertTrue(hasattr(database, 'reset_turso_fallback'))
+
+        # 1. Test fast schema verification ping
+        with database.get_connection() as conn:
+            self.assertTrue(database.is_schema_ready(conn))
+
+        # 2. Test circuit breaker fallback on failure
+        # Force fallback flag and verify status
+        database._TURSO_FALLBACK_ACTIVE = True
+        self.assertEqual(database.get_database_status(), "TURSO_FALLBACK_LOCAL" if (database.get_turso_credentials()[0]) else "LOCAL_ONLY")
+        
+        # Connection must still succeed smoothly via local SQLite
+        with database.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT 1")
+            self.assertEqual(cur.fetchone()[0], 1)
+
+        # Reset fallback to normal
+        database.reset_turso_fallback()
+        self.assertFalse(database._TURSO_FALLBACK_ACTIVE)
+
 if __name__ == "__main__":
     unittest.main()

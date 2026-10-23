@@ -172,6 +172,12 @@ def ingest_feedback_and_pricing(fb_source, coll_source=None):
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, hist_records)
         conn.commit()
+    if database.is_turso_active():
+        database.sync_to_local_sqlite("""
+            INSERT OR REPLACE INTO history_master 
+            (complaint_no, serial, phone, model, customer_name, technician_name, complaint_type, purchase_date, complaint_date, closed_date, remarks, closed_amount) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, hist_records)
 
 def ingest_performance_pipeline(fb_source, cancel_source=None):
     init_estimator_schema()
@@ -229,6 +235,8 @@ def ingest_performance_pipeline(fb_source, cancel_source=None):
         cursor = conn.cursor()
         cursor.executemany("INSERT OR REPLACE INTO tech_performance_master (complaint_no, technician_name, status, closed_date) VALUES (?, ?, ?, ?)", perf_records)
         conn.commit()
+    if database.is_turso_active():
+        database.sync_to_local_sqlite("INSERT OR REPLACE INTO tech_performance_master (complaint_no, technician_name, status, closed_date) VALUES (?, ?, ?, ?)", perf_records)
     return len(perf_records)
 
 def sync_all_complaints_pipeline(fb_source, cancel_source=None, coll_source=None):
