@@ -149,8 +149,8 @@ class TestEstimatorSuite(unittest.TestCase):
             (summary_df['Completed'] / summary_df['Assigned'].replace(0, 1)) * 100
         ).round(1).astype(str) + '%'
 
-        summary_df.sort_values(by=['Completed', 'Assigned'], ascending=[False, False], inplace=True)
-        summary_df.reset_index(drop=True, inplace=True)
+        summary_df = summary_df.sort_values(by=['Completed', 'Assigned'], ascending=[False, False])
+        summary_df = summary_df.reset_index(drop=True)
         summary_df.insert(0, 'Sr. No', range(1, len(summary_df) + 1))
 
         # Assert 'Sr. No' starts at 1 and is strictly sequential

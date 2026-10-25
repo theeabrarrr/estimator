@@ -1015,4 +1015,16 @@ def append_model_catalog(records: list[tuple]) -> int:
                 END
         """, records)
         conn.commit()
+    if is_turso_active():
+        sync_to_local_sqlite("""
+            INSERT INTO model_part_catalog (
+                model, part_no, part_description, board_type, historical_frequency, last_installed_date
+            ) VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(model, part_no) DO UPDATE SET
+                historical_frequency = model_part_catalog.historical_frequency + excluded.historical_frequency,
+                last_installed_date = CASE
+                    WHEN excluded.last_installed_date != '' THEN excluded.last_installed_date
+                    ELSE model_part_catalog.last_installed_date
+                END
+        """, records)
     return len(records)

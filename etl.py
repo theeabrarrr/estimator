@@ -75,48 +75,52 @@ def standardize_columns(df):
         .str.strip('_')
     )
     
+    rename_dict = {}
     # Phone Aliases
     for col in ['phone_no', 'phoneno', 'customer_phone', 'phone_number', 'contact_no', 'cell_no', 'mobile_no', 'mobile', 'contact']:
-        if col in df.columns and 'phone' not in df.columns:
-            df.rename(columns={col: 'phone'}, inplace=True)
+        if col in df.columns and 'phone' not in df.columns and 'phone' not in rename_dict.values():
+            rename_dict[col] = 'phone'
 
     # Model Aliases
     for col in ['model_name', 'model_no', 'modelno', 'item_model', 'product_model', 'appliance_model']:
-        if col in df.columns and 'model' not in df.columns:
-            df.rename(columns={col: 'model'}, inplace=True)
+        if col in df.columns and 'model' not in df.columns and 'model' not in rename_dict.values():
+            rename_dict[col] = 'model'
 
     # Complaint Number Aliases
     for col in ['complain_no', 'complaintno', 'complain_number', 'complaint_number', 'job_no', 'ticket_no']:
-        if col in df.columns and 'complaint_no' not in df.columns:
-            df.rename(columns={col: 'complaint_no'}, inplace=True)
+        if col in df.columns and 'complaint_no' not in df.columns and 'complaint_no' not in rename_dict.values():
+            rename_dict[col] = 'complaint_no'
             
     # Status Aliases (e.g. COMPLETED_STATUS -> status)
     for col in ['completed_status', 'job_status', 'call_status', 'complaint_status', 'current_status', 'job_type']:
-        if col in df.columns and 'status' not in df.columns:
-            df.rename(columns={col: 'status'}, inplace=True)
+        if col in df.columns and 'status' not in df.columns and 'status' not in rename_dict.values():
+            rename_dict[col] = 'status'
 
     # Technician Name Aliases
     for col in ['tech_name', 'technician', 'tech', 'emp_name', 'engineer_name', 'allocated_tech']:
-        if col in df.columns and 'technician_name' not in df.columns:
-            df.rename(columns={col: 'technician_name'}, inplace=True)
+        if col in df.columns and 'technician_name' not in df.columns and 'technician_name' not in rename_dict.values():
+            rename_dict[col] = 'technician_name'
 
     # Closed Date Aliases
     for col in ['complete_date', 'completion_date', 'close_date', 'resolved_date', 'action_date']:
-        if col in df.columns and 'closed_date' not in df.columns:
-            df.rename(columns={col: 'closed_date'}, inplace=True)
+        if col in df.columns and 'closed_date' not in df.columns and 'closed_date' not in rename_dict.values():
+            rename_dict[col] = 'closed_date'
 
     # Serial Aliases
     for col in ['serial_no', 'serialno', 'unit_serial', 'chassis_no']:
-        if col in df.columns and 'serial' not in df.columns:
-            df.rename(columns={col: 'serial'}, inplace=True)
+        if col in df.columns and 'serial' not in df.columns and 'serial' not in rename_dict.values():
+            rename_dict[col] = 'serial'
 
     # Customer Name Aliases
     for col in ['cust_name', 'customer', 'client_name']:
-        if col in df.columns and 'customer_name' not in df.columns:
-            df.rename(columns={col: 'customer_name'}, inplace=True)
+        if col in df.columns and 'customer_name' not in df.columns and 'customer_name' not in rename_dict.values():
+            rename_dict[col] = 'customer_name'
 
-    if 'item_desc' in df.columns and 'part_name' not in df.columns:
-        df.rename(columns={'item_desc': 'part_name'}, inplace=True)
+    if 'item_desc' in df.columns and 'part_name' not in df.columns and 'part_name' not in rename_dict.values():
+        rename_dict['item_desc'] = 'part_name'
+
+    if rename_dict:
+        df = df.rename(columns=rename_dict)
 
     return df
 
@@ -213,7 +217,7 @@ def ingest_performance_pipeline(fb_source, cancel_source=None):
     if comb.empty or 'complaint_no' not in comb.columns:
         return 0
 
-    comb.sort_values(by=['complaint_no', '_priority'], ascending=[True, True], inplace=True)
+    comb = comb.sort_values(by=['complaint_no', '_priority'], ascending=[True, True])
     master_perf = comb.drop_duplicates(subset=['complaint_no'], keep='last').copy()
     
     # Exclude TRANSFERED jobs
