@@ -1137,8 +1137,8 @@ with tab_perf:
             ).round(1).astype(str) + '%'
 
             # Sort strictly based on completed volume descending, then assigned volume descending
-            summary_df.sort_values(by=['Completed', 'Assigned'], ascending=[False, False], inplace=True)
-            summary_df.reset_index(drop=True, inplace=True)
+            summary_df = summary_df.sort_values(by=['Completed', 'Assigned'], ascending=[False, False])
+            summary_df = summary_df.reset_index(drop=True)
 
             # Add sequential ranking column starting from 1
             summary_df.insert(0, 'Sr. No', range(1, len(summary_df) + 1))
