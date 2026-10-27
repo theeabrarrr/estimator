@@ -8,11 +8,8 @@ import json
 import config
 import database
 
-def get_connection():
-    return database.get_connection()
-
-def init_estimator_schema():
-    return database.init_estimator_schema()
+get_connection = database.get_connection
+init_estimator_schema = database.init_estimator_schema
 
 def safe_read(file_obj):
     if file_obj is None:
@@ -268,13 +265,8 @@ def sync_all_complaints_pipeline(fb_source, cancel_source=None, coll_source=None
 # ============================================================================
 # ESTIMATOR PIPELINES: STORE STOCK PDF & QUALITY FEEDBACK CATALOG
 # ============================================================================
-def clean_excel_str(val):
-    if pd.isna(val) or val is None:
-        return ""
-    s = str(val).strip()
-    if s.startswith('="') and s.endswith('"'):
-        s = s[2:-1]
-    return s.strip()
+# Alias clean_excel_str to unified clean_val
+clean_excel_str = clean_val
 
 def parse_store_stock_pdf(pdf_source=None) -> int:
     """
@@ -468,58 +460,55 @@ def sync_model_part_catalog_from_feedback(fb_source=None, is_incremental: bool =
     c_boards = get_c('HARDWARE_BOARD_TYPES')
     c_qtys = get_c('HARDWARE_QTYS')
     c_closed = get_c('CLOSED_DATE')
-    
-    events = []
-    
-    for row in df.to_dict('records'):
-        p_raw = clean_excel_str(row.get(c_parts, ''))
+
+    grp_dict = {}
+
+    col_parts_s = df[c_parts] if c_parts in df.columns else []
+    col_model_s = df[c_model] if c_model in df.columns else []
+    col_prods_s = df[c_prods] if c_prods in df.columns else [''] * len(df)
+    col_boards_s = df[c_boards] if c_boards in df.columns else [''] * len(df)
+    col_closed_s = df[c_closed] if c_closed in df.columns else [''] * len(df)
+
+    for p_raw_val, m_val, prods_raw_val, boards_raw_val, closed_val in zip(
+        col_parts_s, col_model_s, col_prods_s, col_boards_s, col_closed_s
+    ):
+        p_raw = clean_val(p_raw_val)
         if not p_raw or p_raw.lower() == 'nan':
             continue
-            
-        model = clean_excel_str(row.get(c_model, '')).upper()
+
+        model = clean_val(m_val).upper()
         if not model:
             continue
-            
-        prods_raw = clean_excel_str(row.get(c_prods, ''))
-        boards_raw = clean_excel_str(row.get(c_boards, ''))
-        closed_date = clean_excel_str(row.get(c_closed, ''))
-        
+
+        prods_raw = clean_val(prods_raw_val)
+        boards_raw = clean_val(boards_raw_val)
+        closed_date = clean_val(closed_val)
+
         p_nos = [p.strip() for p in p_raw.split(',') if p.strip()]
         p_prods = [p.strip() for p in prods_raw.split(',') if p.strip()]
         p_boards = [p.strip() for p in boards_raw.split(',') if p.strip()]
-        
+
         for i, raw_part in enumerate(p_nos):
             prod_desc = p_prods[i] if i < len(p_prods) else (prods_raw if len(p_nos) == 1 else "")
             board = p_boards[i] if i < len(p_boards) else (boards_raw if len(p_nos) == 1 else "Component")
-            
+
             clean_part = raw_part
             # Excel Scientific Notation Recovery (e.g. 3.00002E+11)
             if 'E+' in raw_part:
                 digit_candidates = re.findall(r'[0-9A-Z\-]{7,15}', prod_desc)
                 if digit_candidates:
                     clean_part = digit_candidates[-1]
-            
-            events.append({
-                'model': model,
-                'part_no': clean_part,
-                'part_description': prod_desc,
-                'board_type': board,
-                'closed_date': closed_date
-            })
-            
-    # Aggregate by (model, part_no) in pure Python dict
-    grp_dict = {}
-    for ev in events:
-        key = (ev['model'], ev['part_no'])
-        if key not in grp_dict:
-            grp_dict[key] = {'freq': 0, 'descs': [], 'boards': [], 'dates': []}
-        grp_dict[key]['freq'] += 1
-        if ev['part_description']:
-            grp_dict[key]['descs'].append(ev['part_description'])
-        if ev['board_type']:
-            grp_dict[key]['boards'].append(ev['board_type'])
-        if ev['closed_date']:
-            grp_dict[key]['dates'].append(ev['closed_date'])
+
+            key = (model, clean_part)
+            if key not in grp_dict:
+                grp_dict[key] = {'freq': 0, 'descs': [], 'boards': [], 'dates': []}
+            grp_dict[key]['freq'] += 1
+            if prod_desc:
+                grp_dict[key]['descs'].append(prod_desc)
+            if board:
+                grp_dict[key]['boards'].append(board)
+            if closed_date:
+                grp_dict[key]['dates'].append(closed_date)
 
     catalog_records = []
     unique_parts_set = set()
@@ -549,6 +538,13 @@ def sync_model_part_catalog_from_feedback(fb_source=None, is_incremental: bool =
             VALUES (?, ?, 0, 1, 'Out of Stock', CURRENT_TIMESTAMP)
         """, pending_records)
         conn.commit()
+    if database.is_turso_active():
+        database.sync_to_local_sqlite("""
+            INSERT OR IGNORE INTO master_parts_lookup 
+            (part_no, erp_description, retail_price, is_pricing_pending, stock_status, last_synced)
+            VALUES (?, ?, 0, 1, 'Out of Stock', CURRENT_TIMESTAMP)
+        """, pending_records)
         
-    return len(models_set), len(unique_parts_set), len(events)
+    total_events = sum(d['freq'] for d in grp_dict.values())
+    return len(models_set), len(unique_parts_set), total_events
 

@@ -13,6 +13,17 @@ import etl
 
 class TestEstimatorSuite(unittest.TestCase):
 
+    @classmethod
+    def setUpClass(cls):
+        # Isolate test suite from live Turso credentials to prevent accidental mutations
+        cls.orig_get_turso_creds = database.get_turso_credentials
+        database.get_turso_credentials = lambda: (None, None)
+        database.init_estimator_schema()
+
+    @classmethod
+    def tearDownClass(cls):
+        database.get_turso_credentials = cls.orig_get_turso_creds
+
     def test_01_gas_charge_rules(self):
         """Verify capacity-aware gas calculation across all product families."""
         test_cases = [
@@ -74,20 +85,23 @@ class TestEstimatorSuite(unittest.TestCase):
     def test_05_manual_price_update(self):
         """Verify manual price update persists into SQLite master_parts_lookup and updates view."""
         test_pno = "TEST_OVERRIDE_SKU_999"
-        # Insert or update price
-        database.update_part_price(test_pno, 4500)
-        
-        with database.get_connection() as conn:
-            c = conn.cursor()
-            c.execute("SELECT retail_price, is_pricing_pending FROM master_parts_lookup WHERE part_no = ?", (test_pno,))
-            row = c.fetchone()
-            self.assertIsNotNone(row)
-            self.assertEqual(row[0], 4500)
-            self.assertEqual(row[1], 0)
+        try:
+            # Insert or update price
+            database.update_part_price(test_pno, 4500)
             
+            with database.get_connection() as conn:
+                c = conn.cursor()
+                c.execute("SELECT retail_price, is_pricing_pending FROM master_parts_lookup WHERE part_no = ?", (test_pno,))
+                row = c.fetchone()
+                self.assertIsNotNone(row)
+                self.assertEqual(row[0], 4500)
+                self.assertEqual(row[1], 0)
+        finally:
             # Clean up test row
-            c.execute("DELETE FROM master_parts_lookup WHERE part_no = ?", (test_pno,))
-            conn.commit()
+            with database.get_connection() as conn:
+                c = conn.cursor()
+                c.execute("DELETE FROM master_parts_lookup WHERE part_no = ?", (test_pno,))
+                conn.commit()
 
     def test_06_missing_price_export(self):
         """Verify missing prices dataframe is generated with valid structure."""

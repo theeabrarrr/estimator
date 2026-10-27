@@ -11,7 +11,13 @@ import database
 class TestDatabaseModule(unittest.TestCase):
 
     def setUp(self):
+        # Isolate database tests from configured application credentials to protect live database
+        self.orig_get_turso_creds = database.get_turso_credentials
+        database.get_turso_credentials = lambda: (None, None)
         database.init_estimator_schema()
+
+    def tearDown(self):
+        database.get_turso_credentials = self.orig_get_turso_creds
 
     def test_database_status(self):
         """Test database connection status function."""
@@ -44,21 +50,23 @@ class TestDatabaseModule(unittest.TestCase):
     def test_update_part_price_and_missing_export(self):
         """Test manual part price override and missing price DataFrame generator."""
         p_no = "DB_TEST_SKU_123"
-        success = database.update_part_price(p_no, 12500)
-        self.assertTrue(success)
+        try:
+            success = database.update_part_price(p_no, 12500)
+            self.assertTrue(success)
 
-        # Verify updated price in database
-        with database.get_connection() as conn:
-            c = conn.cursor()
-            c.execute("SELECT retail_price, is_pricing_pending FROM master_parts_lookup WHERE part_no = ?", (p_no,))
-            row = c.fetchone()
-            self.assertIsNotNone(row)
-            self.assertEqual(row[0], 12500)
-            self.assertEqual(row[1], 0)
-
-            # Cleanup
-            c.execute("DELETE FROM master_parts_lookup WHERE part_no = ?", (p_no,))
-            conn.commit()
+            # Verify updated price in database
+            with database.get_connection() as conn:
+                c = conn.cursor()
+                c.execute("SELECT retail_price, is_pricing_pending FROM master_parts_lookup WHERE part_no = ?", (p_no,))
+                row = c.fetchone()
+                self.assertIsNotNone(row)
+                self.assertEqual(row[0], 12500)
+                self.assertEqual(row[1], 0)
+        finally:
+            with database.get_connection() as conn:
+                c = conn.cursor()
+                c.execute("DELETE FROM master_parts_lookup WHERE part_no = ?", (p_no,))
+                conn.commit()
 
         # Missing price dataframe structure
         missing_df = database.get_missing_price_parts_df()

@@ -30,8 +30,15 @@ def find_latest_collection_file():
 
 DEFAULT_FB_FILE = find_latest_feedback_file()
 DEFAULT_COLL_FILE = find_latest_collection_file()
-DEFAULT_STOCK_PDF = os.path.join(BASE_DIR, "vp786 (1 year stock movement report).pdf")
-STOCK_SEARCH_DIRS = [os.path.join(BASE_DIR, "data"), BASE_DIR, ".", r"C:\temp", "/tmp"]
+
+def find_latest_stock_pdf():
+    for f in ["vp786.pdf", "vp786 (1 year stock movement report).pdf"]:
+        p = os.path.join(BASE_DIR, f)
+        if os.path.exists(p):
+            return p
+    return os.path.join(BASE_DIR, "vp786.pdf")
+
+DEFAULT_STOCK_PDF = find_latest_stock_pdf()
 
 VISIT_CHARGES = 600
 MOBILITY_CHARGES = 2000
@@ -134,67 +141,6 @@ COLUMN_ALIASES = {
     'COMPLETED_STATUS': 'status'
 }
 
-BASELINE_JSON_PATH = os.path.join(BASE_DIR, "data", "ground_truth_baseline.json")
-STOCK_CSV_PATH = os.path.join(BASE_DIR, "data", "stock_inventory_latest.csv")
-
-# Standard Service Overheads per Category
-CATEGORY_OVERHEADS = {
-    'Split AC': {
-        'visit': 600,
-        'mobility': 2000,
-        'has_gas': True,
-        'gas_name': 'Refrigerant Gas',
-        'label': 'Split AC'
-    },
-    'Floor Standing AC': {
-        'visit': 600,
-        'mobility': 2000,
-        'has_gas': True,
-        'gas_name': 'Commercial Refrigerant Gas',
-        'gas_default': 13000,
-        'label': 'Floor Standing AC'
-    },
-    'Refrigerator': {
-        'visit': 600,
-        'mobility': 2000,
-        'has_gas': True,
-        'gas_name': 'R-600 Gas',
-        'gas_default': 4000,
-        'label': 'Refrigerator'
-    },
-    'Washing Machine': {
-        'visit': 600,
-        'mobility': 2000,
-        'has_gas': False,
-        'label': 'Washing Machine'
-    },
-    'Water Dispenser': {
-        'visit': 600,
-        'mobility': 2000,
-        'has_gas': True,
-        'gas_name': 'R-134a Gas',
-        'gas_default': 3500,
-        'label': 'Water Dispenser'
-    },
-    'LED TV': {
-        'visit': 600,
-        'mobility': 2000,
-        'has_gas': False,
-        'label': 'LED TV'
-    },
-    'Microwave Oven': {
-        'visit': 600,
-        'mobility': 2000,
-        'has_gas': False,
-        'label': 'Microwave Oven'
-    },
-    'General': {
-        'visit': 600,
-        'mobility': 2000,
-        'has_gas': False,
-        'label': 'General Appliance'
-    }
-}
 
 COMPONENT_ROLE_GROUPS = [
     ("❄️ Evaporator Assemblies", ["Evaporator Assembly"]),
@@ -344,161 +290,6 @@ def tokenize_appliance_model(model_str):
         'series_key': f"{brand}|{cat}|{ton}|{series}"
     }
 
-def detect_appliance_category(model_str):
-    return tokenize_appliance_model(model_str)['category']
-
-def get_tonnage_specs(model_str):
-    tok = tokenize_appliance_model(model_str)
-    cat = tok['category']
-    ton = tok['tonnage']
-    
-    if cat in ['Washing Machine', 'LED TV', 'Microwave Oven']:
-        return 'Standard Unit', 0, 0, 0, cat
-        
-    if cat == 'Refrigerator':
-        return 'Domestic Ref', 4000, 0, 8000, cat
-    elif cat == 'Water Dispenser':
-        return 'Dispenser', 3500, 0, 4000, cat
-
-    if ton in ['4.0 Ton', '5.0 Ton']:
-        return ton, 13000, 70000, 55000, cat
-    elif ton == '3.0 Ton':
-        return '3.0 Ton', 10000, 58000, 50000, cat
-    elif ton == '2.0 Ton':
-        return '2.0 Ton', 8500, 39000, 45000, cat
-    elif ton == '1.0 Ton':
-        return '1.0 Ton', 5500, 20000, 35000, cat
-        
-    return '1.5 Ton', 7000, 26000, 40000, cat
-
-def get_role_price_floor(role, ton="1.5 Ton", cat="Split AC"):
-    if cat == 'Split AC' or cat == 'Floor Standing AC':
-        if ton in ['4.0 Ton', '5.0 Ton']:
-            floors = {
-                "Evaporator Assembly": 70000,
-                "Outdoor Inverter PCB": 55000,
-                "Indoor Main PCB": 9500,
-                "Circuit Board (PCB)": 9500,
-                "Compressor & Fittings": 75000,
-                "Fan Motor": 4500,
-                "Indoor Fan Motor": 4500,
-                "Outdoor Fan Motor": 5000,
-                "Stepping / Swing Motor": 2000,
-                "Cut-Off Valve (1/4\")": 2100,
-                "Cut-Off Valve (1/2\")": 2800,
-                "Cut-Off Valve (3/8\")": 3000,
-                "Cut-Off Valve (5/8\")": 3200,
-                "Cut-Off Valve (3/8\" - 5/8\")": 3200,
-                "4-Way Valve Assembly": 6500,
-                "Temperature Sensor": 1500,
-                "Capacitor": 1200
-            }
-        elif ton == '3.0 Ton':
-            floors = {
-                "Evaporator Assembly": 55000,
-                "Outdoor Inverter PCB": 50000,
-                "Indoor Main PCB": 8500,
-                "Circuit Board (PCB)": 8500,
-                "Compressor & Fittings": 58000,
-                "Fan Motor": 3500,
-                "Indoor Fan Motor": 3500,
-                "Outdoor Fan Motor": 4000,
-                "Stepping / Swing Motor": 1800,
-                "Cut-Off Valve (1/4\")": 1600,
-                "Cut-Off Valve (1/2\")": 2400,
-                "Cut-Off Valve (3/8\")": 2400,
-                "Cut-Off Valve (5/8\")": 2800,
-                "Cut-Off Valve (3/8\" - 5/8\")": 2800,
-                "4-Way Valve Assembly": 5000,
-                "Temperature Sensor": 1500,
-                "Capacitor": 1100
-            }
-        elif ton == '2.0 Ton':
-            floors = {
-                "Evaporator Assembly": 39000,
-                "Outdoor Inverter PCB": 45000,
-                "Indoor Main PCB": 7500,
-                "Circuit Board (PCB)": 7500,
-                "Compressor & Fittings": 48000,
-                "Fan Motor": 2500,
-                "Indoor Fan Motor": 2500,
-                "Outdoor Fan Motor": 3000,
-                "Stepping / Swing Motor": 1500,
-                "Cut-Off Valve (1/4\")": 1800,
-                "Cut-Off Valve (1/2\")": 2400,
-                "Cut-Off Valve (3/8\")": 2400,
-                "Cut-Off Valve (5/8\")": 2800,
-                "Cut-Off Valve (3/8\" - 5/8\")": 2800,
-                "4-Way Valve Assembly": 4500,
-                "Temperature Sensor": 1500,
-                "Capacitor": 1000
-            }
-        elif ton == '1.0 Ton':
-            floors = {
-                "Evaporator Assembly": 20000,
-                "Outdoor Inverter PCB": 35000,
-                "Indoor Main PCB": 6500,
-                "Circuit Board (PCB)": 6500,
-                "Compressor & Fittings": 32000,
-                "Fan Motor": 2000,
-                "Indoor Fan Motor": 2000,
-                "Outdoor Fan Motor": 2200,
-                "Stepping / Swing Motor": 1395,
-                "Cut-Off Valve (1/4\")": 1600,
-                "Cut-Off Valve (1/2\")": 2100,
-                "Cut-Off Valve (3/8\")": 1500,
-                "Cut-Off Valve (5/8\")": 2600,
-                "Cut-Off Valve (3/8\" - 5/8\")": 1500,
-                "4-Way Valve Assembly": 3300,
-                "Temperature Sensor": 1500,
-                "Capacitor": 800
-            }
-        else: # 1.5 Ton default
-            floors = {
-                "Evaporator Assembly": 26000,
-                "Outdoor Inverter PCB": 40000,
-                "Indoor Main PCB": 6500,
-                "Circuit Board (PCB)": 6500,
-                "Compressor & Fittings": 38000,
-                "Fan Motor": 2000,
-                "Indoor Fan Motor": 2000,
-                "Outdoor Fan Motor": 2500,
-                "Stepping / Swing Motor": 1395,
-                "Cut-Off Valve (1/4\")": 1600,
-                "Cut-Off Valve (1/2\")": 2100,
-                "Cut-Off Valve (3/8\")": 2400,
-                "Cut-Off Valve (5/8\")": 2600,
-                "Cut-Off Valve (3/8\" - 5/8\")": 2600,
-                "4-Way Valve Assembly": 3500,
-                "Temperature Sensor": 1500,
-                "Capacitor": 900
-            }
-        return floors.get(role, 2000)
-    elif cat == 'Refrigerator':
-        floors = {
-            "Evaporator Assembly": 8000,
-            "Compressor & Fittings": 18000,
-            "Temperature Sensor": 1500,
-            "Circuit Board (PCB)": 4500,
-            "Fan Motor": 2000
-        }
-        return floors.get(role, 1500)
-    elif cat == 'Washing Machine':
-        floors = {
-            "Gear Box": 16000,
-            "Circuit Board (PCB)": 14500,
-            "Fan Motor": 6500,
-            "Temperature Sensor": 6300
-        }
-        return floors.get(role, 1500)
-    elif cat == 'LED TV':
-        floors = {
-            "LED TV Module": 12000,
-            "Circuit Board (PCB)": 12000,
-            "Remote Control": 1500
-        }
-        return floors.get(role, 2000)
-    return 2000
 
 def is_valve_tonnage_compatible(role, part_name, target_tonnage, target_cat="Split AC"):
     """

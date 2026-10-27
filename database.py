@@ -33,6 +33,48 @@ def get_turso_credentials():
 _TURSO_FALLBACK_ACTIVE = False
 _TURSO_LAST_FAIL_TIME = 0.0
 _TURSO_RETRY_COOLDOWN_SEC = 90.0
+_PENDING_LOCAL_WRITES = False
+
+def record_local_mutation():
+    """Tracks local writes executed during Turso Cloud fallback mode for later reconciliation."""
+    global _PENDING_LOCAL_WRITES
+    if _TURSO_FALLBACK_ACTIVE:
+        _PENDING_LOCAL_WRITES = True
+
+def reconcile_local_writes_to_turso(cloud_conn) -> bool:
+    """
+    Reconciles any local mutations written to SQLite during fallback back into Turso Cloud.
+    """
+    global _PENDING_LOCAL_WRITES
+    if not _PENDING_LOCAL_WRITES:
+        return True
+    try:
+        if os.path.exists(DB_FILE):
+            conn = sqlite3.connect(DB_FILE)
+            try:
+                lc = conn.cursor()
+                parts_rows = lc.execute("""
+                    SELECT part_no, erp_description, retail_price, is_pricing_pending, stock_status, last_synced
+                    FROM master_parts_lookup
+                    WHERE last_synced >= datetime('now', '-1 day')
+                """).fetchall()
+                if parts_rows:
+                    cc = cloud_conn.cursor()
+                    cc.executemany("""
+                        INSERT INTO master_parts_lookup (part_no, erp_description, retail_price, is_pricing_pending, stock_status, last_synced)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                        ON CONFLICT(part_no) DO UPDATE SET
+                            retail_price = excluded.retail_price,
+                            is_pricing_pending = excluded.is_pricing_pending,
+                            last_synced = excluded.last_synced
+                    """, parts_rows)
+            finally:
+                conn.close()
+        _PENDING_LOCAL_WRITES = False
+        return True
+    except Exception as e:
+        warnings.warn(f"Failed to reconcile local writes to Turso Cloud: {e}")
+        return False
 
 def is_turso_active() -> bool:
     url, token = get_turso_credentials()
@@ -47,14 +89,16 @@ def get_database_status() -> str:
     return "TURSO_ONLINE"
 
 def reset_turso_fallback() -> None:
-    global _TURSO_FALLBACK_ACTIVE, _TURSO_LAST_FAIL_TIME
+    global _TURSO_FALLBACK_ACTIVE, _TURSO_LAST_FAIL_TIME, _PENDING_LOCAL_WRITES
     _TURSO_FALLBACK_ACTIVE = False
     _TURSO_LAST_FAIL_TIME = 0.0
+    _PENDING_LOCAL_WRITES = False
 
 def try_reconnect_turso() -> tuple[bool, str]:
     """
     Attempts a lightweight test query against Turso Cloud.
-    If successful, clears fallback state and returns (True, 'Successfully reconnected').
+    If successful, reconciles any local fallback mutations, clears fallback state,
+    and returns (True, 'Successfully reconnected').
     If failed, records last fail time and returns (False, error_message).
     """
     global _TURSO_FALLBACK_ACTIVE, _TURSO_LAST_FAIL_TIME
@@ -69,6 +113,9 @@ def try_reconnect_turso() -> tuple[bool, str]:
         cur.execute("SELECT 1")
         row = cur.fetchone()
         if row and row[0] == 1:
+            reconcile_ok = reconcile_local_writes_to_turso(test_conn)
+            if not reconcile_ok:
+                return False, "Reconnected to Turso, but local write reconciliation failed; keeping local fallback active."
             _TURSO_FALLBACK_ACTIVE = False
             _TURSO_LAST_FAIL_TIME = 0.0
             return True, "Successfully reconnected to Turso Cloud"
@@ -316,13 +363,16 @@ def get_connection():
 def sync_to_local_sqlite(sql: str, params_seq=None):
     """Mirrors database mutations to local dwp_service.db snapshot for instant offline readiness."""
     try:
-        with sqlite3.connect(DB_FILE) as local_conn:
-            c = local_conn.cursor()
+        conn = sqlite3.connect(DB_FILE)
+        try:
+            c = conn.cursor()
             if params_seq:
                 c.executemany(sql, params_seq)
             else:
                 c.execute(sql)
-            local_conn.commit()
+            conn.commit()
+        finally:
+            conn.close()
     except Exception:
         pass
 
@@ -597,10 +647,9 @@ def init_estimator_schema(force: bool = False):
             except Exception as e:
                 print(f"Tech performance master init error: {e}")
 
-        # Automatically merge verified parts from baseline parts_master if present and run cross-series enrichment on initial seed
+        # Automatically merge verified parts from baseline parts_master if present (includes cross-series enrichment)
         if cat_count == 0:
             merge_parts_master_into_catalog()
-            enrich_cross_series_compatibilities()
 
         _SCHEMA_INITIALIZED = True
     except Exception as e:
@@ -763,95 +812,28 @@ def merge_parts_master_into_catalog() -> int:
                 ) VALUES (?, ?, ?, ?, ?, ?)
             """, catalog_to_insert)
             
-        # Ensure master_parts_lookup has prices from parts_master for parts where price is missing/0
-        for p_no, desc, price in lookup_to_upsert:
-            cursor.execute("SELECT retail_price, is_pricing_pending FROM master_parts_lookup WHERE part_no = ?", (p_no,))
-            row = cursor.fetchone()
-            if row is None:
-                is_pend = 0 if price > 0 else 1
-                cursor.execute("""
-                    INSERT INTO master_parts_lookup (
-                        part_no, erp_description, retail_price, is_pricing_pending, stock_status, last_synced
-                    ) VALUES (?, ?, ?, ?, 'Out of Stock', CURRENT_TIMESTAMP)
-                """, (p_no, desc, price, is_pend))
-            elif (row[0] == 0 or row[1] == 1) and price > 0:
-                cursor.execute("""
-                    UPDATE master_parts_lookup 
-                    SET retail_price = ?, is_pricing_pending = 0 
-                    WHERE part_no = ? AND (retail_price = 0 OR is_pricing_pending = 1)
-                """, (price, p_no))
-                
-        # Cross-Series Coil & Compressor Interchangeability Enrichment
-        # 1. 18-Series Inverter Evaporators (Interchangeable 1.5 Ton coils)
-        evap_18 = [
-            ('11001060868', 'Evaporator Assy GS-18PITH1W 11001060868', 'Evaporator Assy'),
-            ('1002937LC', 'Evaporator assy GS-18CITH1 1002937LC / 1002686', 'Evaporator Assy'),
-            ('1002686LC', 'Evaporater Assy 18LM4 18LITH 1002686LC / 1002937', 'Evaporator Assy'),
-            ('11001000207LC', 'Evaporaters Assy 18AITH11 18FITH1 11001000207LC', 'Evaporator Assy')
-        ]
-        m18_rows = cursor.execute("""
-            SELECT DISTINCT model FROM model_part_catalog 
-            WHERE model LIKE 'GS-18FITH%' OR model LIKE 'GS-18CITH%' OR model LIKE 'GS-18PITH%' OR model LIKE 'GS-18AITH%' OR model LIKE 'GS-18LITH%'
-        """).fetchall()
-        for (m_name,) in m18_rows:
-            for p_no, desc, board in evap_18:
-                cursor.execute("""
-                    INSERT OR IGNORE INTO model_part_catalog (model, part_no, part_description, board_type, historical_frequency, last_installed_date)
-                    VALUES (?, ?, ?, ?, 1, '')
-                """, (m_name, p_no, desc, board))
-
-        # 2. 12-Series Inverter Evaporators (Interchangeable 1.0 Ton coils)
-        evap_12 = [
-            ('1002976', 'Evaporater Assy 12LM4 / 12LM5L 1002976', 'Evaporator Assy'),
-            ('1002422LC', 'Evaporator Assy 12CITH1 1002422LC', 'Evaporator Assy'),
-            ('1002000030', 'Evaporator Assy 1002000030 GS-12FITH6C', 'Evaporator Assy')
-        ]
-        m12_rows = cursor.execute("""
-            SELECT DISTINCT model FROM model_part_catalog 
-            WHERE model LIKE 'GS-12FITH%' OR model LIKE 'GS-12CITH%' OR model LIKE 'GS-12PITH%' OR model LIKE 'GS-12LITH%'
-        """).fetchall()
-        for (m_name,) in m12_rows:
-            for p_no, desc, board in evap_12:
-                cursor.execute("""
-                    INSERT OR IGNORE INTO model_part_catalog (model, part_no, part_description, board_type, historical_frequency, last_installed_date)
-                    VALUES (?, ?, ?, ?, 1, '')
-                """, (m_name, p_no, desc, board))
-
-        # 3. Water Dispenser Compressors
-        wd_comps = [
-            ('QD36LWL', 'WD Compressor WD-300F / WD-350F /WD-450F QD36LWL', 'WD Compressor'),
-            ('QD36LW', 'Compressor For WD-300F/WD- 350F/WD-450F (66625) QD36LW', 'WD Compressor')
-        ]
-        m_wd_rows = cursor.execute("""
-            SELECT DISTINCT model FROM model_part_catalog WHERE model LIKE 'WD-%' OR model LIKE 'GW-%'
-        """).fetchall()
-        wd_models_set = set([r[0] for r in m_wd_rows] + ['WD-300', 'WD-300F', 'WD-350F', 'WD-450F', 'GW-JL500FC', 'GW-JL500FS'])
-        for m_name in wd_models_set:
-            for p_no, desc, board in wd_comps:
-                cursor.execute("""
-                    INSERT OR IGNORE INTO model_part_catalog (model, part_no, part_description, board_type, historical_frequency, last_installed_date)
-                    VALUES (?, ?, ?, ?, 1, '')
-                """, (m_name, p_no, desc, board))
-
-        # 4. Refrigerator Compressors (Interchangeable across Everest series)
-        ref_comps = [
-            ('GR18-E51519002', 'Compressors ENK150KL GR-E9978G-CW1 GR18-E51519002', 'REF Compressor'),
-            ('GR18-E51519001', 'Compressors ETK 130KL GR-E8768G-CW1 GR18-E51519001', 'REF Compressor'),
-            ('GR18-73710005', 'COMPRESSOR - 95AT 310 GR18-73710005', 'REF Compressor'),
-            ('GR18-73710006', 'COMPRESSOR - 12AT 360 GR18-73710006', 'REF Compressor')
-        ]
-        m_ref_rows = cursor.execute("""
-            SELECT DISTINCT model FROM model_part_catalog WHERE model LIKE 'GR-%'
-        """).fetchall()
-        for (m_name,) in m_ref_rows:
-            for p_no, desc, board in ref_comps:
-                cursor.execute("""
-                    INSERT OR IGNORE INTO model_part_catalog (model, part_no, part_description, board_type, historical_frequency, last_installed_date)
-                    VALUES (?, ?, ?, ?, 1, '')
-                """, (m_name, p_no, desc, board))
+        # Ensure master_parts_lookup has prices from parts_master for parts where price is missing/0 (single batch upsert)
+        if lookup_to_upsert:
+            lookup_records = [
+                (p_no, desc, price, 0 if price > 0 else 1)
+                for p_no, desc, price in lookup_to_upsert
+            ]
+            cursor.executemany("""
+                INSERT INTO master_parts_lookup (part_no, erp_description, retail_price, is_pricing_pending, stock_status, last_synced)
+                VALUES (?, ?, ?, ?, 'Out of Stock', CURRENT_TIMESTAMP)
+                ON CONFLICT(part_no) DO UPDATE SET
+                    retail_price = CASE WHEN excluded.retail_price > 0 THEN excluded.retail_price ELSE master_parts_lookup.retail_price END,
+                    is_pricing_pending = CASE WHEN excluded.retail_price > 0 THEN 0 ELSE master_parts_lookup.is_pricing_pending END,
+                    last_synced = CURRENT_TIMESTAMP
+                WHERE master_parts_lookup.retail_price = 0 OR master_parts_lookup.is_pricing_pending = 1
+            """, lookup_records)
 
         conn.commit()
+
+        # Reusable cross-series enrichment (eliminates 70 lines of copy-pasted duplicate logic)
+        enrich_cross_series_compatibilities()
         return len(catalog_to_insert)
+
 
 def get_all_models_for_estimator() -> list[str]:
     """
@@ -968,6 +950,8 @@ def update_part_price(part_no: str, new_price: float | int) -> bool:
             VALUES (?, 'Manual Price Entry', ?, 0, 'Out of Stock', CURRENT_TIMESTAMP)
             ON CONFLICT(part_no) DO UPDATE SET retail_price=excluded.retail_price, is_pricing_pending=0, last_synced=CURRENT_TIMESTAMP
         """, [(clean_pno, price_val)])
+    else:
+        record_local_mutation()
     return True
 
 def get_missing_price_parts_df() -> pd.DataFrame:

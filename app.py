@@ -17,7 +17,11 @@ APP_ROOT = str(Path(__file__).resolve().parent)
 if APP_ROOT not in sys.path:
     sys.path.insert(0, APP_ROOT)
 
+import importlib
+
 import database
+if not hasattr(database, "try_reconnect_turso"):
+    importlib.reload(database)
 from database import (
     search_history_records, fetch_performance_data,
     init_estimator_schema, get_all_models_for_estimator,
@@ -28,6 +32,8 @@ from database import (
 )
 
 import etl
+if not hasattr(etl, "sync_all_complaints_pipeline"):
+    importlib.reload(etl)
 from etl import (
     normalize_phone, ingest_performance_pipeline, ingest_feedback_and_pricing,
     parse_store_stock_pdf, sync_model_part_catalog_from_feedback,
@@ -35,6 +41,8 @@ from etl import (
 )
 
 import config
+if not hasattr(config, "AC_SERVICE_CHARGES"):
+    importlib.reload(config)
 from config import (
     VISIT_CHARGES, MOBILITY_CHARGES, BASE_FIXED_TOTAL, calculate_gas_charge,
     VALVE_BYPASS_CHARGES, AC_SERVICE_CHARGES

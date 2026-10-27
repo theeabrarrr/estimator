@@ -46,96 +46,11 @@ def migrate_to_turso(url: str, token: str):
 
     # 3. Create Schema on Turso Cloud
     print("\n📦 Setting up database schema and views on Turso...")
-    schema_statements = [
-        """
-        CREATE TABLE IF NOT EXISTS history_master (
-            complaint_no TEXT PRIMARY KEY,
-            serial TEXT,
-            phone TEXT,
-            model TEXT,
-            customer_name TEXT,
-            technician_name TEXT,
-            complaint_type TEXT,
-            purchase_date TEXT,
-            complaint_date TEXT,
-            closed_date TEXT,
-            remarks TEXT,
-            closed_amount INTEGER DEFAULT 0
-        )
-        """,
-        "CREATE INDEX IF NOT EXISTS idx_history_complaint_no ON history_master (complaint_no)",
-        "CREATE INDEX IF NOT EXISTS idx_history_phone ON history_master (phone)",
-        "CREATE INDEX IF NOT EXISTS idx_history_serial ON history_master (serial)",
-        "CREATE INDEX IF NOT EXISTS idx_history_closed_date ON history_master (closed_date)",
-        """
-        CREATE TABLE IF NOT EXISTS tech_performance_master (
-            complaint_no TEXT PRIMARY KEY,
-            technician_name TEXT,
-            status TEXT,
-            closed_date TEXT
-        )
-        """,
-        "CREATE INDEX IF NOT EXISTS idx_tech_perf_tech ON tech_performance_master (technician_name)",
-        "CREATE INDEX IF NOT EXISTS idx_tech_perf_date ON tech_performance_master (closed_date)",
-        """
-        CREATE TABLE IF NOT EXISTS model_part_catalog (
-            model TEXT NOT NULL,
-            part_no TEXT NOT NULL,
-            part_description TEXT,
-            board_type TEXT,
-            historical_frequency INTEGER DEFAULT 1,
-            last_installed_date TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (model, part_no)
-        )
-        """,
-        "CREATE INDEX IF NOT EXISTS idx_catalog_model ON model_part_catalog (model)",
-        "CREATE INDEX IF NOT EXISTS idx_catalog_part_no ON model_part_catalog (part_no)",
-        "CREATE INDEX IF NOT EXISTS idx_catalog_model_freq ON model_part_catalog (model, historical_frequency DESC)",
-        """
-        CREATE TABLE IF NOT EXISTS master_parts_lookup (
-            part_no TEXT PRIMARY KEY,
-            erp_description TEXT,
-            erp_default_model TEXT,
-            retail_price INTEGER DEFAULT 0,
-            branch_store_qty INTEGER DEFAULT 0,
-            branch_sales_qty INTEGER DEFAULT 0,
-            tech_stock_qty INTEGER DEFAULT 0,
-            total_stock_qty INTEGER DEFAULT 0,
-            available_branch_stock INTEGER DEFAULT 0,
-            available_total_stock INTEGER DEFAULT 0,
-            stock_status TEXT DEFAULT 'Out of Stock',
-            tech_allocations_json TEXT,
-            is_pricing_pending INTEGER DEFAULT 0,
-            source_document TEXT,
-            last_synced TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        """,
-        "CREATE INDEX IF NOT EXISTS idx_parts_lookup_status ON master_parts_lookup (stock_status)",
-        "CREATE INDEX IF NOT EXISTS idx_parts_lookup_pricing_pending ON master_parts_lookup (is_pricing_pending)",
-        """
-        CREATE VIEW IF NOT EXISTS v_model_compatible_parts AS
-        SELECT 
-            c.model,
-            c.part_no,
-            COALESCE(p.erp_description, c.part_description) AS part_description,
-            c.board_type,
-            c.historical_frequency,
-            COALESCE(p.retail_price, 0) AS retail_price,
-            COALESCE(p.available_branch_stock, 0) AS branch_stock,
-            COALESCE(p.tech_stock_qty, 0) AS tech_stock,
-            COALESCE(p.available_total_stock, 0) AS total_stock,
-            COALESCE(p.stock_status, 'Out of Stock') AS stock_status,
-            COALESCE(p.tech_allocations_json, '{}') AS tech_allocations_json,
-            COALESCE(p.is_pricing_pending, 1) AS is_pricing_pending,
-            (SELECT COUNT(DISTINCT m2.model) FROM model_part_catalog m2 WHERE m2.part_no = c.part_no) AS cross_model_count
-        FROM model_part_catalog c
-        LEFT JOIN master_parts_lookup p ON c.part_no = p.part_no
-        """
-    ]
-
-    for stmt in schema_statements:
-        cloud_cursor.execute(stmt)
+    if hasattr(cloud_conn, "execute_batch"):
+        cloud_conn.execute_batch(database.SCHEMA_DDL_STATEMENTS)
+    else:
+        for stmt in database.SCHEMA_DDL_STATEMENTS:
+            cloud_cursor.execute(stmt)
     print("✅ Schema created successfully on Turso.")
 
     # 4. Migrate tables in chunks

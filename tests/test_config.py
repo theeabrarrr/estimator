@@ -107,21 +107,15 @@ class TestConfigModule(unittest.TestCase):
         self.assertTrue(config.is_valve_tonnage_compatible("Cut-Off Valve (5/8\")", "Valve 5/8", "4.0 Ton"))
         self.assertFalse(config.is_valve_tonnage_compatible("Cut-Off Valve (1/4\")", "Valve 1/4", "4.0 Ton"))
 
-    def test_tonnage_specs_and_price_floors(self):
-        """Test tonnage specs lookup and role price floor thresholds."""
-        ton, gas, evap_floor, comp_floor, cat = config.get_tonnage_specs("GS-18PITH11W")
-        self.assertEqual(ton, "1.5 Ton")
-        self.assertEqual(gas, 7000)
+    def test_tonnage_valve_pairing(self):
+        """Test tonnage valve pairing standards across AC capacities."""
+        suction_15, liquid_15 = config.get_tonnage_valve_pairing("1.5 Ton")
+        self.assertEqual(suction_15, "Cut-Off Valve (1/2\")")
+        self.assertEqual(liquid_15, "Cut-Off Valve (1/4\")")
 
-        floor_evap_18 = config.get_role_price_floor("Evaporator Assembly", ton="1.5 Ton")
-        self.assertEqual(floor_evap_18, 26000)
-
-        floor_evap_12 = config.get_role_price_floor("Evaporator Assembly", ton="1.0 Ton")
-        self.assertEqual(floor_evap_12, 20000)
-
-        suction, liquid = config.get_tonnage_valve_pairing("1.5 Ton")
-        self.assertEqual(suction, "Cut-Off Valve (1/2\")")
-        self.assertEqual(liquid, "Cut-Off Valve (1/4\")")
+        suction_10, liquid_10 = config.get_tonnage_valve_pairing("1.0 Ton")
+        self.assertEqual(suction_10, "Cut-Off Valve (3/8\")")
+        self.assertEqual(liquid_10, "Cut-Off Valve (1/4\")")
 
 if __name__ == "__main__":
     unittest.main()
