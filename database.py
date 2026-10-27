@@ -5,6 +5,7 @@ import pandas as pd
 import json
 import re
 import base64
+import time
 import requests
 import warnings
 from contextlib import contextmanager
@@ -30,6 +31,8 @@ def get_turso_credentials():
     return (url.strip() if url else None), (token.strip() if token else None)
 
 _TURSO_FALLBACK_ACTIVE = False
+_TURSO_LAST_FAIL_TIME = 0.0
+_TURSO_RETRY_COOLDOWN_SEC = 90.0
 
 def is_turso_active() -> bool:
     url, token = get_turso_credentials()
@@ -44,8 +47,38 @@ def get_database_status() -> str:
     return "TURSO_ONLINE"
 
 def reset_turso_fallback() -> None:
-    global _TURSO_FALLBACK_ACTIVE
+    global _TURSO_FALLBACK_ACTIVE, _TURSO_LAST_FAIL_TIME
     _TURSO_FALLBACK_ACTIVE = False
+    _TURSO_LAST_FAIL_TIME = 0.0
+
+def try_reconnect_turso() -> tuple[bool, str]:
+    """
+    Attempts a lightweight test query against Turso Cloud.
+    If successful, clears fallback state and returns (True, 'Successfully reconnected').
+    If failed, records last fail time and returns (False, error_message).
+    """
+    global _TURSO_FALLBACK_ACTIVE, _TURSO_LAST_FAIL_TIME
+    url, token = get_turso_credentials()
+    if not url or not token:
+        return False, "Turso credentials not configured"
+    
+    try:
+        _reset_shared_turso_connection()
+        test_conn = _get_shared_turso_connection(url, token)
+        cur = test_conn.cursor()
+        cur.execute("SELECT 1")
+        row = cur.fetchone()
+        if row and row[0] == 1:
+            _TURSO_FALLBACK_ACTIVE = False
+            _TURSO_LAST_FAIL_TIME = 0.0
+            return True, "Successfully reconnected to Turso Cloud"
+        else:
+            return False, "Unexpected response from Turso Cloud ping"
+    except Exception as e:
+        _TURSO_FALLBACK_ACTIVE = True
+        _TURSO_LAST_FAIL_TIME = time.time()
+        _reset_shared_turso_connection()
+        return False, str(e)
 
 class TursoCursor:
     def __init__(self, conn):
@@ -173,27 +206,30 @@ class TursoConnection:
             "Content-Type": "application/json"
         })
 
-    def _post(self, payload, timeout=6):
+    def _post(self, payload, timeout=12):
         import time
         max_retries = 2
         last_err = None
         for attempt in range(max_retries):
+            # Attempt 0: min 10s timeout, Attempt 1: min 15s timeout for Turso cloud wakeups
+            current_timeout = max(timeout, 10) if attempt == 0 else max(timeout, 15)
             try:
-                resp = self.session.post(self.pipeline_url, json=payload, timeout=timeout)
+                resp = self.session.post(self.pipeline_url, json=payload, timeout=current_timeout)
                 if resp.status_code != 200:
                     raise sqlite3.OperationalError(f"Turso HTTP {resp.status_code}: {resp.text}")
                 return resp.json()
             except Exception as e:
                 last_err = e
                 if attempt < max_retries - 1:
-                    time.sleep(0.5 * (attempt + 1))
+                    time.sleep(1.0 * (attempt + 1))
                 else:
-                    global _TURSO_FALLBACK_ACTIVE
+                    global _TURSO_FALLBACK_ACTIVE, _TURSO_LAST_FAIL_TIME
                     _TURSO_FALLBACK_ACTIVE = True
+                    _TURSO_LAST_FAIL_TIME = time.time()
                     _reset_shared_turso_connection()
                     raise sqlite3.OperationalError(f"Turso Network Error after {max_retries} attempts: {last_err}")
 
-    def execute_batch(self, sql_statements: list[str], timeout=15):
+    def execute_batch(self, sql_statements: list[str], timeout=20):
         """
         Executes a batch of SQL statements in a single atomic /v2/pipeline HTTP request.
         """
@@ -245,8 +281,17 @@ def _reset_shared_turso_connection():
 
 @contextmanager
 def get_connection():
-    global _TURSO_FALLBACK_ACTIVE
+    global _TURSO_FALLBACK_ACTIVE, _TURSO_LAST_FAIL_TIME
     url, token = get_turso_credentials()
+    
+    # Auto-recovery: If in fallback mode and cooldown has elapsed (90s), probe Turso
+    if url and token and _TURSO_FALLBACK_ACTIVE:
+        if (time.time() - _TURSO_LAST_FAIL_TIME) >= _TURSO_RETRY_COOLDOWN_SEC:
+            try:
+                try_reconnect_turso()
+            except Exception:
+                _TURSO_LAST_FAIL_TIME = time.time()
+
     if url and token and not _TURSO_FALLBACK_ACTIVE:
         try:
             conn = _get_shared_turso_connection(url, token)
@@ -254,6 +299,7 @@ def get_connection():
         except Exception as e:
             warnings.warn(f"Turso Cloud connection failed ({e}). Falling over to local high-speed SQLite database.")
             _TURSO_FALLBACK_ACTIVE = True
+            _TURSO_LAST_FAIL_TIME = time.time()
             _reset_shared_turso_connection()
             conn = sqlite3.connect(DB_FILE)
             try:

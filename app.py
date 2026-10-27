@@ -24,7 +24,7 @@ from database import (
     get_parts_by_model, update_part_price,
     get_missing_price_parts_df, get_cross_model_compatibilities,
     get_all_cross_model_compatibilities_map,
-    is_turso_active, get_database_status
+    is_turso_active, get_database_status, try_reconnect_turso
 )
 
 import etl
@@ -495,6 +495,14 @@ with st.sidebar:
         st.markdown("<div style='margin-bottom:8px;'><span class='status-badge-completed'>🟢 Cloud Storage: Permanent (Turso Cloud)</span></div>", unsafe_allow_html=True)
     elif db_status == "TURSO_FALLBACK_LOCAL":
         st.markdown("<div style='margin-bottom:8px;'><span class='status-badge-canceled' title='Turso Cloud network latency detected. High-speed local snapshot active.'>🟡 High-Speed Local Snapshot Active (Cloud Syncing)</span></div>", unsafe_allow_html=True)
+        if st.button("🔄 Retry Turso Cloud Connection", key="btn_retry_turso", width="stretch"):
+            with st.spinner("Connecting to Turso Cloud..."):
+                ok, msg = try_reconnect_turso()
+                if ok:
+                    st.success("Reconnected to Turso Cloud!")
+                    st.rerun()
+                else:
+                    st.warning(f"Turso Cloud unreachable: {msg}. Continuing on local snapshot.")
     else:
         st.markdown("<div style='margin-bottom:8px;'><span class='dwp-badge'>💻 Local Storage (dwp_service.db)</span></div>", unsafe_allow_html=True)
     st.caption("Upload complaints to update Master History, Technician KPI, and Parts Catalog simultaneously.")
