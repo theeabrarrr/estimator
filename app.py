@@ -721,15 +721,15 @@ with tab_estimator:
                     if filtered_parts.empty:
                         st.info("No matching spare parts found for the selected category/search filter.")
                     else:
-                        for idx, r in filtered_parts.iterrows():
-                            p_no = str(r['part_no'])
-                            p_desc = str(r['part_description'])
-                            p_board = str(r['board_type'])
-                            freq = int(r['historical_frequency'])
-                            p_price = int(r['retail_price']) if r['retail_price'] else 0
-                            b_stock = int(r['branch_stock']) if r['branch_stock'] else 0
-                            is_pending = bool(r['is_pricing_pending'])
-                            cross_cnt = int(r['cross_model_count']) if r['cross_model_count'] else 1
+                        for r in filtered_parts.itertuples(index=False):
+                            p_no = str(r.part_no)
+                            p_desc = str(r.part_description)
+                            p_board = str(r.board_type)
+                            freq = int(r.historical_frequency)
+                            p_price = int(r.retail_price) if r.retail_price else 0
+                            b_stock = int(r.branch_stock) if r.branch_stock else 0
+                            is_pending = bool(r.is_pricing_pending)
+                            cross_cnt = int(r.cross_model_count) if pd.notna(r.cross_model_count) and r.cross_model_count else 1
 
                             # Construct hover tooltip for compatible models without taking vertical space
                             compat_models = cross_compat_map.get(p_no, [])
