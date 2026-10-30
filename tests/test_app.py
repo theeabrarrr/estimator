@@ -2,6 +2,8 @@ import unittest
 import os
 import sys
 import urllib.parse
+from unittest.mock import patch
+import app
 
 # Ensure app root is in sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -32,6 +34,18 @@ class TestAppLogic(unittest.TestCase):
         quote_text = f"Model: {selected_model}\nTotal: Rs. {grand_total:,}"
         encoded = urllib.parse.quote(quote_text)
         self.assertIn("GS-18PITH11W", encoded)
+
+
+    @patch('app.get_all_models_for_estimator')
+    def test_get_cached_all_models(self, mock_get_all_models):
+        """Verify get_cached_all_models correctly wraps get_all_models_for_estimator."""
+        mock_get_all_models.return_value = ["ModelA", "ModelB"]
+        app.get_cached_all_models.clear()
+
+        result = app.get_cached_all_models()
+
+        mock_get_all_models.assert_called_once()
+        self.assertEqual(result, ["ModelA", "ModelB"])
 
 if __name__ == "__main__":
     unittest.main()
