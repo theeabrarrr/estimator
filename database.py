@@ -758,6 +758,54 @@ def enrich_cross_series_compatibilities() -> None:
 
         conn.commit()
 
+
+def _classify_board_type(model: str, p_no: str, desc: str) -> str:
+    text = (p_no + ' ' + desc).upper()
+    if 'COMP' in text or 'QD' in text:
+        return 'WD Compressor' if model.startswith('WD') else 'Compressor'
+    elif 'VALVE' in text:
+        return 'Cut Off Valve'
+    elif 'PCB' in text or 'BOARD' in text or 'MODULE' in text:
+        return 'Electronic PCB'
+    elif 'MOTOR' in text:
+        return 'Fan Motor'
+    elif 'EVAPORATOR' in text:
+        return 'Evaporator Assy'
+    elif 'CONDEN' in text:
+        return 'Condenser'
+    elif 'THERMOSTAT' in text:
+        return 'WD Thermostat'
+    elif 'DRIER' in text or 'FILTER' in text:
+        return 'Filter Drier'
+    elif model.startswith('WD'):
+        return 'WD Parts'
+    else:
+        return 'Spare Part'
+
+def _update_model_part_catalog(cursor, catalog_to_insert):
+    if catalog_to_insert:
+        cursor.executemany("""
+            INSERT OR IGNORE INTO model_part_catalog (
+                model, part_no, part_description, board_type, historical_frequency, last_installed_date
+            ) VALUES (?, ?, ?, ?, ?, ?)
+        """, catalog_to_insert)
+
+def _update_master_parts_lookup(cursor, lookup_to_upsert):
+    if lookup_to_upsert:
+        lookup_records = [
+            (p_no, desc, price, 0 if price > 0 else 1)
+            for p_no, desc, price in lookup_to_upsert
+        ]
+        cursor.executemany("""
+            INSERT INTO master_parts_lookup (part_no, erp_description, retail_price, is_pricing_pending, stock_status, last_synced)
+            VALUES (?, ?, ?, ?, 'Out of Stock', CURRENT_TIMESTAMP)
+            ON CONFLICT(part_no) DO UPDATE SET
+                retail_price = CASE WHEN excluded.retail_price > 0 THEN excluded.retail_price ELSE master_parts_lookup.retail_price END,
+                is_pricing_pending = CASE WHEN excluded.retail_price > 0 THEN 0 ELSE master_parts_lookup.is_pricing_pending END,
+                last_synced = CURRENT_TIMESTAMP
+            WHERE master_parts_lookup.retail_price = 0 OR master_parts_lookup.is_pricing_pending = 1
+        """, lookup_records)
+
 def merge_parts_master_into_catalog() -> int:
     """
     Enriches model_part_catalog and master_parts_lookup with verified parts
@@ -796,28 +844,7 @@ def merge_parts_master_into_catalog() -> int:
             if re.search(r'b[- ]?grade\s+set', p_no + ' ' + desc, re.IGNORECASE):
                 continue
                 
-            # Classify board type
-            text = (p_no + ' ' + desc).upper()
-            if 'COMP' in text or 'QD' in text:
-                board = 'WD Compressor' if m.startswith('WD') else 'Compressor'
-            elif 'VALVE' in text:
-                board = 'Cut Off Valve'
-            elif 'PCB' in text or 'BOARD' in text or 'MODULE' in text:
-                board = 'Electronic PCB'
-            elif 'MOTOR' in text:
-                board = 'Fan Motor'
-            elif 'EVAPORATOR' in text:
-                board = 'Evaporator Assy'
-            elif 'CONDEN' in text:
-                board = 'Condenser'
-            elif 'THERMOSTAT' in text:
-                board = 'WD Thermostat'
-            elif 'DRIER' in text or 'FILTER' in text:
-                board = 'Filter Drier'
-            elif m.startswith('WD'):
-                board = 'WD Parts'
-            else:
-                board = 'Spare Part'
+            board = _classify_board_type(m, p_no, desc)
                 
             if (m, p_no) not in existing_pairs:
                 catalog_to_insert.append((m, p_no, desc, board, 1, ''))
@@ -830,35 +857,14 @@ def merge_parts_master_into_catalog() -> int:
                 
             lookup_to_upsert.append((p_no, desc, p_price))
             
-        if catalog_to_insert:
-            cursor.executemany("""
-                INSERT OR IGNORE INTO model_part_catalog (
-                    model, part_no, part_description, board_type, historical_frequency, last_installed_date
-                ) VALUES (?, ?, ?, ?, ?, ?)
-            """, catalog_to_insert)
-            
-        # Ensure master_parts_lookup has prices from parts_master for parts where price is missing/0 (single batch upsert)
-        if lookup_to_upsert:
-            lookup_records = [
-                (p_no, desc, price, 0 if price > 0 else 1)
-                for p_no, desc, price in lookup_to_upsert
-            ]
-            cursor.executemany("""
-                INSERT INTO master_parts_lookup (part_no, erp_description, retail_price, is_pricing_pending, stock_status, last_synced)
-                VALUES (?, ?, ?, ?, 'Out of Stock', CURRENT_TIMESTAMP)
-                ON CONFLICT(part_no) DO UPDATE SET
-                    retail_price = CASE WHEN excluded.retail_price > 0 THEN excluded.retail_price ELSE master_parts_lookup.retail_price END,
-                    is_pricing_pending = CASE WHEN excluded.retail_price > 0 THEN 0 ELSE master_parts_lookup.is_pricing_pending END,
-                    last_synced = CURRENT_TIMESTAMP
-                WHERE master_parts_lookup.retail_price = 0 OR master_parts_lookup.is_pricing_pending = 1
-            """, lookup_records)
+        _update_model_part_catalog(cursor, catalog_to_insert)
+        _update_master_parts_lookup(cursor, lookup_to_upsert)
 
         conn.commit()
 
         # Reusable cross-series enrichment (eliminates 70 lines of copy-pasted duplicate logic)
         enrich_cross_series_compatibilities()
         return len(catalog_to_insert)
-
 
 def get_all_models_for_estimator() -> list[str]:
     """
@@ -1082,4 +1088,4 @@ def append_model_catalog(records: list[tuple]) -> int:
                     ELSE model_part_catalog.last_installed_date
                 END
         """, records)
-    return len(records)
+    return len(records)
