@@ -3,6 +3,7 @@ import os
 import sys
 import io
 import pandas as pd
+from unittest.mock import patch, MagicMock
 
 # Ensure app root is in sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -79,6 +80,95 @@ class TestETLModule(unittest.TestCase):
             c.execute("DELETE FROM history_master WHERE complaint_no = '999001122'")
             c.execute("DELETE FROM tech_performance_master WHERE complaint_no = '999001122'")
             conn.commit()
+
+
+class TestETLSyncModelPartCatalog(unittest.TestCase):
+
+    @patch('etl.safe_read')
+    @patch('database.upsert_model_catalog')
+    @patch('database.append_model_catalog')
+    @patch('etl.get_connection')
+    @patch('database.sync_to_local_sqlite')
+    @patch('database.is_turso_active', return_value=False)
+    def test_sync_model_part_catalog_from_feedback_basic(self, mock_is_turso_active, mock_sync_to_local, mock_get_conn, mock_append, mock_upsert, mock_safe_read):
+        # Setup mock DataFrame
+        df = pd.DataFrame({
+            'COMPLETED_STATUS': ['COMPLETED', 'PENDING'],
+            'MODEL_NAME': ['MODEL_A', 'MODEL_B'],
+            'HARDWARE_PART_NOS': ['PART1,PART2', 'PART3'],
+            'HARDWARE_PRODUCTS': ['PROD1,PROD2', 'PROD3'],
+            'HARDWARE_BOARD_TYPES': ['BOARD1,BOARD2', 'BOARD3'],
+            'CLOSED_DATE': ['2023-01-01', '2023-01-02']
+        })
+        mock_safe_read.return_value = df
+
+        # Setup DB connection mock
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_conn.cursor.return_value = mock_cursor
+        mock_get_conn.return_value.__enter__.return_value = mock_conn
+
+        # Call function
+        models, parts, events = etl.sync_model_part_catalog_from_feedback('dummy.csv', is_incremental=False)
+
+        # Only 'COMPLETED' row is processed
+        self.assertEqual(models, 1) # MODEL_A
+        self.assertEqual(parts, 2) # PART1, PART2
+        self.assertEqual(events, 2) # 2 parts from the completed row
+
+        # Verify DB updates
+        mock_upsert.assert_called_once()
+        catalog_records = mock_upsert.call_args[0][0]
+        self.assertEqual(len(catalog_records), 2)
+        # Check record content ('MODEL_A', 'PART1', 'PROD1', 'BOARD1', 1, '2023-01-01')
+        self.assertIn(('MODEL_A', 'PART1', 'PROD1', 'BOARD1', 1, '2023-01-01'), catalog_records)
+        self.assertIn(('MODEL_A', 'PART2', 'PROD2', 'BOARD2', 1, '2023-01-01'), catalog_records)
+
+        mock_append.assert_not_called()
+
+        # Verify master parts lookup insertion
+        mock_cursor.executemany.assert_called_once()
+
+    @patch('etl.safe_read')
+    @patch('database.upsert_model_catalog')
+    @patch('etl.get_connection')
+    @patch('database.sync_to_local_sqlite')
+    @patch('database.is_turso_active', return_value=False)
+    def test_sync_model_part_catalog_from_feedback_scientific_notation(self, mock_is_turso_active, mock_sync_to_local, mock_get_conn, mock_upsert, mock_safe_read):
+        # Setup DB connection mock
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_conn.cursor.return_value = mock_cursor
+        mock_get_conn.return_value.__enter__.return_value = mock_conn
+
+        df = pd.DataFrame({
+            'COMPLETED_STATUS': ['COMPLETED'],
+            'MODEL_NAME': ['MODEL_C'],
+            'HARDWARE_PART_NOS': ['3.00002E+11'],
+            'HARDWARE_PRODUCTS': ['Description 30000200000-A']
+        })
+        mock_safe_read.return_value = df
+
+        models, parts, events = etl.sync_model_part_catalog_from_feedback('dummy.csv', is_incremental=False)
+
+        self.assertEqual(models, 1)
+        self.assertEqual(parts, 1)
+
+        mock_upsert.assert_called_once()
+        catalog_records = mock_upsert.call_args[0][0]
+        self.assertEqual(len(catalog_records), 1)
+        # Should resolve '3.00002E+11' to '30000200000-A' based on description
+        self.assertEqual(catalog_records[0][1], '30000200000-A')
+
+    @patch('etl.safe_read')
+    def test_sync_model_part_catalog_from_feedback_empty(self, mock_safe_read):
+        df = pd.DataFrame()
+        mock_safe_read.return_value = df
+
+        models, parts, events = etl.sync_model_part_catalog_from_feedback('dummy.csv')
+        self.assertEqual(models, 0)
+        self.assertEqual(parts, 0)
+        self.assertEqual(events, 0)
 
 if __name__ == "__main__":
     unittest.main()
