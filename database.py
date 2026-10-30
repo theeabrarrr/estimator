@@ -783,6 +783,7 @@ def merge_parts_master_into_catalog() -> int:
         
         catalog_to_insert = []
         lookup_to_upsert = []
+        b_grade_pattern = re.compile(r'b[- ]?grade\s+set', re.IGNORECASE)
         
         for m, p_no, p_name, price in pm_rows:
             m = str(m).strip().upper()
@@ -793,7 +794,7 @@ def merge_parts_master_into_catalog() -> int:
                 continue
             
             # Rule 7: Skip B-grade sets
-            if re.search(r'b[- ]?grade\s+set', p_no + ' ' + desc, re.IGNORECASE):
+            if b_grade_pattern.search(p_no + ' ' + desc):
                 continue
                 
             # Classify board type
