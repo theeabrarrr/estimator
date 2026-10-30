@@ -80,5 +80,65 @@ class TestETLModule(unittest.TestCase):
             c.execute("DELETE FROM tech_performance_master WHERE complaint_no = '999001122'")
             conn.commit()
 
+
+    def test_ingest_performance_pipeline(self):
+        """Test ingest_performance_pipeline processing with feedback and cancel sources."""
+        # Note: the code renames columns using standardize_columns which might require specific naming or just rely on standard mappings.
+        # standardize_columns renames 'COMPLAIN_NO' or similar to 'complaint_no', 'TECH_NAME' -> 'technician_name', 'JOB_STATUS' -> 'status'
+
+        fb_df = pd.DataFrame({
+            'COMPLAIN_NO': ['111222333', '444555666'],
+            'TECH_NAME': ['Tech A', 'Tech B'],
+            'BRANCH_NAME': ['Branch X', 'Karachi 2 HA'],
+            'DAYS': [2, -1],  # -1 should become 0.0
+            'JOB_STATUS': ['COMPLETED', 'TRANSFERED'], # TRANSFERED should be dropped
+            'CLOSED_DATE': ['2026-03-01', '2026-03-02']
+        })
+
+        cancel_df = pd.DataFrame({
+            'COMPLAIN_NO': ['111222333', '777888999'], # 111222333 is in both, cancel has priority 1, fb has 2. 'last' is kept, so it might be FB if ordered by priority asc.
+            'TECH_NAME': ['Tech A', 'Tech C'],
+            'BRANCH_NAME': ['Branch X', 'Branch Y'],
+            'DAYS': [3, 1],
+            'JOB_STATUS': ['CANCELED', 'CANCELED'],
+            'CLOSED_DATE': ['2026-03-03', '2026-03-04']
+        })
+
+        # the code: comb = comb.sort_values(by=['complaint_no', '_priority'], ascending=[True, True])
+        # keep='last'.
+        # cancel has _priority 1, fb has _priority 2.
+        # 1 comes before 2. keep='last' means 2 (fb) will be kept!
+        # So 111222333 should actually have STATUS = COMPLETED from fb_df!
+
+        perf_cnt = etl.ingest_performance_pipeline(fb_df, cancel_df)
+        self.assertGreaterEqual(perf_cnt, 2) # Expecting 2 valid records
+
+        with database.get_connection() as conn:
+            c = conn.cursor()
+
+            # Check 111222333 (from fb due to keep='last' on ascending priority sort)
+            c.execute("SELECT status, days, closed_date FROM tech_performance_master WHERE complaint_no = '111222333'")
+            res1 = c.fetchone()
+            self.assertIsNotNone(res1)
+            self.assertEqual(res1[0], 'COMPLETED')
+            self.assertEqual(res1[1], 2)
+            self.assertEqual(res1[2], '2026-03-01')
+
+            # Check 777888999 (from cancel)
+            c.execute("SELECT status, branch_name FROM tech_performance_master WHERE complaint_no = '777888999'")
+            res2 = c.fetchone()
+            self.assertIsNotNone(res2)
+            self.assertEqual(res2[0], 'CANCELED')
+            self.assertEqual(res2[1], 'Branch Y')
+
+            # Ensure TRANSFERED is absent
+            c.execute("SELECT * FROM tech_performance_master WHERE complaint_no = '444555666'")
+            res3 = c.fetchone()
+            self.assertIsNone(res3)
+
+            # Cleanup
+            c.execute("DELETE FROM tech_performance_master WHERE complaint_no IN ('111222333', '444555666', '777888999')")
+            conn.commit()
+
 if __name__ == "__main__":
     unittest.main()
