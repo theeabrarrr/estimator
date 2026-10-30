@@ -51,6 +51,46 @@ class TestConfigModule(unittest.TestCase):
         self.assertEqual(charge, 5500)
         self.assertIn("Standard", label)
 
+
+        # Additional keyword variations for 4.0 Ton
+        for m in ['48', '48000', '4.0 TON', '4 TON']:
+            charge, label = config.calculate_gas_charge(m)
+            self.assertEqual(charge, 13000, f"Failed for {m}")
+            self.assertIn("4.0 Ton", label, f"Failed for {m}")
+
+        # Additional keyword variations for 3.0 Ton
+        for m in ['36', '36000', '3.0 TON', '3 TON']:
+            charge, label = config.calculate_gas_charge(m)
+            self.assertEqual(charge, 13000, f"Failed for {m}")
+            self.assertIn("3.0 Ton", label, f"Failed for {m}")
+
+        # Additional keyword variations for 2.0 Ton
+        for m in ['24', '24000', '2.0 TON', '2 TON']:
+            charge, label = config.calculate_gas_charge(m)
+            self.assertEqual(charge, 8500, f"Failed for {m}")
+            self.assertIn("2.0 Ton", label, f"Failed for {m}")
+
+        # Additional keyword variations for 1.5 Ton
+        for m in ['18', '18000', '1.5 TON']:
+            charge, label = config.calculate_gas_charge(m)
+            self.assertEqual(charge, 7000, f"Failed for {m}")
+            self.assertIn("1.5 Ton", label, f"Failed for {m}")
+
+        # Additional keyword variations for 1.0 Ton
+        for m in ['12', '12000', '1.0 TON', '1 TON']:
+            charge, label = config.calculate_gas_charge(m)
+            self.assertEqual(charge, 5500, f"Failed for {m}")
+            self.assertIn("1.0 Ton", label, f"Failed for {m}")
+
+        # Edge cases
+        charge, label = config.calculate_gas_charge("   ") # whitespace
+        self.assertEqual(charge, 5500)
+        self.assertIn("Standard", label)
+
+        charge, label = config.calculate_gas_charge(18000) # integer
+        self.assertEqual(charge, 7000)
+        self.assertIn("1.5 Ton", label)
+
     def test_tokenize_appliance_model(self):
         """Test brand, category, tonnage, and series tokenization."""
         tok = config.tokenize_appliance_model("GS-18PITH11W")
