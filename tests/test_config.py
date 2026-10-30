@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 import os
 import sys
 
@@ -8,6 +9,44 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 import config
 
 class TestConfigModule(unittest.TestCase):
+
+
+    @patch('config.glob.glob')
+    @patch('config.os.path.getmtime')
+    def test_find_latest_feedback_file(self, mock_getmtime, mock_glob):
+        """Test finding the latest feedback file with mocking."""
+        # Scenario 1: No files found
+        mock_glob.return_value = []
+        result = config.find_latest_feedback_file()
+        self.assertEqual(result, os.path.join(config.BASE_DIR, "quality_feedback_report_28SEP2026_142900.csv"))
+
+        # Scenario 2: Multiple files found
+        def glob_side_effect(pattern):
+            if "quality_feedback_report_*.csv" in pattern:
+                return [
+                    os.path.join(config.BASE_DIR, "quality_feedback_report_1.csv"),
+                    os.path.join(config.BASE_DIR, "quality_feedback_report_2.csv")
+                ]
+            elif "*feedback*.csv" in pattern:
+                return [
+                    os.path.join(config.BASE_DIR, "other_feedback_1.csv")
+                ]
+            return []
+
+        mock_glob.side_effect = glob_side_effect
+
+        def getmtime_side_effect(filename):
+            times = {
+                os.path.join(config.BASE_DIR, "quality_feedback_report_1.csv"): 100,
+                os.path.join(config.BASE_DIR, "quality_feedback_report_2.csv"): 300,
+                os.path.join(config.BASE_DIR, "other_feedback_1.csv"): 200,
+            }
+            return times.get(filename, 0)
+
+        mock_getmtime.side_effect = getmtime_side_effect
+
+        result = config.find_latest_feedback_file()
+        self.assertEqual(result, os.path.join(config.BASE_DIR, "quality_feedback_report_2.csv"))
 
     def test_gas_charge_rates_and_labels(self):
         """Test capacity-aware gas calculation across all appliance categories."""
