@@ -35,7 +35,7 @@ import etl
 if not hasattr(etl, "sync_all_complaints_pipeline"):
     importlib.reload(etl)
 from etl import (
-    normalize_phone, ingest_performance_pipeline, ingest_feedback_and_pricing,
+    normalize_phone, ingest_feedback_and_pricing,
     parse_store_stock_pdf, sync_model_part_catalog_from_feedback,
     sync_all_complaints_pipeline
 )
