@@ -25,7 +25,7 @@ if not hasattr(database, "try_reconnect_turso"):
 from database import (
     search_history_records, fetch_performance_data,
     init_estimator_schema, get_all_models_for_estimator,
-    get_parts_by_model, update_part_price,
+    get_parts_by_model,
     get_missing_price_parts_df, get_cross_model_compatibilities,
     get_all_cross_model_compatibilities_map,
     is_turso_active, get_database_status, try_reconnect_turso
