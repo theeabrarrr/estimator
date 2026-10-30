@@ -80,5 +80,55 @@ class TestETLModule(unittest.TestCase):
             c.execute("DELETE FROM tech_performance_master WHERE complaint_no = '999001122'")
             conn.commit()
 
+
+    def test_sync_model_part_catalog_from_feedback(self):
+        """Test syncing part catalog from feedback CSV, covering scientific notation recovery and multi-part splitting."""
+        fb_csv = """COMPLAINT_NO,MODEL_NAME,HARDWARE_PART_NOS,HARDWARE_PRODUCTS,HARDWARE_BOARD_TYPES,COMPLETED_STATUS,CLOSED_DATE,PHONE,CUSTOMER_NAME,TECHNICIAN_NAME
+1,MODEL-A,1234567,Compressor,Main Board,COMPLETED,2026-02-01,111,User A,Tech A
+2,MODEL-B,"1111111, 2222222","Valve, Sensor","Board A, Board B",COMPLETED,2026-02-02,222,User B,Tech B
+3,MODEL-C,3.00002E+11,03000021234,Control Board,COMPLETED,2026-02-03,333,User C,Tech C
+4,MODEL-D,nan,Null Product,Null Board,COMPLETED,2026-02-04,444,User D,Tech D
+5,MODEL-E,,Empty Product,Empty Board,COMPLETED,2026-02-05,555,User E,Tech E
+"""
+        fb_stream = io.BytesIO(fb_csv.encode('utf-8'))
+        fb_stream.name = "feedback2.csv"
+
+        models_count, parts_count, events_count = etl.sync_model_part_catalog_from_feedback(fb_stream, is_incremental=False)
+
+        # models: MODEL-A, MODEL-B, MODEL-C (MODEL-D and MODEL-E skipped because of missing part nos)
+        self.assertEqual(models_count, 3)
+        # parts: 1234567, 1111111, 2222222, 03000021234
+        self.assertEqual(parts_count, 4)
+        self.assertEqual(events_count, 4)
+
+        with database.get_connection() as conn:
+            c = conn.cursor()
+
+            # Check model_part_catalog
+            c.execute("SELECT part_no FROM model_part_catalog WHERE model = 'MODEL-C'")
+            res_c = c.fetchone()
+            self.assertIsNotNone(res_c)
+            self.assertEqual(res_c[0], "03000021234") # Recovered from scientific notation
+
+            c.execute("SELECT part_no FROM model_part_catalog WHERE model = 'MODEL-B' ORDER BY part_no")
+            res_b = c.fetchall()
+            self.assertEqual(len(res_b), 2)
+            self.assertEqual(res_b[0][0], "1111111")
+            self.assertEqual(res_b[1][0], "2222222")
+
+            # Check master_parts_lookup pending entries
+            c.execute("SELECT part_no, is_pricing_pending FROM master_parts_lookup WHERE part_no IN ('1234567', '1111111', '2222222', '03000021234')")
+            lookup_res = c.fetchall()
+            self.assertEqual(len(lookup_res), 4)
+            for row in lookup_res:
+                self.assertEqual(row[1], 1) # pending pricing
+
+            # Cleanup test rows
+            models_to_clean = "('MODEL-A', 'MODEL-B', 'MODEL-C')"
+            parts_to_clean = "('1234567', '1111111', '2222222', '03000021234')"
+            c.execute(f"DELETE FROM model_part_catalog WHERE model IN {models_to_clean}")
+            c.execute(f"DELETE FROM master_parts_lookup WHERE part_no IN {parts_to_clean}")
+            conn.commit()
+
 if __name__ == "__main__":
     unittest.main()
