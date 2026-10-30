@@ -471,6 +471,34 @@ st.markdown("""
         transform: translateY(-2px);
         box-shadow: 8px 8px 20px rgba(0, 0, 0, 0.09) !important;
     }
+
+    .unit-timeline-card {
+        background-color: var(--secondary-background-color, rgba(128,128,128,0.06)) !important;
+        border: 1.5px solid var(--dwp-border) !important;
+        border-radius: 20px !important;
+        padding: 18px 20px !important;
+        margin-bottom: 18px !important;
+        color: var(--text-color) !important;
+        box-shadow: 6px 6px 16px rgba(0, 0, 0, 0.06), 
+                    inset 2px 2px 4px rgba(255, 255, 255, 0.25), 
+                    inset -2px -2px 4px rgba(0, 0, 0, 0.04) !important;
+    }
+
+    .timeline-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--background-color, #ffffff);
+        border: 1px solid var(--dwp-border);
+        border-radius: 12px;
+        padding: 4px 10px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--text-color);
+        box-shadow: inset 1px 1px 2px rgba(255, 255, 255, 0.4), 1px 1px 4px rgba(0,0,0,0.04);
+        margin-right: 6px;
+        margin-top: 4px;
+    }
     
     .scope-box { 
         background-color: var(--secondary-background-color, rgba(128,128,128,0.06)) !important; 
@@ -983,7 +1011,50 @@ with tab_history:
         if match_df.empty:
             st.warning(f"`{query}` ke against koi record nahi mila.")
         else:
-            st.info(f"`{query}` ke **{len(match_df)}** service record(s) milay hain:")
+            # Calculate Unit Timeline & Lifecycle Metrics
+            total_records = len(match_df)
+            models = [m for m in match_df['model'].dropna().unique() if m and m != 'N/A']
+            unit_model = models[0] if models else "N/A"
+            serials = [s for s in match_df['serial'].dropna().unique() if s and s != 'N/A']
+            unit_serial = serials[0] if serials else "N/A"
+            primary_cust = match_df.iloc[0]['customer_name'] or "Valued Customer"
+            primary_phone = match_df.iloc[0]['phone'] or "N/A"
+            
+            all_dates = []
+            for dt_col in ['closed_date', 'complaint_date']:
+                if dt_col in match_df.columns:
+                    for d_val in match_df[dt_col].dropna():
+                        d_str = str(d_val).strip()
+                        if d_str and d_str != 'N/A':
+                            all_dates.append(d_str)
+            first_service = all_dates[-1] if all_dates else "N/A"
+            latest_service = all_dates[0] if all_dates else "N/A"
+            latest_tech = match_df.iloc[0]['technician_name'] or "N/A"
+            total_spent = sum(int(amt) for amt in match_df.get('closed_amount', [0]) if pd.notna(amt))
+
+            st.markdown(f"""
+            <div class="unit-timeline-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-weight: 800; font-size: 1.05rem; color: var(--text-color); letter-spacing: -0.01em;">
+                        📋 Unit Lifecycle & Service History Summary
+                    </span>
+                    <span class="status-badge-completed">✨ {total_records} Verified Service Event(s)</span>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px;">
+                    <span class="timeline-chip">🏷️ <b>Model:</b> {unit_model}</span>
+                    <span class="timeline-chip">🔢 <b>Serial:</b> <code>{unit_serial}</code></span>
+                    <span class="timeline-chip">👤 <b>Customer:</b> {primary_cust} (📞 {primary_phone})</span>
+                    <span class="timeline-chip">👨‍🔧 <b>Latest Tech:</b> {latest_tech}</span>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 4px; font-size: 0.82rem;">
+                    <span class="timeline-chip">🗓️ <b>First Service:</b> {first_service}</span>
+                    <span class="timeline-chip">🚀 <b>Latest Service:</b> {latest_service}</span>
+                    <span class="timeline-chip">💰 <b>Total Recorded Invoiced:</b> Rs. {total_spent:,}</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            st.markdown(f"###### 📑 Detailed Historical Service Tickets ({total_records})")
             for _, r in match_df.iterrows():
                 raw_c_no = str(r['complaint_no'])
                 c_no = raw_c_no.replace('="', '').replace('"', '').strip()

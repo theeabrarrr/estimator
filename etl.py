@@ -152,8 +152,8 @@ def normalize_phone(ph):
 def ingest_feedback_and_pricing(fb_source, coll_source=None):
     init_estimator_schema()
     fb = standardize_columns(safe_read(fb_source))
-    fb['complaint_no'] = fb['complaint_no'].apply(clean_val)
-    fb['serial'] = fb['serial'].apply(clean_val).str.upper() if 'serial' in fb.columns else ""
+    fb['complaint_no'] = fb['complaint_no'].apply(clean_val).str.strip()
+    fb['serial'] = fb['serial'].apply(clean_val).str.strip().str.upper() if 'serial' in fb.columns else ""
     fb['phone'] = fb['phone'].apply(normalize_phone) if 'phone' in fb.columns else ""
     fb['model'] = fb['model'].astype(str).str.strip().str.upper() if 'model' in fb.columns else ""
     fb['remarks'] = fb['remarks'].apply(clean_val) if 'remarks' in fb.columns else ""
@@ -161,12 +161,15 @@ def ingest_feedback_and_pricing(fb_source, coll_source=None):
     for col in ['customer_name', 'technician_name', 'complaint_type', 'purchase_date', 'complaint_date', 'closed_date']:
         fb[col] = fb[col].apply(clean_val) if col in fb.columns else ""
 
+    # Filter out empty complaint numbers and deduplicate by clean complaint_no
+    fb = fb[fb['complaint_no'] != ''].drop_duplicates(subset=['complaint_no'], keep='last').copy()
+
     fb['closed_amount'] = 0
 
     if coll_source is not None:
         try:
             coll = standardize_columns(safe_read(coll_source))
-            coll['complaint_no'] = coll['complaint_no'].apply(clean_val)
+            coll['complaint_no'] = coll['complaint_no'].apply(clean_val).str.strip()
             coll['net_amt'] = pd.to_numeric(coll.get('net_collection', 0), errors='coerce').fillna(0).astype(int)
             amt_map = coll.groupby('complaint_no')['net_amt'].max().to_dict()
             fb['closed_amount'] = fb['complaint_no'].map(amt_map).fillna(0).astype(int)

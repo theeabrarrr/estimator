@@ -400,7 +400,7 @@ def search_history_records(query_str, clean_phone_str):
                 COALESCE(t.status, 'COMPLETED') AS status
             FROM history_master h
             LEFT JOIN tech_performance_master t 
-                ON (h.complaint_no = t.complaint_no OR REPLACE(REPLACE(h.complaint_no, '=', ''), '"', '') = t.complaint_no)
+                ON (TRIM(REPLACE(REPLACE(h.complaint_no, '=', ''), '"', '')) = TRIM(REPLACE(REPLACE(t.complaint_no, '=', ''), '"', '')))
             WHERE h.serial LIKE ? 
                OR h.complaint_no LIKE ? 
                OR (h.phone != '' AND (h.phone LIKE ? OR h.phone LIKE ? OR h.phone LIKE ?))
@@ -426,8 +426,7 @@ def search_history_records(query_str, clean_phone_str):
             WHERE t.status IN ('REJECTED', 'CANCELED', 'NIL')
               AND NOT EXISTS (
                   SELECT 1 FROM history_master h 
-                  WHERE h.complaint_no = t.complaint_no 
-                     OR REPLACE(REPLACE(h.complaint_no, '=', ''), '"', '') = t.complaint_no
+                  WHERE TRIM(REPLACE(REPLACE(h.complaint_no, '=', ''), '"', '')) = TRIM(REPLACE(REPLACE(t.complaint_no, '=', ''), '"', ''))
               )
               AND (t.complaint_no LIKE ? OR t.technician_name LIKE ?)
 
@@ -443,6 +442,23 @@ def search_history_records(query_str, clean_phone_str):
             f"%{clean_q}%",
             f"%{query_str}%"
         ))
+
+    if not match_df.empty:
+        # Defensive deduplication on normalized complaint_no, prioritizing populated records
+        clean_c = match_df['complaint_no'].astype(str).str.replace('="', '', regex=False).str.replace('"', '', regex=False).str.strip()
+        match_df['complaint_no'] = clean_c
+        match_df['serial'] = match_df['serial'].astype(str).str.replace('="', '', regex=False).str.replace('"', '', regex=False).str.strip()
+        
+        has_phone = match_df['phone'].astype(str).str.strip() != ''
+        has_model = match_df['model'].astype(str).str.strip() != ''
+        match_df['_completeness'] = has_phone.astype(int) + has_model.astype(int)
+        match_df = (
+            match_df.sort_values(by=['_completeness'], ascending=False)
+            .drop_duplicates(subset=['complaint_no'], keep='first')
+            .drop(columns=['_completeness'])
+            .reset_index(drop=True)
+        )
+
     return match_df
 
 def fetch_performance_data(start_date=None, end_date=None):
@@ -651,7 +667,7 @@ def init_estimator_schema(force: bool = False):
             except Exception as e:
                 print(f"Catalog init error: {e}")
 
-        if hist_count == 0 or valid_phone_count == 0:
+        if hist_count == 0:
             try:
                 import etl
                 import config
@@ -1082,4 +1098,4 @@ def append_model_catalog(records: list[tuple]) -> int:
                     ELSE model_part_catalog.last_installed_date
                 END
         """, records)
-    return len(records)
+    return len(records)
