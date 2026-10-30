@@ -8,6 +8,41 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 import database
 
+
+from unittest.mock import patch, MagicMock
+
+class TestGetTursoCredentials(unittest.TestCase):
+    @patch.dict(os.environ, {}, clear=True)
+    def test_credentials_from_env(self):
+        os.environ["TURSO_DATABASE_URL"] = " http://env-url "
+        os.environ["TURSO_AUTH_TOKEN"] = " env-token "
+        url, token = database.get_turso_credentials()
+        self.assertEqual(url, "http://env-url")
+        self.assertEqual(token, "env-token")
+
+    @patch.dict(os.environ, {}, clear=True)
+    def test_credentials_from_streamlit_secrets(self):
+        with patch.dict('sys.modules', {'streamlit': MagicMock(secrets={"TURSO_DATABASE_URL": " http://st-url ", "TURSO_AUTH_TOKEN": " st-token "})}):
+            url, token = database.get_turso_credentials()
+            self.assertEqual(url, "http://st-url")
+            self.assertEqual(token, "st-token")
+
+    @patch.dict(os.environ, {}, clear=True)
+    def test_no_credentials(self):
+        with patch.dict('sys.modules', {'streamlit': MagicMock(secrets={})}):
+            url, token = database.get_turso_credentials()
+            self.assertIsNone(url)
+            self.assertIsNone(token)
+
+    @patch.dict(os.environ, {}, clear=True)
+    def test_mixed_credentials(self):
+        os.environ["TURSO_DATABASE_URL"] = "http://mixed-url"
+        with patch.dict('sys.modules', {'streamlit': MagicMock(secrets={"TURSO_AUTH_TOKEN": "mixed-token"})}):
+            url, token = database.get_turso_credentials()
+            self.assertEqual(url, "http://mixed-url")
+            self.assertEqual(token, "mixed-token")
+
+
 class TestDatabaseModule(unittest.TestCase):
 
     def setUp(self):
