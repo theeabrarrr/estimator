@@ -10,6 +10,20 @@ class TestTursoResilience(unittest.TestCase):
     def tearDown(self):
         database.reset_turso_fallback()
 
+    def test_reset_turso_fallback(self):
+        # Mutate the global state to simulate an active fallback and pending writes
+        database._TURSO_FALLBACK_ACTIVE = True
+        database._TURSO_LAST_FAIL_TIME = 12345.67
+        database._PENDING_LOCAL_WRITES = True
+
+        # Call the reset function
+        database.reset_turso_fallback()
+
+        # Assert that the state has been correctly reset
+        self.assertFalse(database._TURSO_FALLBACK_ACTIVE)
+        self.assertEqual(database._TURSO_LAST_FAIL_TIME, 0.0)
+        self.assertFalse(database._PENDING_LOCAL_WRITES)
+
     def test_database_status_reporting(self):
         status = database.get_database_status()
         self.assertIn(status, ["TURSO_ONLINE", "TURSO_FALLBACK_LOCAL", "LOCAL_ONLY"])
