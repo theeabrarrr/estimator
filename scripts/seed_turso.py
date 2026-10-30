@@ -106,8 +106,8 @@ def main():
         print("\nPlease provide them via arguments:")
         print("  python scripts/seed_turso.py --url <TURSO_URL> --token <TURSO_TOKEN>")
         print("\nOr configure them in .streamlit/secrets.toml:")
-        print('  TURSO_DATABASE_URL = "libsql://dwp-service-username.turso.io"')
-        print('  TURSO_AUTH_TOKEN = "your-turso-auth-token"')
+        print('  TURSO_DATABASE_URL = "<YOUR_TURSO_DATABASE_URL>"')
+        print('  TURSO_AUTH_TOKEN = "<YOUR_TURSO_AUTH_TOKEN>"')
         sys.exit(1)
 
     migrate_to_turso(url, token)
