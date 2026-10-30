@@ -2,6 +2,9 @@ import unittest
 import os
 import sys
 import pandas as pd
+import sqlite3
+import tempfile
+
 
 # Ensure app root is in sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -84,6 +87,40 @@ class TestDatabaseModule(unittest.TestCase):
 
         df_ranged = database.fetch_performance_data("2026-01-01", "2026-01-31")
         self.assertIsInstance(df_ranged, pd.DataFrame)
+
+
+    def test_sync_to_local_sqlite(self):
+        """Test syncing data to local SQLite mirror with both single and multiple statements."""
+        original_db_file = database.DB_FILE
+        temp_db = ""
+        try:
+            with tempfile.NamedTemporaryFile(delete=False) as tmp:
+                temp_db = tmp.name
+
+            database.DB_FILE = temp_db
+
+            with sqlite3.connect(temp_db) as conn:
+                conn.execute("CREATE TABLE test_sync (id INTEGER PRIMARY KEY, name TEXT)")
+
+            database.sync_to_local_sqlite("INSERT INTO test_sync (name) VALUES ('test1')")
+
+            with sqlite3.connect(temp_db) as conn:
+                row = conn.execute("SELECT name FROM test_sync WHERE id = 1").fetchone()
+                self.assertEqual(row[0], 'test1')
+
+            database.sync_to_local_sqlite("INSERT INTO test_sync (name) VALUES (?)", [('test2',), ('test3',)])
+
+            with sqlite3.connect(temp_db) as conn:
+                rows = conn.execute("SELECT name FROM test_sync ORDER BY id").fetchall()
+                self.assertEqual(len(rows), 3)
+                self.assertEqual(rows[1][0], 'test2')
+                self.assertEqual(rows[2][0], 'test3')
+
+            database.sync_to_local_sqlite("INVALID SQL QUERY")
+        finally:
+            database.DB_FILE = original_db_file
+            if os.path.exists(temp_db):
+                os.remove(temp_db)
 
 if __name__ == "__main__":
     unittest.main()
