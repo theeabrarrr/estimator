@@ -915,11 +915,11 @@ with tab_estimator:
             st.markdown(bill_card_html, unsafe_allow_html=True)
 
             # WhatsApp Quotation Generator
-            parts_lines = ""
             if selected_parts_data:
-                for i, p in enumerate(selected_parts_data, 1):
-                    p_amt = f"Rs. {p['price']:,}" if p['price'] > 0 else "Pending ERP Confirmation"
-                    parts_lines += f"{i}. {p['description']} ({p['part_no']}) - {p_amt}\n"
+                parts_lines = "".join(
+                    [f"{i}. {p['description']} ({p['part_no']}) - " + (f"Rs. {p['price']:,}" if p['price'] > 0 else "Pending ERP Confirmation") + "\n"
+                     for i, p in enumerate(selected_parts_data, 1)]
+                )
             else:
                 parts_lines = "• No spare parts required (Inspection / General Service)\n"
 
