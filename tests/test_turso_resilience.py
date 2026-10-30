@@ -10,6 +10,34 @@ class TestTursoResilience(unittest.TestCase):
     def tearDown(self):
         database.reset_turso_fallback()
 
+
+    @patch('database.get_turso_credentials')
+    def test_is_turso_active(self, mock_creds):
+        # 1. Valid credentials, no fallback -> True
+        mock_creds.return_value = ("libsql://test.turso.io", "dummy_token")
+        database._TURSO_FALLBACK_ACTIVE = False
+        self.assertTrue(database.is_turso_active())
+
+        # 2. Valid credentials, fallback active -> False
+        mock_creds.return_value = ("libsql://test.turso.io", "dummy_token")
+        database._TURSO_FALLBACK_ACTIVE = True
+        self.assertFalse(database.is_turso_active())
+
+        # 3. Missing token -> False
+        mock_creds.return_value = ("libsql://test.turso.io", None)
+        database._TURSO_FALLBACK_ACTIVE = False
+        self.assertFalse(database.is_turso_active())
+
+        # 4. Missing URL -> False
+        mock_creds.return_value = (None, "dummy_token")
+        database._TURSO_FALLBACK_ACTIVE = False
+        self.assertFalse(database.is_turso_active())
+
+        # 5. Missing both -> False
+        mock_creds.return_value = (None, None)
+        database._TURSO_FALLBACK_ACTIVE = False
+        self.assertFalse(database.is_turso_active())
+
     def test_database_status_reporting(self):
         status = database.get_database_status()
         self.assertIn(status, ["TURSO_ONLINE", "TURSO_FALLBACK_LOCAL", "LOCAL_ONLY"])
