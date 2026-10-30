@@ -7,7 +7,7 @@
 **Supported Brands:** Gree & EcoStar (HVAC, Refrigeration, Water Dispensers, Washing Machines, LED TVs)  
 **Database Architecture:** Dual-Engine: **Turso Cloud Database (libSQL over HTTP Pipeline API)** (Primary Cloud Persistence) with transparent fallback to **Local SQLite (`dwp_service.db`)** (Local/Offline)  
 **Document Status:** Ground Truth Standard (Active & Authoritative)  
-**Version:** 2.4 (Branch-Level Multi-Center Filtering, Turnaround Time Avg Days Tracking, and Dynamic Technician Personal Scorecards)  
+**Version:** 2.5 (Top 3 Best Performers Showcase, Branch-Level Multi-Center Filtering, Turnaround Time Avg Days Tracking)  
 
 ---
 
@@ -144,6 +144,10 @@ The **DWP Field Assistant Engine** is an enterprise field operations, diagnostic
   - `Canceled / Nil Calls`
   - `Branch Efficiency (%)` (Renamed from Zone Efficiency; dynamically switches to `Personal Efficiency` or `Enterprise Efficiency`).
   - **Dynamic State Switching:** When an individual technician is selected in the personal score dropdown, all 5 top cards instantly switch to display that specific technician's metrics.
+- **Top 3 Best Performers Showcase (Standard Streamlit Metric Cards):**
+  - Ranks the top 3 star performers in the active branch scope strictly by completed complaint volume (with lowest `Avg Days` tiebreaker).
+  - Clean 3-column layout (`🥇 1st Place`, `🥈 2nd Place`, `🥉 3rd Place`) displaying completed volume and delta badge combining efficiency percentage and average resolution days.
+  - Interactive one-click `🔍 Inspect {Name}` button beneath each card that immediately syncs the dropdown, personal KPI cards, and table row highlighting.
 - **Technician Personal Scorecard & Ranking Table:**
   - Full ranking table sorted by completed volume descending with sequential ranking (`Sr. No`).
   - Columns: `Sr. No` | `Technician` | `Assigned` | `Completed` | `Rejected` | `Canceled` | `Avg Days`.
@@ -217,3 +221,4 @@ Enforced by authoritative skill [`dwp-ui-design-system`](file:///.agents/skills/
 | **v2.2** | Oct 2026 | Integrated Turso Cloud Database persistence (libSQL over HTTP), TCP Keep-Alive connection pooling, and Streamlit query caching. |
 | **v2.3** | Oct 2026 | **Sleek Corporate Claymorphism UI Overhaul:**<br>• Converted Estimator to 2-Column Split Dashboard (Catalog Left, Checkout Right).<br>• Implemented Ultra-Compact 2-Line Spare Parts rows (~48px height, 65% space reduction).<br>• Eliminated bulky expander boxes; introduced hover tooltips for cross-model fits.<br>• Added 4-Way Valve Bypass (Rs. 1,500) and AC Service Charges (Rs. 3,500).<br>• Removed redundant Customer Warranty Status selector.<br>• Relocated Operations & Support help box to the Sidebar footer.<br>• Formalized Mandatory Continuous PRD Maintenance & Versioning Policy. |
 | **v2.4** | Oct 2026 | **Technician Performance Hub Upgrade (Module 3):**<br>• Added multi-branch filtering (defaulting to `Karachi 2 HA` with `-- All Branches --` option).<br>• Dynamically updated 5 top KPI cards to switch between Branch metrics and individual Technician Personal Score.<br>• Renamed Zone Efficiency to `Branch Efficiency` (and `Personal Efficiency` for individual technicians).<br>• Replaced Completion Rate in ranking table with `Avg Days` (turnaround time, clamping negative days to 0 for same-day closures).<br>• Eliminated ghost blank technician rows from the table while retaining unassigned jobs in branch totals.<br>• Implemented visual row highlighting for the selected technician in the full ranking table.<br>• Upgraded `tech_performance_master` schema in Turso Cloud and local SQLite with `branch_name` and `days`. |
+| **v2.5** | Oct 2026 | **Top 3 Best Performers Showcase (Module 3):**<br>• Added Top 3 Best Performers podium row in standard Streamlit metric cards (🥇, 🥈, 🥉).<br>• Ranked by completed complaint volume with speed and efficiency delta sub-badges.<br>• Added interactive `🔍 Inspect` one-click drilldown buttons under each performer card to instantly focus their personal scorecard and table row.<br>• Added automated unit tests and validated across all branch scopes. |

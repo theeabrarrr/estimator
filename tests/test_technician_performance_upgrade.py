@@ -57,5 +57,44 @@ KARACHI,Karachi 2 HA | ASC,Test Cust 2,TEST99002,ASC Tech,COMPLETED,2026-10-16,3
         self.assertIn("branch_name", df.columns)
         self.assertIn("days", df.columns)
 
+    def test_top_3_performers_ranking_and_efficiency(self):
+        # Create a mock dataframe of technicians with varying completed and assigned counts
+        mock_data = pd.DataFrame([
+            {"complaint_no": "C1", "technician_name": "Tech Alpha", "status": "COMPLETED", "days": 1.0},
+            {"complaint_no": "C2", "technician_name": "Tech Alpha", "status": "COMPLETED", "days": 2.0},
+            {"complaint_no": "C3", "technician_name": "Tech Alpha", "status": "COMPLETED", "days": 0.0},
+            {"complaint_no": "C4", "technician_name": "Tech Beta", "status": "COMPLETED", "days": 0.5},
+            {"complaint_no": "C5", "technician_name": "Tech Beta", "status": "COMPLETED", "days": 1.5},
+            {"complaint_no": "C6", "technician_name": "Tech Gamma", "status": "COMPLETED", "days": 3.0},
+            {"complaint_no": "C7", "technician_name": "Tech Delta", "status": "REJECTED", "days": np.nan},
+        ])
+        
+        all_pvt = pd.pivot_table(
+            mock_data,
+            index='technician_name',
+            columns='status',
+            values='complaint_no',
+            aggfunc='count',
+            fill_value=0
+        )
+        for s in ['COMPLETED', 'REJECTED']:
+            if s not in all_pvt.columns:
+                all_pvt[s] = 0
+                
+        summary_df = pd.DataFrame({
+            'Technician': all_pvt.index,
+            'Assigned': all_pvt.sum(axis=1).values,
+            'Completed': all_pvt['COMPLETED'].values,
+        }).sort_values(by=['Completed', 'Assigned'], ascending=[False, False]).reset_index(drop=True)
+        
+        top3 = summary_df[summary_df['Completed'] > 0].head(3)
+        self.assertEqual(len(top3), 3)
+        self.assertEqual(top3.iloc[0]['Technician'], "Tech Alpha")
+        self.assertEqual(top3.iloc[0]['Completed'], 3)
+        self.assertEqual(top3.iloc[1]['Technician'], "Tech Beta")
+        self.assertEqual(top3.iloc[1]['Completed'], 2)
+        self.assertEqual(top3.iloc[2]['Technician'], "Tech Gamma")
+        self.assertEqual(top3.iloc[2]['Completed'], 1)
+
 if __name__ == "__main__":
     unittest.main()

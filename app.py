@@ -1125,34 +1125,6 @@ with tab_perf:
             </div>
             """, unsafe_allow_html=True)
 
-            # Technician selector (clean list excluding blank strings)
-            tech_candidates = sorted([t for t in scoped_data['technician_name'].dropna().unique() if str(t).strip()])
-            all_techs = ["-- All Technicians (Branch View) --"] + tech_candidates
-            selected_tech = st.selectbox("👤 Select Technician (Personal Score):", options=all_techs, key="sel_kpi_tech")
-
-            # Dynamic KPI calculation: Switch dynamically between Branch and Selected Technician
-            if selected_tech == "-- All Technicians (Branch View) --":
-                active_subset = scoped_data
-                eff_title = "Branch Efficiency" if sel_branch != "-- All Branches --" else "Enterprise Efficiency"
-            else:
-                active_subset = scoped_data[scoped_data['technician_name'] == selected_tech]
-                eff_title = "Personal Efficiency"
-
-            tot_assigned = len(active_subset)
-            tot_completed = int((active_subset['status'] == 'COMPLETED').sum())
-            tot_rejected = int((active_subset['status'] == 'REJECTED').sum())
-            tot_canceled = int((active_subset['status'].isin(['CANCELED', 'NIL'])).sum())
-            efficiency = (tot_completed / max(tot_assigned, 1)) * 100
-
-            k1, k2, k3, k4, k5 = st.columns(5)
-            k1.metric("Total Assigned", f"{tot_assigned:,}")
-            k2.metric("Completed", f"{tot_completed:,}")
-            k3.metric("Rejected", f"{tot_rejected:,}")
-            k4.metric("Canceled", f"{tot_canceled:,}")
-            k5.metric(eff_title, f"{efficiency:.1f}%")
-
-            st.divider()
-
             # Build summary table across all named technicians (strictly filter out blank technician rows)
             table_scoped = scoped_data[scoped_data['technician_name'].astype(str).str.strip() != ''].copy()
 
@@ -1199,10 +1171,83 @@ with tab_perf:
 
                 # Add sequential ranking column starting from 1
                 summary_df.insert(0, 'Sr. No', range(1, len(summary_df) + 1))
+            else:
+                summary_df = pd.DataFrame()
 
+            # Technician selector candidates
+            tech_candidates = sorted([t for t in scoped_data['technician_name'].dropna().unique() if str(t).strip()])
+            all_techs = ["-- All Technicians (Branch View) --"] + tech_candidates
+
+            if "sel_kpi_tech" not in st.session_state or st.session_state["sel_kpi_tech"] not in all_techs:
+                st.session_state["sel_kpi_tech"] = "-- All Technicians (Branch View) --"
+
+            active_tech = st.session_state["sel_kpi_tech"]
+
+            # Dynamic KPI calculation: Switch dynamically between Branch and Selected Technician
+            if active_tech == "-- All Technicians (Branch View) --":
+                active_subset = scoped_data
+                eff_title = "Branch Efficiency" if sel_branch != "-- All Branches --" else "Enterprise Efficiency"
+            else:
+                active_subset = scoped_data[scoped_data['technician_name'] == active_tech]
+                eff_title = "Personal Efficiency"
+
+            tot_assigned = len(active_subset)
+            tot_completed = int((active_subset['status'] == 'COMPLETED').sum())
+            tot_rejected = int((active_subset['status'] == 'REJECTED').sum())
+            tot_canceled = int((active_subset['status'].isin(['CANCELED', 'NIL'])).sum())
+            efficiency = (tot_completed / max(tot_assigned, 1)) * 100
+
+            k1, k2, k3, k4, k5 = st.columns(5)
+            k1.metric("Total Assigned", f"{tot_assigned:,}")
+            k2.metric("Completed", f"{tot_completed:,}")
+            k3.metric("Rejected", f"{tot_rejected:,}")
+            k4.metric("Canceled", f"{tot_canceled:,}")
+            k5.metric(eff_title, f"{efficiency:.1f}%")
+
+            # Top 3 Best Performers Showcase (Standard Streamlit Metric Cards)
+            if not summary_df.empty:
+                top3 = summary_df[summary_df['Completed'] > 0].head(3)
+                if not top3.empty:
+                    st.markdown("##### 🏆 Top 3 Best Performers")
+                    medals = ["🥇 1st Place", "🥈 2nd Place", "🥉 3rd Place"]
+                    top_cols = st.columns(len(top3))
+                    for idx, (t_col, (_, r_data)) in enumerate(zip(top_cols, top3.iterrows())):
+                        with t_col:
+                            p_name = r_data['Technician']
+                            p_comp = int(r_data['Completed'])
+                            p_ass = int(r_data['Assigned'])
+                            p_days = r_data['Avg Days']
+                            p_eff = (p_comp / max(p_ass, 1)) * 100
+                            speed_txt = f" • ⚡ {p_days} Days Avg" if p_days != "-" else ""
+                            
+                            st.metric(
+                                label=f"{medals[idx]}: {p_name}",
+                                value=f"{p_comp:,} Completed",
+                                delta=f"{p_eff:.1f}% Efficiency{speed_txt}"
+                            )
+                            if st.button(f"🔍 Inspect {p_name}", key=f"btn_inspect_podium_{idx}", width="stretch"):
+                                st.session_state["sel_kpi_tech"] = p_name
+                                st.rerun()
+
+            st.divider()
+
+            # Technician Selector dropdown
+            selected_tech_idx = all_techs.index(st.session_state["sel_kpi_tech"])
+            chosen_tech = st.selectbox(
+                "👤 Select Technician (Personal Score):",
+                options=all_techs,
+                index=selected_tech_idx,
+                key="sel_kpi_tech_box"
+            )
+            if chosen_tech != st.session_state["sel_kpi_tech"]:
+                st.session_state["sel_kpi_tech"] = chosen_tech
+                st.rerun()
+
+            # Render Ranking Table
+            if not summary_df.empty:
                 # Highlight selected technician row while keeping full ranking visible
                 def highlight_selected(row):
-                    if selected_tech != "-- All Technicians (Branch View) --" and row['Technician'] == selected_tech:
+                    if active_tech != "-- All Technicians (Branch View) --" and row['Technician'] == active_tech:
                         return ['background-color: rgba(30, 144, 255, 0.22); font-weight: bold; border-left: 4px solid #1E90FF;'] * len(row)
                     return [''] * len(row)
 
