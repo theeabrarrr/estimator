@@ -1,5 +1,6 @@
 import unittest
 import os
+from unittest.mock import patch
 import sys
 
 # Ensure app root is in sys.path
@@ -116,6 +117,44 @@ class TestConfigModule(unittest.TestCase):
         suction_10, liquid_10 = config.get_tonnage_valve_pairing("1.0 Ton")
         self.assertEqual(suction_10, "Cut-Off Valve (3/8\")")
         self.assertEqual(liquid_10, "Cut-Off Valve (1/4\")")
+
+
+
+
+    def test_find_latest_collection_file_default(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('config.BASE_DIR', tmpdir):
+                result = config.find_latest_collection_file()
+                self.assertEqual(result, os.path.join(tmpdir, "Detail_Collection_28SEP26_023634PM.xlsx"))
+
+    def test_find_latest_collection_file_finds_latest(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('config.BASE_DIR', tmpdir):
+                f1 = os.path.join(tmpdir, "Detail_Collection_1.xlsx")
+                f2 = os.path.join(tmpdir, "Detail_Collection_2.xlsx")
+                open(f1, 'w').close()
+                open(f2, 'w').close()
+                os.utime(f1, (100, 100))
+                os.utime(f2, (200, 200))
+
+                result = config.find_latest_collection_file()
+                self.assertEqual(result, f2)
+
+    def test_find_latest_collection_file_ignores_temp(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch('config.BASE_DIR', tmpdir):
+                f1 = os.path.join(tmpdir, "Detail_Collection_1.xlsx")
+                f2 = os.path.join(tmpdir, "~$Detail_Collection_2.xlsx")
+                open(f1, 'w').close()
+                open(f2, 'w').close()
+                os.utime(f1, (100, 100))
+                os.utime(f2, (200, 200))
+
+                result = config.find_latest_collection_file()
+                self.assertEqual(result, f1)
 
 if __name__ == "__main__":
     unittest.main()
