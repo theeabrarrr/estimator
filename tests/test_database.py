@@ -16,8 +16,40 @@ class TestDatabaseModule(unittest.TestCase):
         database.get_turso_credentials = lambda: (None, None)
         database.init_estimator_schema()
 
+
     def tearDown(self):
         database.get_turso_credentials = self.orig_get_turso_creds
+        database._TURSO_FALLBACK_ACTIVE = False
+
+
+    def test_is_turso_active(self):
+        """Test is_turso_active returns correct boolean based on credentials and fallback state."""
+        # 1. No credentials
+        database.get_turso_credentials = lambda: (None, None)
+        database._TURSO_FALLBACK_ACTIVE = False
+        self.assertFalse(database.is_turso_active())
+
+        # 2. Only URL
+        database.get_turso_credentials = lambda: ("http://url", None)
+        database._TURSO_FALLBACK_ACTIVE = False
+        self.assertFalse(database.is_turso_active())
+
+        # 3. Only Token
+        database.get_turso_credentials = lambda: (None, "token")
+        database._TURSO_FALLBACK_ACTIVE = False
+        self.assertFalse(database.is_turso_active())
+
+        # 4. Valid URL and Token, Fallback Inactive
+        database.get_turso_credentials = lambda: ("http://url", "token")
+        database._TURSO_FALLBACK_ACTIVE = False
+        self.assertTrue(database.is_turso_active())
+
+        # 5. Valid URL and Token, Fallback Active
+        database.get_turso_credentials = lambda: ("http://url", "token")
+        database._TURSO_FALLBACK_ACTIVE = True
+        self.assertFalse(database.is_turso_active())
+
+
 
     def test_database_status(self):
         """Test database connection status function."""
