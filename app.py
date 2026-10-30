@@ -9,6 +9,7 @@ import urllib.parse
 from datetime import datetime, date
 import calendar
 import json
+import html
 import pandas as pd
 import streamlit as st
 
@@ -810,7 +811,7 @@ with tab_estimator:
                 for pno, pinfo in list(st.session_state["estimator_selected_parts"].items()):
                     cp1, cp2 = st.columns([0.82, 0.18])
                     with cp1:
-                        st.markdown(f"• **{pinfo['description']}** (`{pno}`)<br><span style='font-size:0.86rem; font-weight:700;'>Rs. {pinfo['price']:,}</span> &nbsp;<span class='dwp-badge'>[{pinfo['board_type']}]</span>", unsafe_allow_html=True)
+                        st.markdown(f"• **{html.escape(str(pinfo['description']))}** (`{html.escape(str(pno))}`)<br><span style='font-size:0.86rem; font-weight:700;'>Rs. {pinfo['price']:,}</span> &nbsp;<span class='dwp-badge'>[{html.escape(str(pinfo['board_type']))}]</span>", unsafe_allow_html=True)
                     with cp2:
                         if st.button("❌", key=f"btn_rem_{pno}", help="Remove component"):
                             st.session_state["estimator_selected_parts"].pop(pno, None)
