@@ -51,6 +51,28 @@ class TestConfigModule(unittest.TestCase):
         self.assertEqual(charge, 5500)
         self.assertIn("Standard", label)
 
+
+    def test_calculate_gas_charge_amount(self):
+        """Test the pure integer wrapper for gas charge calculation."""
+        # Split ACs
+        self.assertEqual(config.calculate_gas_charge_amount("GS-12PITH11W"), 5500)
+        self.assertEqual(config.calculate_gas_charge_amount("GS-18PITH11W"), 7000)
+        self.assertEqual(config.calculate_gas_charge_amount("GS-24PITH11W"), 8500)
+        self.assertEqual(config.calculate_gas_charge_amount("GF-36TFIH"), 13000)
+        self.assertEqual(config.calculate_gas_charge_amount("GKH48K3FI"), 13000)
+
+        # Refrigerators
+        self.assertEqual(config.calculate_gas_charge_amount("GR-E8890G-CB3"), 4000)
+
+        # Water Dispensers
+        self.assertEqual(config.calculate_gas_charge_amount("WD-300F"), 3500)
+        self.assertEqual(config.calculate_gas_charge_amount("GW-JL500FC"), 3500)
+
+        # Edge cases and fallback
+        self.assertEqual(config.calculate_gas_charge_amount(""), 5500)
+        self.assertEqual(config.calculate_gas_charge_amount(None), 5500)
+        self.assertEqual(config.calculate_gas_charge_amount("UNKNOWN_MODEL"), 5500)
+
     def test_tokenize_appliance_model(self):
         """Test brand, category, tonnage, and series tokenization."""
         tok = config.tokenize_appliance_model("GS-18PITH11W")
