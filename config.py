@@ -209,7 +209,28 @@ def classify_component_role(part_name, part_no=""):
         return "LED TV Module"
     return "Component Hardware"
 
+
+FLOOR_STANDING_CAPACITIES = {
+    '60': '5.0 Ton', '5TON': '5.0 Ton',
+    '48': '4.0 Ton', '4TON': '4.0 Ton',
+    '36': '3.0 Ton', '3TON': '3.0 Ton',
+    '24': '2.0 Ton', '26': '2.0 Ton', '2TON': '2.0 Ton'
+}
+
+SPLIT_AC_CAPACITIES = {
+    '60': '5.0 Ton',
+    '48': '4.0 Ton',
+    '36': '3.0 Ton',
+    '24': '2.0 Ton', '26': '2.0 Ton',
+    '18': '1.5 Ton', '16': '1.5 Ton',
+    '12': '1.0 Ton', '11': '1.0 Ton', '10': '1.0 Ton'
+}
+
+FLOOR_STANDING_SERIES = ['TFIH', 'FWITH', 'VTIH', 'TF', 'FW', 'ISH', 'CD', 'CB', 'IPH', 'PITH', 'CITH']
+SPLIT_AC_SERIES = ['PITH', 'CITH', 'FITH', 'AITH', 'VITH', 'LITH', 'ZITH', 'VTIH', 'UITH', 'TFIH', 'FWITH', 'PIT', 'CIT', 'CM', 'LM', 'ECH', 'DU', 'EM', 'CZ', 'AR', 'PR', 'NV', 'GL', 'IB', 'ISH', 'FW', 'TF', 'CD', 'CB']
+
 def tokenize_appliance_model(model_str):
+
     m = str(model_str).strip().replace('=', '').replace('"', '').upper()
     
     brand = "Gree" if m.startswith(('GS-', 'GR-', 'GF-', 'GW-')) else ("EcoStar" if m.startswith(('ES-', 'EW-', 'CX-', 'EM-')) else "Other")
@@ -240,46 +261,18 @@ def tokenize_appliance_model(model_str):
     elif m.startswith(('GF-', 'EF-')) or any(k in m for k in ['FLOOR', 'STANDING']):
         cat = "Floor Standing AC"
         # Determine Floor Standing Capacity
-        if any(x in m for x in ['60', '5TON']):
-            ton = "5.0 Ton"
-        elif any(x in m for x in ['48', '4TON']):
-            ton = "4.0 Ton"
-        elif any(x in m for x in ['36', '3TON']):
-            ton = "3.0 Ton"
-        elif any(x in m for x in ['24', '26', '2TON']):
-            ton = "2.0 Ton"
-        else:
-            ton = "3.0 Ton"
+        ton = next((v for k, v in FLOOR_STANDING_CAPACITIES.items() if k in m), "3.0 Ton")
             
         # Determine Floor Standing Series
-        series = "FLOOR"
-        for s in ['TFIH', 'FWITH', 'VTIH', 'TF', 'FW', 'ISH', 'CD', 'CB', 'IPH', 'PITH', 'CITH']:
-            if s in m:
-                series = s
-                break
+        series = next((s for s in FLOOR_STANDING_SERIES if s in m), "FLOOR")
     else:
         cat = "Split AC"
         cap_match = re.search(r'-(10|11|12|16|18|24|26|36|48|60)', m)
         if cap_match:
-            cv = cap_match.group(1)
-            if cv in ['60']:
-                ton = "5.0 Ton"
-            elif cv in ['48']:
-                ton = "4.0 Ton"
-            elif cv in ['36']:
-                ton = "3.0 Ton"
-            elif cv in ['24', '26']:
-                ton = "2.0 Ton"
-            elif cv in ['18', '16']:
-                ton = "1.5 Ton"
-            elif cv in ['12', '11', '10']:
-                ton = "1.0 Ton"
+            ton = SPLIT_AC_CAPACITIES.get(cap_match.group(1), "1.5 Ton")
             
         # Strict Platform Series Tokenizer
-        for s in ['PITH', 'CITH', 'FITH', 'AITH', 'VITH', 'LITH', 'ZITH', 'VTIH', 'UITH', 'TFIH', 'FWITH', 'PIT', 'CIT', 'CM', 'LM', 'ECH', 'DU', 'EM', 'CZ', 'AR', 'PR', 'NV', 'GL', 'IB', 'ISH', 'FW', 'TF', 'CD', 'CB']:
-            if s in m:
-                series = s
-                break
+        series = next((s for s in SPLIT_AC_SERIES if s in m), series)
                 
     return {
         'model': m,
@@ -372,4 +365,3 @@ def get_tonnage_valve_pairing(target_tonnage):
     return "Cut-Off Valve (1/2\")", "Cut-Off Valve (1/4\")"
 
 
-
