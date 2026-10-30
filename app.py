@@ -984,22 +984,26 @@ with tab_history:
             st.warning(f"`{query}` ke against koi record nahi mila.")
         else:
             st.info(f"`{query}` ke **{len(match_df)}** service record(s) milay hain:")
-            for _, r in match_df.iterrows():
-                raw_c_no = str(r['complaint_no'])
+            for r in match_df.itertuples():
+                raw_c_no = str(r.complaint_no)
                 c_no = raw_c_no.replace('="', '').replace('"', '').strip()
-                raw_serial = str(r['serial'])
+                raw_serial = str(r.serial)
                 serial = raw_serial.replace('="', '').replace('"', '').strip()
-                model = r['model']
-                cust_name = r['customer_name']
-                phone = r['phone']
-                tech = r['technician_name']
-                c_type = str(r['complaint_type']).strip()
-                p_date = r['purchase_date']
-                c_date = r['complaint_date']
-                closed_date = r['closed_date']
-                remarks = r['remarks'] if r['remarks'] else "No remarks logged."
-                closed_amt = int(r.get('closed_amount', 0))
-                status = str(r.get('status', 'COMPLETED')).upper().strip()
+                model = r.model
+                cust_name = r.customer_name
+                phone = r.phone
+                tech = r.technician_name
+                c_type = str(r.complaint_type).strip()
+                p_date = r.purchase_date
+                c_date = r.complaint_date
+                closed_date = r.closed_date
+                remarks = r.remarks if r.remarks else "No remarks logged."
+
+                c_amt = getattr(r, 'closed_amount', 0)
+                closed_amt = int(c_amt if pd.notna(c_amt) else 0)
+
+                s = getattr(r, 'status', 'COMPLETED')
+                status = str(s if pd.notna(s) else 'COMPLETED').upper().strip()
 
                 if status == 'COMPLETED':
                     status_badge = '<span class="status-badge-completed">🟢 Completed</span>'
