@@ -80,5 +80,61 @@ class TestETLModule(unittest.TestCase):
             c.execute("DELETE FROM tech_performance_master WHERE complaint_no = '999001122'")
             conn.commit()
 
+    def test_ingest_feedback_and_pricing(self):
+        """Test ingest_feedback_and_pricing processes feedback and collection data correctly."""
+        fb_csv = """COMPLAINT_NO,MODEL_NAME,PHONE,CUSTOMER_NAME,TECHNICIAN_NAME,COMPLAINT_TYPE,PURCHASE_DATE,COMPLAINT_DATE,CLOSED_DATE,REMARKS,SERIAL
+12345,MODEL-A,03001234567,John Doe,Tech A,Repair,2023-01-01,2023-05-01,2023-05-02,Fixed issue,SN123
+67890,MODEL-B,03007654321,Jane Doe,Tech B,Replacement,2023-02-01,2023-06-01,2023-06-02,Replaced part,SN456
+"""
+        fb_stream = io.BytesIO(fb_csv.encode('utf-8'))
+        fb_stream.name = "feedback.csv"
+
+        coll_csv = """COMPLAIN_NO,NET_COLLECTION
+12345,1500
+67890,2500
+"""
+        coll_stream = io.BytesIO(coll_csv.encode('utf-8'))
+        coll_stream.name = "collection.csv"
+
+        # Call with both sources
+        etl.ingest_feedback_and_pricing(fb_stream, coll_stream)
+
+        # Verify ingested record 12345
+        res_hist = database.search_history_records("12345", "")
+        res_hist1 = res_hist[res_hist['complaint_no'] == '12345']
+        self.assertFalse(res_hist1.empty)
+        self.assertEqual(res_hist1.iloc[0]['model'], "MODEL-A")
+        self.assertEqual(res_hist1.iloc[0]['closed_amount'], 1500)
+        self.assertEqual(res_hist1.iloc[0]['serial'], "SN123")
+
+        # Verify ingested record 67890
+        res_hist = database.search_history_records("67890", "")
+        res_hist2 = res_hist[res_hist['complaint_no'] == '67890']
+        self.assertFalse(res_hist2.empty)
+        self.assertEqual(res_hist2.iloc[0]['model'], "MODEL-B")
+        self.assertEqual(res_hist2.iloc[0]['closed_amount'], 2500)
+        self.assertEqual(res_hist2.iloc[0]['serial'], "SN456")
+
+        # Call without collection source (should default to 0)
+        fb_csv_no_coll = """COMPLAINT_NO,MODEL_NAME,PHONE
+99999,MODEL-C,03009999999
+"""
+        fb_stream_no_coll = io.BytesIO(fb_csv_no_coll.encode('utf-8'))
+        fb_stream_no_coll.name = "feedback2.csv"
+
+        etl.ingest_feedback_and_pricing(fb_stream_no_coll)
+        res_hist = database.search_history_records("99999", "")
+        res_hist3 = res_hist[res_hist['complaint_no'] == '99999']
+        self.assertFalse(res_hist3.empty)
+        self.assertEqual(res_hist3.iloc[0]['closed_amount'], 0)
+        self.assertEqual(res_hist3.iloc[0]['model'], "MODEL-C")
+
+        # Cleanup test rows
+        with database.get_connection() as conn:
+            c = conn.cursor()
+            c.execute("DELETE FROM history_master WHERE complaint_no IN ('12345', '67890', '99999')")
+            conn.commit()
+
+
 if __name__ == "__main__":
     unittest.main()
