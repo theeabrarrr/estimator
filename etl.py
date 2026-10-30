@@ -500,6 +500,9 @@ def sync_model_part_catalog_from_feedback(fb_source=None, is_incremental: bool =
     col_boards_s = df[c_boards] if c_boards in df.columns else [''] * len(df)
     col_closed_s = df[c_closed] if c_closed in df.columns else [''] * len(df)
 
+    # Pre-compile regex for performance
+    sci_regex = re.compile(r'[0-9A-Z\-]{7,15}')
+
     for p_raw_val, m_val, prods_raw_val, boards_raw_val, closed_val in zip(
         col_parts_s, col_model_s, col_prods_s, col_boards_s, col_closed_s
     ):
@@ -526,7 +529,7 @@ def sync_model_part_catalog_from_feedback(fb_source=None, is_incremental: bool =
             clean_part = raw_part
             # Excel Scientific Notation Recovery (e.g. 3.00002E+11)
             if 'E+' in raw_part:
-                digit_candidates = re.findall(r'[0-9A-Z\-]{7,15}', prod_desc)
+                digit_candidates = sci_regex.findall(prod_desc)
                 if digit_candidates:
                     clean_part = digit_candidates[-1]
 
