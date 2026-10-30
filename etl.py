@@ -3,6 +3,7 @@ import os
 import tempfile
 import gc
 import pandas as pd
+import numpy as np
 import re
 import json
 import config
@@ -113,6 +114,16 @@ def standardize_columns(df):
         if col in df.columns and 'customer_name' not in df.columns and 'customer_name' not in rename_dict.values():
             rename_dict[col] = 'customer_name'
 
+    # Branch Aliases
+    for col in ['branch_name', 'branch', 'branchname', 'service_center', 'center_name']:
+        if col in df.columns and 'branch_name' not in df.columns and 'branch_name' not in rename_dict.values():
+            rename_dict[col] = 'branch_name'
+
+    # Days Aliases
+    for col in ['days', 'tat', 'aging_days', 'resolution_days']:
+        if col in df.columns and 'days' not in df.columns and 'days' not in rename_dict.values():
+            rename_dict[col] = 'days'
+
     if 'item_desc' in df.columns and 'part_name' not in df.columns and 'part_name' not in rename_dict.values():
         rename_dict['item_desc'] = 'part_name'
 
@@ -187,9 +198,14 @@ def ingest_performance_pipeline(fb_source, cancel_source=None):
     if 'complaint_no' in fb.columns:
         fb['complaint_no'] = fb['complaint_no'].apply(clean_val)
 
+    clean_fb_branch = fb['branch_name'].apply(clean_val) if 'branch_name' in fb.columns else 'Karachi 2 HA'
+    clean_fb_days = pd.to_numeric(fb['days'], errors='coerce').apply(lambda x: 0.0 if (pd.notna(x) and x < 0) else x) if 'days' in fb.columns else np.nan
+
     fb_sub = pd.DataFrame({
         'complaint_no': fb['complaint_no'] if 'complaint_no' in fb.columns else pd.Series(dtype=str),
         'technician_name': fb['technician_name'].apply(clean_val) if 'technician_name' in fb.columns else '',
+        'branch_name': clean_fb_branch,
+        'days': clean_fb_days,
         'status': fb['status'].astype(str).str.upper().str.strip() if 'status' in fb.columns else 'COMPLETED',
         'closed_date': fb['closed_date'].apply(clean_val) if 'closed_date' in fb.columns else '',
         '_priority': 2
@@ -200,15 +216,20 @@ def ingest_performance_pipeline(fb_source, cancel_source=None):
         if 'complaint_no' in cancel.columns:
             cancel['complaint_no'] = cancel['complaint_no'].apply(clean_val)
 
+        clean_can_branch = cancel['branch_name'].apply(clean_val) if 'branch_name' in cancel.columns else ''
+        clean_can_days = pd.to_numeric(cancel['days'], errors='coerce').apply(lambda x: 0.0 if (pd.notna(x) and x < 0) else x) if 'days' in cancel.columns else np.nan
+
         can_sub = pd.DataFrame({
             'complaint_no': cancel['complaint_no'] if 'complaint_no' in cancel.columns else pd.Series(dtype=str),
             'technician_name': cancel['technician_name'].apply(clean_val) if 'technician_name' in cancel.columns else '',
+            'branch_name': clean_can_branch,
+            'days': clean_can_days,
             'status': cancel['status'].astype(str).str.upper().str.strip() if 'status' in cancel.columns else 'CANCELED',
             'closed_date': cancel['closed_date'].apply(clean_val) if 'closed_date' in cancel.columns else '',
             '_priority': 1
         })
     else:
-        can_sub = pd.DataFrame(columns=['complaint_no', 'technician_name', 'status', 'closed_date', '_priority'])
+        can_sub = pd.DataFrame(columns=['complaint_no', 'technician_name', 'branch_name', 'days', 'status', 'closed_date', '_priority'])
 
     comb = pd.concat([fb_sub, can_sub], ignore_index=True)
     if comb.empty or 'complaint_no' not in comb.columns:
@@ -220,6 +241,14 @@ def ingest_performance_pipeline(fb_source, cancel_source=None):
     # Exclude TRANSFERED jobs
     master_perf = master_perf[master_perf['status'] != 'TRANSFERED'].copy()
 
+    # Reconcile missing branches using known technician primary branch or default to 'Karachi 2 HA'
+    valid_branch_df = master_perf[master_perf['branch_name'].astype(str).str.strip() != '']
+    tech_branch_map = valid_branch_df.drop_duplicates(subset=['technician_name']).set_index('technician_name')['branch_name'].to_dict() if not valid_branch_df.empty else {}
+    master_perf['branch_name'] = master_perf.apply(
+        lambda r: str(r['branch_name']).strip() if str(r['branch_name']).strip() else tech_branch_map.get(r['technician_name'], 'Karachi 2 HA'),
+        axis=1
+    )
+
     clean_dates = master_perf['closed_date'].astype(str).str.replace('Sept', 'Sep', regex=False)
     parsed = pd.to_datetime(clean_dates, format='mixed', errors='coerce').dt.strftime('%Y-%m-%d')
     today_str = pd.Timestamp.now().strftime('%Y-%m-%d')
@@ -228,16 +257,18 @@ def ingest_performance_pipeline(fb_source, cancel_source=None):
     perf_records = pd.DataFrame({
         'complaint_no': master_perf['complaint_no'],
         'technician_name': master_perf['technician_name'],
+        'branch_name': master_perf['branch_name'],
+        'days': master_perf['days'],
         'status': master_perf['status'],
         'closed_date': parsed_dates
     }).values.tolist()
 
     with get_connection() as conn:
         cursor = conn.cursor()
-        cursor.executemany("INSERT OR REPLACE INTO tech_performance_master (complaint_no, technician_name, status, closed_date) VALUES (?, ?, ?, ?)", perf_records)
+        cursor.executemany("INSERT OR REPLACE INTO tech_performance_master (complaint_no, technician_name, branch_name, days, status, closed_date) VALUES (?, ?, ?, ?, ?, ?)", perf_records)
         conn.commit()
     if database.is_turso_active():
-        database.sync_to_local_sqlite("INSERT OR REPLACE INTO tech_performance_master (complaint_no, technician_name, status, closed_date) VALUES (?, ?, ?, ?)", perf_records)
+        database.sync_to_local_sqlite("INSERT OR REPLACE INTO tech_performance_master (complaint_no, technician_name, branch_name, days, status, closed_date) VALUES (?, ?, ?, ?, ?, ?)", perf_records)
     return len(perf_records)
 
 def sync_all_complaints_pipeline(fb_source, cancel_source=None, coll_source=None):

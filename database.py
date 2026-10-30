@@ -493,12 +493,15 @@ SCHEMA_DDL_STATEMENTS = [
     CREATE TABLE IF NOT EXISTS tech_performance_master (
         complaint_no TEXT PRIMARY KEY,
         technician_name TEXT,
+        branch_name TEXT,
+        days REAL,
         status TEXT,
         closed_date TEXT
     )
     """,
     "CREATE INDEX IF NOT EXISTS idx_tech_perf_tech ON tech_performance_master (technician_name)",
     "CREATE INDEX IF NOT EXISTS idx_tech_perf_date ON tech_performance_master (closed_date)",
+    "CREATE INDEX IF NOT EXISTS idx_tech_perf_branch ON tech_performance_master (branch_name)",
     """
     CREATE TABLE IF NOT EXISTS model_part_catalog (
         model TEXT NOT NULL,
@@ -571,6 +574,27 @@ def is_schema_ready(conn) -> bool:
     except Exception:
         return False
 
+def ensure_tech_performance_columns(conn):
+    """Ensures branch_name and days columns exist in tech_performance_master."""
+    try:
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(tech_performance_master)")
+        cols = [r[1] for r in cursor.fetchall()]
+        if cols:
+            if "branch_name" not in cols:
+                cursor.execute("ALTER TABLE tech_performance_master ADD COLUMN branch_name TEXT")
+                conn.commit()
+            if "days" not in cols:
+                cursor.execute("ALTER TABLE tech_performance_master ADD COLUMN days REAL")
+                conn.commit()
+            try:
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_tech_perf_branch ON tech_performance_master (branch_name)")
+                conn.commit()
+            except Exception:
+                pass
+    except Exception:
+        pass
+
 def init_estimator_schema(force: bool = False):
     """
     Ensures history_master, tech_performance_master, model_part_catalog, master_parts_lookup, and v_model_compatible_parts exist.
@@ -583,8 +607,9 @@ def init_estimator_schema(force: bool = False):
         with get_connection() as conn:
             cursor = conn.cursor()
             
-            # Fast-path check: if schema is already healthy, exit instantly
+            # Fast-path check: if schema is already healthy, ensure columns and exit instantly
             if not force and is_schema_ready(conn):
+                ensure_tech_performance_columns(conn)
                 _SCHEMA_INITIALIZED = True
                 return
 

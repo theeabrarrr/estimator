@@ -90,7 +90,7 @@ def get_cached_missing_price_parts_df():
 def get_cached_performance_data():
     df = fetch_performance_data()
     if df is None or df.empty:
-        return pd.DataFrame(), None, None, []
+        return pd.DataFrame(), None, None, [], []
     df = df.copy()
     df['parsed_date'] = pd.to_datetime(df['closed_date'], errors='coerce')
     valid_dates = df['parsed_date'].dropna()
@@ -98,7 +98,12 @@ def get_cached_performance_data():
     max_avail = valid_dates.max().date() if not valid_dates.empty else datetime.now().date()
     df['month_period'] = df['closed_date'].astype(str).str.slice(0, 7)
     available_months = sorted([m for m in df['month_period'].dropna().unique() if len(m) == 7 and m.startswith('20')], reverse=True)
-    return df, min_avail, max_avail, available_months
+    if 'branch_name' in df.columns:
+        raw_branches = [b for b in df['branch_name'].dropna().unique() if str(b).strip()]
+        available_branches = ["Karachi 2 HA"] + sorted([b for b in raw_branches if b != "Karachi 2 HA"])
+    else:
+        available_branches = ["Karachi 2 HA"]
+    return df, min_avail, max_avail, available_months, available_branches
 
 # ==========================================
 # CUSTOM STYLING: SLEEK CORPORATE CLAYMORPHISM
@@ -1032,29 +1037,42 @@ with tab_history:
 # TAB 3: TECHNICIAN PERFORMANCE
 # ==========================================
 with tab_perf:
-    perf_data, min_avail, max_avail, available_months = get_cached_performance_data()
+    perf_data, min_avail, max_avail, available_months, available_branches = get_cached_performance_data()
     if perf_data.empty:
         st.info("ℹ️ **Technician Performance Report Abhi Load Nahi Hai.**\n\nSidebar mein **Quality Feedback Report** upload karke **Sync All Complaints & Performance** dabayein.")
     else:
-        st.markdown("##### 📅 Select Period for KPI Evaluation")
+        st.markdown("##### 📅 Select Branch & Period for KPI Evaluation")
         
-        month_labels = {}
-        for m_str in available_months:
-            try:
-                dt_m = datetime.strptime(m_str, '%Y-%m')
-                month_labels[m_str] = dt_m.strftime('%B %Y')
-            except Exception:
-                month_labels[m_str] = m_str
+        col_br, col_pr = st.columns([1, 1])
+        with col_br:
+            branch_options = available_branches.copy()
+            if "-- All Branches --" not in branch_options:
+                branch_options.append("-- All Branches --")
+            sel_branch = st.selectbox(
+                "🏢 Select Branch:",
+                options=branch_options,
+                index=0,
+                key="sel_kpi_branch"
+            )
 
-        period_options = [f"🗓️ {month_labels[m]}" for m in available_months]
-        period_options += ["🌐 Full Year Baseline (All Time)", "⚙️ Custom Date Range..."]
-        
-        sel_period = st.selectbox(
-            "Evaluation Period:",
-            options=period_options,
-            index=0 if period_options else None,
-            key="sel_kpi_period"
-        )
+        with col_pr:
+            month_labels = {}
+            for m_str in available_months:
+                try:
+                    dt_m = datetime.strptime(m_str, '%Y-%m')
+                    month_labels[m_str] = dt_m.strftime('%B %Y')
+                except Exception:
+                    month_labels[m_str] = m_str
+
+            period_options = [f"🗓️ {month_labels[m]}" for m in available_months]
+            period_options += ["🌐 Full Year Baseline (All Time)", "⚙️ Custom Date Range..."]
+            
+            sel_period = st.selectbox(
+                "📅 Evaluation Period:",
+                options=period_options,
+                index=0 if period_options else None,
+                key="sel_kpi_period"
+            )
 
         min_calendar = min(date(2025, 1, 1), min_avail) if min_avail else date(2025, 1, 1)
         max_calendar = max(max_avail, datetime.now().date()) if max_avail else datetime.now().date()
@@ -1091,80 +1109,107 @@ with tab_perf:
             end_str = dt_end.strftime('%Y-%m-%d')
             period_label = f"{dt_start.strftime('%B %Y')} (01-{dt_start.strftime('%b')} to {last_day:02d}-{dt_start.strftime('%b-%Y')})"
 
+        # Filter by date range and branch
         mask = (perf_data['closed_date'] >= start_str) & (perf_data['closed_date'] <= end_str)
+        if sel_branch != "-- All Branches --" and 'branch_name' in perf_data.columns:
+            mask = mask & (perf_data['branch_name'] == sel_branch)
         scoped_data = perf_data[mask].copy()
 
         if scoped_data.empty:
-            st.warning(f"{period_label} ke darmiyan koi complaints nahi mili.")
+            st.warning(f"{sel_branch} | {period_label} ke darmiyan koi complaints nahi mili.")
         else:
-            tot_assigned = len(scoped_data)
-            tot_completed = int((scoped_data['status'] == 'COMPLETED').sum())
-            tot_rejected = int((scoped_data['status'] == 'REJECTED').sum())
-            tot_canceled = int((scoped_data['status'].isin(['CANCELED', 'NIL'])).sum())
-            efficiency = (tot_completed / max(tot_assigned, 1)) * 100
-
+            branch_label_html = f"🏢 <b>Branch:</b> {sel_branch}" if sel_branch != "-- All Branches --" else "🏢 <b>Branch:</b> All Branches (Enterprise View)"
             st.markdown(f"""
             <div class="scope-box">
-                📅 <b>Selected Scope:</b> {period_label} &nbsp;|&nbsp; <b>Note:</b> Transferred calls excluded from KPI
+                {branch_label_html} &nbsp;|&nbsp; 📅 <b>Selected Scope:</b> {period_label} &nbsp;|&nbsp; <b>Note:</b> Transferred calls excluded from KPI
             </div>
             """, unsafe_allow_html=True)
+
+            # Technician selector (clean list excluding blank strings)
+            tech_candidates = sorted([t for t in scoped_data['technician_name'].dropna().unique() if str(t).strip()])
+            all_techs = ["-- All Technicians (Branch View) --"] + tech_candidates
+            selected_tech = st.selectbox("👤 Select Technician (Personal Score):", options=all_techs, key="sel_kpi_tech")
+
+            # Dynamic KPI calculation: Switch dynamically between Branch and Selected Technician
+            if selected_tech == "-- All Technicians (Branch View) --":
+                active_subset = scoped_data
+                eff_title = "Branch Efficiency" if sel_branch != "-- All Branches --" else "Enterprise Efficiency"
+            else:
+                active_subset = scoped_data[scoped_data['technician_name'] == selected_tech]
+                eff_title = "Personal Efficiency"
+
+            tot_assigned = len(active_subset)
+            tot_completed = int((active_subset['status'] == 'COMPLETED').sum())
+            tot_rejected = int((active_subset['status'] == 'REJECTED').sum())
+            tot_canceled = int((active_subset['status'].isin(['CANCELED', 'NIL'])).sum())
+            efficiency = (tot_completed / max(tot_assigned, 1)) * 100
 
             k1, k2, k3, k4, k5 = st.columns(5)
             k1.metric("Total Assigned", f"{tot_assigned:,}")
             k2.metric("Completed", f"{tot_completed:,}")
             k3.metric("Rejected", f"{tot_rejected:,}")
             k4.metric("Canceled", f"{tot_canceled:,}")
-            k5.metric("Zone Efficiency", f"{efficiency:.1f}%")
+            k5.metric(eff_title, f"{efficiency:.1f}%")
 
             st.divider()
 
-            all_techs = ["-- All Technicians (Branch View) --"] + sorted([t for t in scoped_data['technician_name'].dropna().unique() if t.strip()])
-            selected_tech = st.selectbox("👤 Select Technician (Personal Score):", options=all_techs)
+            # Build summary table across all named technicians (strictly filter out blank technician rows)
+            table_scoped = scoped_data[scoped_data['technician_name'].astype(str).str.strip() != ''].copy()
 
-            # Build summary table across all technicians in scope to establish overall rankings
-            all_pvt = pd.pivot_table(
-                scoped_data,
-                index='technician_name',
-                columns='status',
-                values='complaint_no',
-                aggfunc='count',
-                fill_value=0
-            )
+            if not table_scoped.empty:
+                all_pvt = pd.pivot_table(
+                    table_scoped,
+                    index='technician_name',
+                    columns='status',
+                    values='complaint_no',
+                    aggfunc='count',
+                    fill_value=0
+                )
 
-            for s in ['COMPLETED', 'REJECTED', 'CANCELED', 'NIL']:
-                if s not in all_pvt.columns:
-                    all_pvt[s] = 0
+                for s in ['COMPLETED', 'REJECTED', 'CANCELED', 'NIL']:
+                    if s not in all_pvt.columns:
+                        all_pvt[s] = 0
 
-            completed_series = all_pvt['COMPLETED']
-            rejected_series = all_pvt['REJECTED']
-            canceled_series = all_pvt['CANCELED'] + all_pvt['NIL']
-            assigned_series = all_pvt.sum(axis=1)
+                completed_series = all_pvt['COMPLETED']
+                rejected_series = all_pvt['REJECTED']
+                canceled_series = all_pvt['CANCELED'] + all_pvt['NIL']
+                assigned_series = all_pvt.sum(axis=1)
 
-            summary_df = pd.DataFrame({
-                'Technician': all_pvt.index,
-                'Assigned': assigned_series.values,
-                'Completed': completed_series.values,
-                'Rejected': rejected_series.values,
-                'Canceled': canceled_series.values,
-            })
+                # Calculate Avg Days per technician on completed jobs with non-null days
+                tech_days_map = {}
+                for t_name, grp in table_scoped.groupby('technician_name'):
+                    valid_days = grp[grp['status'] == 'COMPLETED']['days'].dropna()
+                    if not valid_days.empty:
+                        tech_days_map[t_name] = f"{valid_days.mean():.1f}"
+                    else:
+                        tech_days_map[t_name] = "-"
 
-            summary_df['Completion Rate (%)'] = (
-                (summary_df['Completed'] / summary_df['Assigned'].replace(0, 1)) * 100
-            ).round(1).astype(str) + '%'
+                summary_df = pd.DataFrame({
+                    'Technician': all_pvt.index,
+                    'Assigned': assigned_series.values,
+                    'Completed': completed_series.values,
+                    'Rejected': rejected_series.values,
+                    'Canceled': canceled_series.values,
+                    'Avg Days': [tech_days_map.get(t, "-") for t in all_pvt.index]
+                })
 
-            # Sort strictly based on completed volume descending, then assigned volume descending
-            summary_df = summary_df.sort_values(by=['Completed', 'Assigned'], ascending=[False, False])
-            summary_df = summary_df.reset_index(drop=True)
+                # Sort strictly based on completed volume descending, then assigned volume descending
+                summary_df = summary_df.sort_values(by=['Completed', 'Assigned'], ascending=[False, False])
+                summary_df = summary_df.reset_index(drop=True)
 
-            # Add sequential ranking column starting from 1
-            summary_df.insert(0, 'Sr. No', range(1, len(summary_df) + 1))
+                # Add sequential ranking column starting from 1
+                summary_df.insert(0, 'Sr. No', range(1, len(summary_df) + 1))
 
-            if selected_tech != "-- All Technicians (Branch View) --":
-                display_df = summary_df[summary_df['Technician'] == selected_tech].copy()
+                # Highlight selected technician row while keeping full ranking visible
+                def highlight_selected(row):
+                    if selected_tech != "-- All Technicians (Branch View) --" and row['Technician'] == selected_tech:
+                        return ['background-color: rgba(30, 144, 255, 0.22); font-weight: bold; border-left: 4px solid #1E90FF;'] * len(row)
+                    return [''] * len(row)
+
+                styled_df = summary_df.style.apply(highlight_selected, axis=1)
+                st.dataframe(styled_df, hide_index=True, width="stretch")
             else:
-                display_df = summary_df.copy()
-
-            st.dataframe(display_df, hide_index=True, width="stretch")
+                st.info("No technician data found for the selected branch and period.")
 
 # Clean, subtle credit footer at the bottom of the page
 st.markdown("""

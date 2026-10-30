@@ -7,7 +7,7 @@
 **Supported Brands:** Gree & EcoStar (HVAC, Refrigeration, Water Dispensers, Washing Machines, LED TVs)  
 **Database Architecture:** Dual-Engine: **Turso Cloud Database (libSQL over HTTP Pipeline API)** (Primary Cloud Persistence) with transparent fallback to **Local SQLite (`dwp_service.db`)** (Local/Offline)  
 **Document Status:** Ground Truth Standard (Active & Authoritative)  
-**Version:** 2.3 (Sleek Corporate Claymorphism, 2-Column Split Dashboard & Ultra-Compact Estimator Standard)  
+**Version:** 2.4 (Branch-Level Multi-Center Filtering, Turnaround Time Avg Days Tracking, and Dynamic Technician Personal Scorecards)  
 
 ---
 
@@ -133,15 +133,23 @@ The **DWP Field Assistant Engine** is an enterprise field operations, diagnostic
 - Displays technician name, purchase date, complaint date, closed date, closing remarks, and collected revenue amount.
 
 ### Module 3: 📊 Technician Performance KPI Hub
-- Top KPI Summary Cards with Claymorphic elevation:
+- **Branch & Evaluation Period Scope:**
+  - Branch Selector placed alongside Evaluation Period, defaulting to `Karachi 2 HA`, with support for `-- All Branches --` (Enterprise View).
+  - Monthly periods dynamically extracted from `closed_date`, Full Year Baseline, or Custom Date Range.
+  - Informative scope banner indicating selected Branch, Date Range, and status exclusion notes.
+- **Dynamic 5 KPI Metric Cards:**
   - `Total Assigned Jobs`
   - `Completed Complaints`
   - `Rejected Calls`
   - `Canceled / Nil Calls`
-  - `Zone Efficiency (%)`
-- Dynamic evaluation period selector (Monthly periods dynamically extracted from `closed_date`, Full Year Baseline, or Custom Date Range).
-- Technician personal scorecard dropdown.
-- Performance pivot table with sequential ranking (`Sr. No`) sorted by completed volume descending.
+  - `Branch Efficiency (%)` (Renamed from Zone Efficiency; dynamically switches to `Personal Efficiency` or `Enterprise Efficiency`).
+  - **Dynamic State Switching:** When an individual technician is selected in the personal score dropdown, all 5 top cards instantly switch to display that specific technician's metrics.
+- **Technician Personal Scorecard & Ranking Table:**
+  - Full ranking table sorted by completed volume descending with sequential ranking (`Sr. No`).
+  - Columns: `Sr. No` | `Technician` | `Assigned` | `Completed` | `Rejected` | `Canceled` | `Avg Days`.
+  - Replaced Completion Rate with **`Avg Days`** (Turnaround Time from complaint registration to closure; clamped at minimum 0 days for same-day closures).
+  - **Ghost Row Elimination:** Blank technician records are cleanly excluded from the ranking table while counted in branch totals.
+  - **Visual Highlighting:** The selected technician's row is highlighted with high-contrast clay accent styling while keeping the full branch ranking visible for supervisor context.
 
 ---
 
@@ -159,7 +167,7 @@ The **DWP Field Assistant Engine** is an enterprise field operations, diagnostic
 1. `parts_pricing`: Spare parts catalog, retail prices, store stock, and pricing status.
 2. `model_part_catalog`: Cross-model compatibility map and replacement frequencies.
 3. `history_master`: Closed service complaints archive (27,930+ records).
-4. `tech_performance_master`: Technician KPI performance tracking (18,156+ records).
+4. `tech_performance_master`: Technician KPI performance tracking with `branch_name` and `days` columns (19,124+ records).
 5. `branch_store_stock`: Karachi-2 HA Store inventory parsed from Store Movement PDFs.
 
 ---
@@ -208,3 +216,4 @@ Enforced by authoritative skill [`dwp-ui-design-system`](file:///.agents/skills/
 | **v2.1** | Oct 2026 | Added missing ERP price exports, cross-model compatibilities, and sequential rankings. |
 | **v2.2** | Oct 2026 | Integrated Turso Cloud Database persistence (libSQL over HTTP), TCP Keep-Alive connection pooling, and Streamlit query caching. |
 | **v2.3** | Oct 2026 | **Sleek Corporate Claymorphism UI Overhaul:**<br>• Converted Estimator to 2-Column Split Dashboard (Catalog Left, Checkout Right).<br>• Implemented Ultra-Compact 2-Line Spare Parts rows (~48px height, 65% space reduction).<br>• Eliminated bulky expander boxes; introduced hover tooltips for cross-model fits.<br>• Added 4-Way Valve Bypass (Rs. 1,500) and AC Service Charges (Rs. 3,500).<br>• Removed redundant Customer Warranty Status selector.<br>• Relocated Operations & Support help box to the Sidebar footer.<br>• Formalized Mandatory Continuous PRD Maintenance & Versioning Policy. |
+| **v2.4** | Oct 2026 | **Technician Performance Hub Upgrade (Module 3):**<br>• Added multi-branch filtering (defaulting to `Karachi 2 HA` with `-- All Branches --` option).<br>• Dynamically updated 5 top KPI cards to switch between Branch metrics and individual Technician Personal Score.<br>• Renamed Zone Efficiency to `Branch Efficiency` (and `Personal Efficiency` for individual technicians).<br>• Replaced Completion Rate in ranking table with `Avg Days` (turnaround time, clamping negative days to 0 for same-day closures).<br>• Eliminated ghost blank technician rows from the table while retaining unassigned jobs in branch totals.<br>• Implemented visual row highlighting for the selected technician in the full ranking table.<br>• Upgraded `tech_performance_master` schema in Turso Cloud and local SQLite with `branch_name` and `days`. |
