@@ -1,0 +1,4 @@
+🎯 **What:** Replaced the silent `pass` in `sync_to_local_sqlite` exception handler with `logger.exception("Failed to sync to local SQLite snapshot")`.
+💡 **Why:** Catching and silently ignoring exceptions makes it difficult to debug failures. Logging the exception provides visibility and improves debuggability.
+✅ **Verification:** Confirmed that the unit test suite passes after the change.
+✨ **Result:** Improved maintainability and debugging by exposing silent failures to logs.

@@ -9,6 +9,8 @@ import time
 import requests
 import warnings
 from contextlib import contextmanager
+import logging
+logger = logging.getLogger(__name__)
 
 # Suppress harmless pandas DBAPI UserWarning when using custom Turso connection wrappers
 warnings.filterwarnings('ignore', category=UserWarning, message='.*pandas only supports SQLAlchemy connectable.*')
@@ -374,7 +376,7 @@ def sync_to_local_sqlite(sql: str, params_seq=None):
         finally:
             conn.close()
     except Exception:
-        pass
+        logger.exception("Failed to sync to local SQLite snapshot")
 
 def search_history_records(query_str, clean_phone_str):
     init_estimator_schema()
@@ -1082,4 +1084,4 @@ def append_model_catalog(records: list[tuple]) -> int:
                     ELSE model_part_catalog.last_installed_date
                 END
         """, records)
-    return len(records)
+    return len(records)
