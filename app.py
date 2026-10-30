@@ -855,11 +855,11 @@ with tab_estimator:
                 c_phone_input = st.text_input("Customer Phone:", placeholder="e.g. 03402696414", key="q_phone").strip()
 
             # Itemized table rows
-            parts_rows_html = ""
             if selected_parts_data:
+                parts_rows = []
                 for p in selected_parts_data:
                     p_price_str = f"Rs. {p['price']:,}" if p['price'] > 0 else "<span>Pending Price</span>"
-                    parts_rows_html += (
+                    parts_rows.append(
                         f"<tr>"
                         f"<td style='padding: 3px 0 3px 10px; font-size: 0.83rem;'>"
                         f"• <b>{p['description']}</b> <code>({p['part_no']})</code>"
@@ -869,6 +869,7 @@ with tab_estimator:
                         f"</td>"
                         f"</tr>"
                     )
+                parts_rows_html = "".join(parts_rows)
             else:
                 parts_rows_html = (
                     "<tr>"
