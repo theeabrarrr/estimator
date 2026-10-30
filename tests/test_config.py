@@ -1,6 +1,7 @@
 import unittest
 import os
 import sys
+from unittest.mock import patch
 
 # Ensure app root is in sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -116,6 +117,27 @@ class TestConfigModule(unittest.TestCase):
         suction_10, liquid_10 = config.get_tonnage_valve_pairing("1.0 Ton")
         self.assertEqual(suction_10, "Cut-Off Valve (3/8\")")
         self.assertEqual(liquid_10, "Cut-Off Valve (1/4\")")
+
+
+    @patch('os.path.exists')
+    def test_find_latest_stock_pdf(self, mock_exists):
+        """Test finding the latest stock PDF based on file existence."""
+
+        # Scenario 1: vp786.pdf exists
+        def exists_side_effect_1(path):
+            return "vp786.pdf" in path
+        mock_exists.side_effect = exists_side_effect_1
+        self.assertTrue(config.find_latest_stock_pdf().endswith("vp786.pdf"))
+
+        # Scenario 2: vp786.pdf does not exist, but vp786 (1 year stock movement report).pdf exists
+        def exists_side_effect_2(path):
+            return "vp786 (1 year stock movement report).pdf" in path
+        mock_exists.side_effect = exists_side_effect_2
+        self.assertTrue(config.find_latest_stock_pdf().endswith("vp786 (1 year stock movement report).pdf"))
+
+        # Scenario 3: neither exists
+        mock_exists.side_effect = lambda path: False
+        self.assertTrue(config.find_latest_stock_pdf().endswith("vp786.pdf"))
 
 if __name__ == "__main__":
     unittest.main()
