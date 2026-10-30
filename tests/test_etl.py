@@ -1,3 +1,4 @@
+from unittest import mock
 import unittest
 import os
 import sys
@@ -79,6 +80,53 @@ class TestETLModule(unittest.TestCase):
             c.execute("DELETE FROM history_master WHERE complaint_no = '999001122'")
             c.execute("DELETE FROM tech_performance_master WHERE complaint_no = '999001122'")
             conn.commit()
+
+    @mock.patch('pdfplumber.open')
+    @mock.patch('database.upsert_master_parts')
+    def test_parse_store_stock_pdf(self, mock_upsert, mock_pdf_open):
+        """Test parse_store_stock_pdf extracts prices and correctly normalizes negative balances and B-grades."""
+        mock_pdf = mock.MagicMock()
+        mock_pdf_open.return_value.__enter__.return_value = mock_pdf
+
+        mock_page1 = mock.MagicMock()
+        mock_page2 = mock.MagicMock()
+
+        mock_pdf.pages = [mock_page1, mock_page2]
+
+        # Row format
+        # r1: 0: dummy, 1: part, 2: desc, 3: model, 4: price, 5-13: techs, 14: sales, 15: branch, 16: tech10
+        # r2: 0: dummy, 1: part, 2: desc, 3: model, 4: price, 5-13: techs, 14: total_stock
+
+        r1_header = [""] * 17
+        r2_header = [""] * 17
+
+        r1_row = ["", "PART123", "DESC123", "MOD123", "1,000", "1", "0", "0", "0", "0", "0", "0", "0", "0", "5", "-10", "2"]
+        r2_row = ["", "PART123", "DESC123", "MOD123", "1,000", "3", "0", "0", "0", "0", "0", "0", "0", "0", "20"]
+
+        # Add a B-Grade part to test filtering
+        r1_bgrade = ["", "PARTB", "B-Grade Set", "MODB", "500", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"]
+        r2_bgrade = ["", "PARTB", "B-Grade Set", "MODB", "500", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"]
+
+        mock_page1.extract_table.return_value = [r1_header, r1_row, r1_bgrade]
+        mock_page2.extract_table.return_value = [r2_header, r2_row, r2_bgrade]
+
+        count = etl.parse_store_stock_pdf("dummy.pdf")
+
+        self.assertEqual(count, 1)
+        mock_upsert.assert_called_once()
+
+        args = mock_upsert.call_args[0][0]
+        self.assertEqual(len(args), 1)
+
+        record = args[0]
+        # p_no, desc, model, price, branch_store, sales_store, tech_total, total_stock, avail_branch, avail_total, stock_status, tech_dict_json, is_pricing_pending, source_doc
+        self.assertEqual(record[0], "PART123")
+        self.assertEqual(record[3], 1000)
+        self.assertEqual(record[4], -10) # branch_store
+        self.assertEqual(record[5], 5) # sales_store
+        self.assertEqual(record[6], 6) # tech_total (1+2+3 = 6, 1 from idx 5, 2 from idx 16 of p1, 3 from idx 5 of p2)
+        self.assertEqual(record[7], 20) # total_stock
+        self.assertEqual(record[10], "Out of Stock")
 
 if __name__ == "__main__":
     unittest.main()
