@@ -325,6 +325,9 @@ def parse_store_stock_pdf(pdf_source=None) -> int:
                      "Ubaid Raza", "Umer Hayat Khi2", "Waseem Raja", "amin karachi 2ha", "muhammad naeem Kh"]
     tech_p2_indices = [5, 6, 7, 8, 9, 10, 11, 12, 13]
     
+    # Pre-compile regex for performance
+    b_grade_re = re.compile(r'b[- ]?grade\s+set', re.IGNORECASE)
+
     parsed_records = []
     seen_parts = set()
     source_doc = getattr(pdf_source, 'name', str(pdf_source))
@@ -391,7 +394,7 @@ def parse_store_stock_pdf(pdf_source=None) -> int:
                         continue
                     
                     # Rule 7: Filter out complete B-Grade finished units
-                    if re.search(r'b[- ]?grade\s+set', p_no + ' ' + desc, re.IGNORECASE):
+                    if b_grade_re.search(p_no + ' ' + desc):
                         continue
                     
                     if p_no in seen_parts:
