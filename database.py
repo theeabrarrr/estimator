@@ -699,12 +699,11 @@ def enrich_cross_series_compatibilities() -> None:
             SELECT DISTINCT model FROM model_part_catalog 
             WHERE model LIKE 'GS-18FITH%' OR model LIKE 'GS-18CITH%' OR model LIKE 'GS-18PITH%' OR model LIKE 'GS-18AITH%' OR model LIKE 'GS-18LITH%'
         """).fetchall()
+        records_to_insert = []
+
         for (m_name,) in m18_rows:
             for p_no, desc, board in evap_18:
-                cursor.execute("""
-                    INSERT OR IGNORE INTO model_part_catalog (model, part_no, part_description, board_type, historical_frequency, last_installed_date)
-                    VALUES (?, ?, ?, ?, 1, '')
-                """, (m_name, p_no, desc, board))
+                records_to_insert.append((m_name, p_no, desc, board))
 
         # 2. 12-Series Inverter Evaporators (Interchangeable 1.0 Ton coils)
         evap_12 = [
@@ -718,10 +717,7 @@ def enrich_cross_series_compatibilities() -> None:
         """).fetchall()
         for (m_name,) in m12_rows:
             for p_no, desc, board in evap_12:
-                cursor.execute("""
-                    INSERT OR IGNORE INTO model_part_catalog (model, part_no, part_description, board_type, historical_frequency, last_installed_date)
-                    VALUES (?, ?, ?, ?, 1, '')
-                """, (m_name, p_no, desc, board))
+                records_to_insert.append((m_name, p_no, desc, board))
 
         # 3. Water Dispenser Compressors
         wd_comps = [
@@ -734,10 +730,7 @@ def enrich_cross_series_compatibilities() -> None:
         wd_models_set = set([r[0] for r in m_wd_rows] + ['WD-300', 'WD-300F', 'WD-350F', 'WD-450F', 'GW-JL500FC', 'GW-JL500FS'])
         for m_name in wd_models_set:
             for p_no, desc, board in wd_comps:
-                cursor.execute("""
-                    INSERT OR IGNORE INTO model_part_catalog (model, part_no, part_description, board_type, historical_frequency, last_installed_date)
-                    VALUES (?, ?, ?, ?, 1, '')
-                """, (m_name, p_no, desc, board))
+                records_to_insert.append((m_name, p_no, desc, board))
 
         # 4. Refrigerator Compressors (Interchangeable across Everest series)
         ref_comps = [
@@ -751,10 +744,13 @@ def enrich_cross_series_compatibilities() -> None:
         """).fetchall()
         for (m_name,) in m_ref_rows:
             for p_no, desc, board in ref_comps:
-                cursor.execute("""
-                    INSERT OR IGNORE INTO model_part_catalog (model, part_no, part_description, board_type, historical_frequency, last_installed_date)
-                    VALUES (?, ?, ?, ?, 1, '')
-                """, (m_name, p_no, desc, board))
+                records_to_insert.append((m_name, p_no, desc, board))
+
+        if records_to_insert:
+            cursor.executemany("""
+                INSERT OR IGNORE INTO model_part_catalog (model, part_no, part_description, board_type, historical_frequency, last_installed_date)
+                VALUES (?, ?, ?, ?, 1, '')
+            """, records_to_insert)
 
         conn.commit()
 
@@ -1082,4 +1078,4 @@ def append_model_catalog(records: list[tuple]) -> int:
                     ELSE model_part_catalog.last_installed_date
                 END
         """, records)
-    return len(records)
+    return len(records)
