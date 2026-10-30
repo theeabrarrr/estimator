@@ -299,6 +299,83 @@ def sync_all_complaints_pipeline(fb_source, cancel_source=None, coll_source=None
 # Alias clean_excel_str to unified clean_val
 clean_excel_str = clean_val
 
+
+def _process_pdf_row(r1, r2, tech_p1_names, tech_p1_indices, tech_p2_names, tech_p2_indices, source_doc, seen_parts):
+    def get_col(row, idx):
+        return row[idx] if len(row) > idx and row[idx] is not None else None
+
+    col1_p = get_col(r1, 1) or get_col(r2, 1) or ''
+    col2_d = get_col(r1, 2) or get_col(r2, 2) or ''
+    col3_m = get_col(r1, 3) or get_col(r2, 3) or ''
+    col4_pr = get_col(r1, 4) or get_col(r2, 4) or ''
+
+    p_no = str(col1_p).replace('\n', '').strip()
+    desc = str(col2_d).replace('\n', ' ').strip()
+    model = str(col3_m).replace('\n', ' ').strip()
+    price_str = str(col4_pr).replace('\n', '').replace(',', '').strip()
+
+    if not p_no and not desc:
+        return None
+
+    # Rule 7: Filter out complete B-Grade finished units
+    if re.search(r'b[- ]?grade\s+set', p_no + ' ' + desc, re.IGNORECASE):
+        return None
+
+    if p_no in seen_parts:
+        return None
+    seen_parts.add(p_no)
+
+    try:
+        price = int(round(float(price_str))) if price_str else 0
+    except Exception:
+        price = 0
+
+    def parse_qty(v):
+        if v is None:
+            return 0
+        s = str(v).replace('\n', '').replace(',', '').strip()
+        try:
+            return int(float(s))
+        except Exception:
+            return 0
+
+    sales_store = parse_qty(get_col(r1, 14))
+    branch_store = parse_qty(get_col(r1, 15))
+    total_stock = parse_qty(get_col(r2, 14))
+
+    tech_dict = {}
+    for t_name, idx in zip(tech_p1_names, tech_p1_indices):
+        val = parse_qty(get_col(r1, idx))
+        if val != 0:
+            tech_dict[t_name] = val
+
+    for t_name, idx in zip(tech_p2_names, tech_p2_indices):
+        val = parse_qty(get_col(r2, idx))
+        if val != 0:
+            tech_dict[t_name] = val
+
+    tech_total = sum(tech_dict.values())
+    avail_branch = max(0, branch_store)
+    avail_total = max(0, total_stock)
+    stock_status = 'In Stock' if avail_branch > 0 else 'Out of Stock'
+
+    return (
+        p_no,
+        desc,
+        model,
+        price,
+        branch_store,
+        sales_store,
+        tech_total,
+        total_stock,
+        avail_branch,
+        avail_total,
+        stock_status,
+        json.dumps(tech_dict),
+        0,  # is_pricing_pending = 0 since present in stock report
+        source_doc
+    )
+
 def parse_store_stock_pdf(pdf_source=None) -> int:
     """
     Parses Karachi-2 HA Store stock report PDF (vp786), extracts prices, store stock,
@@ -374,80 +451,11 @@ def parse_store_stock_pdf(pdf_source=None) -> int:
                     if not r1 or not r2:
                         continue
 
-                    def get_col(row, idx):
-                        return row[idx] if len(row) > idx and row[idx] is not None else None
-
-                    col1_p = get_col(r1, 1) or get_col(r2, 1) or ''
-                    col2_d = get_col(r1, 2) or get_col(r2, 2) or ''
-                    col3_m = get_col(r1, 3) or get_col(r2, 3) or ''
-                    col4_pr = get_col(r1, 4) or get_col(r2, 4) or ''
-
-                    p_no = str(col1_p).replace('\n', '').strip()
-                    desc = str(col2_d).replace('\n', ' ').strip()
-                    model = str(col3_m).replace('\n', ' ').strip()
-                    price_str = str(col4_pr).replace('\n', '').replace(',', '').strip()
-                    
-                    if not p_no and not desc:
-                        continue
-                    
-                    # Rule 7: Filter out complete B-Grade finished units
-                    if re.search(r'b[- ]?grade\s+set', p_no + ' ' + desc, re.IGNORECASE):
-                        continue
-                    
-                    if p_no in seen_parts:
-                        continue
-                    seen_parts.add(p_no)
-                    
-                    try:
-                        price = int(round(float(price_str))) if price_str else 0
-                    except Exception:
-                        price = 0
-                    
-                    def parse_qty(v):
-                        if v is None:
-                            return 0
-                        s = str(v).replace('\n', '').replace(',', '').strip()
-                        try:
-                            return int(float(s))
-                        except Exception:
-                            return 0
-                    
-                    sales_store = parse_qty(get_col(r1, 14))
-                    branch_store = parse_qty(get_col(r1, 15))
-                    total_stock = parse_qty(get_col(r2, 14))
-                    
-                    tech_dict = {}
-                    for t_name, idx in zip(tech_p1_names, tech_p1_indices):
-                        val = parse_qty(get_col(r1, idx))
-                        if val != 0:
-                            tech_dict[t_name] = val
-                            
-                    for t_name, idx in zip(tech_p2_names, tech_p2_indices):
-                        val = parse_qty(get_col(r2, idx))
-                        if val != 0:
-                            tech_dict[t_name] = val
-                    
-                    tech_total = sum(tech_dict.values())
-                    avail_branch = max(0, branch_store)
-                    avail_total = max(0, total_stock)
-                    stock_status = 'In Stock' if avail_branch > 0 else 'Out of Stock'
-                    
-                    parsed_records.append((
-                        p_no,
-                        desc,
-                        model,
-                        price,
-                        branch_store,
-                        sales_store,
-                        tech_total,
-                        total_stock,
-                        avail_branch,
-                        avail_total,
-                        stock_status,
-                        json.dumps(tech_dict),
-                        0,  # is_pricing_pending = 0 since present in stock report
-                        source_doc
-                    ))
+                    record = _process_pdf_row(
+                        r1, r2, tech_p1_names, tech_p1_indices, tech_p2_names, tech_p2_indices, source_doc, seen_parts
+                    )
+                    if record:
+                        parsed_records.append(record)
     finally:
         if temp_file_path and os.path.exists(temp_file_path):
             try:
