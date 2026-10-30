@@ -4,7 +4,6 @@ import os
 import sys
 from pathlib import Path
 import importlib
-import re
 import urllib.parse
 from datetime import datetime, date
 import calendar
