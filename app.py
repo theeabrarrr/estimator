@@ -551,7 +551,7 @@ with st.sidebar:
     sync_can = st.file_uploader("2. Cancel / Nil / Transfer Report (Optional)", type=["xlsx", "xls"], key="sync_can")
     sync_coll = st.file_uploader("3. Collection Pricing File (Optional)", type=["xlsx", "xls"], key="sync_coll")
 
-    if st.button("🔄 Sync All Complaints & Performance", width="stretch"):
+    if st.button("🔄 Sync All Complaints & Performance", width="stretch", disabled=not sync_fb, help="Please upload the Quality Feedback Report to enable syncing." if not sync_fb else None):
         if sync_fb:
             with st.spinner("Syncing Master History, KPI & Catalog..."):
                 try:
@@ -564,8 +564,6 @@ with st.sidebar:
                     st.rerun()
                 except Exception as e:
                     st.error(f"Sync error: {e}")
-        else:
-            st.error("Quality Feedback Report lazmi upload karein!")
 
     if not is_turso_active() and os.path.exists(database.DB_FILE):
         try:
@@ -585,7 +583,7 @@ with st.sidebar:
     st.markdown("### 📦 Store Stock & Retail Pricing Sync")
     st.caption("Store Wise Stock Movement PDF upload karein taky Karachi-2 Store live inventory aur retail prices update hon.")
     sync_pdf = st.file_uploader("Latest Stock Movement PDF", type=["pdf"], key="sync_pdf")
-    if st.button("🔄 Sync Live Stock & Prices", width="stretch"):
+    if st.button("🔄 Sync Live Stock & Prices", width="stretch", disabled=not sync_pdf, help="Please upload the Latest Stock Movement PDF to enable syncing." if not sync_pdf else None):
         if sync_pdf:
             with st.spinner("Updating Live Stock & Prices..."):
                 try:
@@ -598,8 +596,6 @@ with st.sidebar:
                     st.rerun()
                 except Exception as e:
                     st.error(f"Stock PDF parse error: {e}")
-        else:
-            st.error("Stock Movement PDF upload karein!")
 
     st.markdown("---")
     st.markdown("### 📋 Estimator & Pricing Tools")
